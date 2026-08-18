@@ -25,17 +25,30 @@
         </form>
         <button id="guest-start" class="text-button">我不在名单中，直接开始</button>
       </div>
+      <section class="identity-tools" aria-label="工作台功能">
+        <div class="identity-tools-heading"><p class="eyebrow">一个工作台</p><strong>四项创作能力</strong></div>
+        <div id="identity-tool-grid" class="identity-tool-grid">
+          <button class="identity-tool active" data-tool="ip" type="button"><span>✨</span><b>IP 人设</b><small>定位与账号简介</small></button>
+          <button class="identity-tool" data-tool="planning" type="button"><span>🗂️</span><b>内容规划</b><small>作品合集与选题</small></button>
+          <button class="identity-tool" data-tool="script" type="button"><span>✍️</span><b>脚本改写</b><small>人设化表达</small></button>
+          <button class="identity-tool" data-tool="xhs" type="button"><span>📱</span><b>小红书排版</b><small>发布前整理</small></button>
+        </div>
+      </section>
     </section>
 
     <section id="workspace" class="workspace hidden">
-      <aside class="sidebar">
-        <div class="brand">AIA Auto IP</div>
-        <div id="identity-state" class="identity-state"></div>
-        <button id="switch-account" class="text-button">切换账号</button>
-        <p class="sidebar-note">未匹配用户的资料只保留在本次浏览器会话中。</p>
-      </aside>
+      <header class="workspace-toolbar">
+        <div class="toolbar-brand"><strong>AIA Auto IP</strong><span>红人计划</span></div>
+        <nav id="tool-tabs" class="tool-tabs" aria-label="创作工具">
+          <button class="tool-tab active" data-tool="ip" type="button"><span>✨</span>IP 人设</button>
+          <button class="tool-tab" data-tool="planning" type="button"><span>🗂️</span>内容规划</button>
+          <button class="tool-tab" data-tool="script" type="button"><span>✍️</span>脚本改写</button>
+          <button class="tool-tab" data-tool="xhs" type="button"><span>📱</span>小红书排版</button>
+        </nav>
+        <div class="toolbar-account"><span id="identity-state" class="identity-state"></span><button id="switch-account" class="text-button">切换账号</button></div>
+      </header>
 
-      <section class="chat-panel">
+      <section id="ip-chat-panel" class="chat-panel">
         <header class="panel-header">
           <div><p class="eyebrow">IP 定位助手</p><h2 id="chat-title">正在核验资料</h2></div>
           <span id="save-state" class="status-pill">本次会话</span>
@@ -48,8 +61,10 @@
         </form>
       </section>
 
+      <section id="tool-placeholder" class="tool-placeholder hidden" aria-live="polite"></section>
+
       <aside class="profile-panel">
-        <div class="profile-title"><div><p class="eyebrow">实时档案</p><h2>我的 IP 信息</h2></div><span id="completion">0%</span></div>
+        <div class="profile-title"><div><p class="eyebrow">当前创作上下文</p><h2>我的 IP 信息</h2></div><span id="completion">0%</span></div>
         <div id="profile-card" class="profile-card"></div>
         <button id="generate-button" class="primary full-width" disabled>确认资料，生成方案</button>
         <button id="view-proposal" class="secondary-button full-width hidden" type="button">查看最新方案</button>
@@ -67,4 +82,3 @@
   <script src="app.js"></script>
 </body>
 </html>
-

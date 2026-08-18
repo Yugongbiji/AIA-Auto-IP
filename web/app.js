@@ -1,5 +1,5 @@
 const SESSION_KEY = 'aia-auto-ip-session';
-const state = { matched: false, profile: {}, currentQuestion: 0, done: false, version: 1, pendingUpdate: null, multiSelection: new Set(), hasHistory: false, proposals: [], generating: false };
+const state = { matched: false, profile: {}, currentQuestion: 0, done: false, version: 1, pendingUpdate: null, multiSelection: new Set(), hasHistory: false, proposals: [], generating: false, activeTool: 'ip', requestedTool: 'ip' };
 const COMPLIANCE_TIPS = {
   allowed: [
     { emoji: '✅', title: '真实信息', text: '可表达真实的个人经历、城市、专业服务方向与已获得的荣誉。' },
@@ -41,6 +41,48 @@ const labels = {
 
 const $ = (id) => document.getElementById(id);
 const messages = $('messages');
+
+const toolDetails = {
+  planning: {
+    icon: '🗂️', eyebrow: '账号内容规划', title: '让账号内容不再像朋友圈',
+    description: '以当前 IP 为基础，先筛选“保险 + N”，再为账号确定唯一的“保险 + 1”内容结构。',
+    cards: [['保险主线', '确定保障、教育金、养老等适合你的保险内容核心。'], ['泛内容筛选', '从育儿、医疗、运动等候选方向中，只保留最匹配的一项。'], ['作品合集', '按拓客或增员的信任路径，整理合集、选题与优先级。']],
+    note: '内容不能太杂、太随意地混发；平台要先读懂你的账号，才知道该把你推给谁。',
+  },
+  script: {
+    icon: '✍️', eyebrow: '脚本改写', title: '把一个好选题，写成像你说的话',
+    description: '粘贴已有脚本或从内容规划中选择选题；系统会先判断是否需要带入你的 IP。',
+    cards: [['识别场景', '判断内容是否需要体现你的城市、专业方向和个人经历。'], ['多版改写', '保留原意，调整结构、表达方式与手机阅读节奏。'], ['合规核对', '避免未经确认的个人经历、夸大承诺和不合规表达。']],
+    note: '脚本方法将以确认后的内部指令文档为准，并与当前 IP 方案协同使用。',
+  },
+  xhs: {
+    icon: '📱', eyebrow: '小红书排版', title: '让内容看起来更像一篇愿意读完的笔记',
+    description: '将确认后的文案整理为标题、段落、小标题与表情建议，并提供可直接复制的发布版本。',
+    cards: [['阅读节奏', '根据手机屏幕自动控制段落长度与留白。'], ['账号风格', '需要时带入当前 IP 的表达气质和目标人群。'], ['发布前提示', '在复制前核对敏感词、引流和夸大承诺风险。']],
+    note: '排版服务于清晰表达，不会为了“好看”添加虚构经历或不合规信息。',
+  },
+};
+
+function renderToolPlaceholder(tool) {
+  const detail = toolDetails[tool];
+  if (!detail) return;
+  const panel = $('tool-placeholder');
+  panel.innerHTML = `<div class="tool-stage-heading"><span class="tool-stage-icon">${detail.icon}</span><div><p class="eyebrow">${detail.eyebrow} · 功能预览</p><h2>${detail.title}</h2><p>${detail.description}</p></div><span class="tool-stage-status">正在设计</span></div><div class="tool-stage-cards">${detail.cards.map(([title, text], index) => `<article><span>0${index + 1}</span><h3>${title}</h3><p>${text}</p></article>`).join('')}</div><div class="tool-stage-context"><strong>将使用当前 IP 上下文</strong><span>${state.profile.name ? `已关联：${state.profile.name} 的资料与 IP 方案` : '登录并建立 IP 档案后，将自动关联个人资料与方案版本'}</span></div><p class="tool-stage-note">📌 ${detail.note}</p>`;
+}
+
+function selectTool(tool) {
+  state.activeTool = tool;
+  document.querySelectorAll('[data-tool]').forEach((button) => button.classList.toggle('active', button.dataset.tool === tool));
+  const isIp = tool === 'ip';
+  $('ip-chat-panel').classList.toggle('hidden', !isIp);
+  $('tool-placeholder').classList.toggle('hidden', isIp);
+  if (!isIp) renderToolPlaceholder(tool);
+}
+
+function chooseToolBeforeLogin(tool) {
+  state.requestedTool = tool;
+  document.querySelectorAll('.identity-tool').forEach((button) => button.classList.toggle('active', button.dataset.tool === tool));
+}
 
 function addMessage(text, kind = 'assistant', persist = true) {
   const node = document.createElement('div');
@@ -244,7 +286,7 @@ function startWorkspace(profile, matched, history = [], proposals = []) {
   $('save-state').textContent = matched ? '已载入历史档案' : '本次会话';
   if (history.length) history.forEach((item) => addMessage(item.content, item.role, false));
   else addMessage(matched ? `你好，${profile.name}。你的报名资料已经带入，接下来补充生成方案需要的关键信息。` : '亲，欢迎加入友邦红人计划。我们会通过对话建立本次 IP 档案。');
-  renderProfile(); refreshProposalButton(); presentQuestion();
+  renderProfile(); refreshProposalButton(); presentQuestion(); selectTool(state.requestedTool || 'ip');
 }
 
 function makeNode(tag, className, text) { const node = document.createElement(tag); if (className) node.className = className; if (text !== undefined) node.textContent = text; return node; }
@@ -283,6 +325,8 @@ function renderProposal(proposal, version) {
 
 $('lookup-form').addEventListener('submit', async (event) => { event.preventDefault(); const name = $('name-input').value.trim(); const agentId = $('agent-id-input').value.trim(); const response = await fetch(`/api/lookup?name=${encodeURIComponent(name)}&agentId=${encodeURIComponent(agentId)}`); const result = await response.json(); if (result.matched) return startWorkspace(result.profile, true, result.history || [], result.proposals || []); startWorkspace({ name, agentId }, false); });
 $('guest-start').onclick = () => startWorkspace({}, false);
+document.querySelectorAll('.identity-tool').forEach((button) => { button.onclick = () => chooseToolBeforeLogin(button.dataset.tool); });
+document.querySelectorAll('.tool-tab').forEach((button) => { button.onclick = () => selectTool(button.dataset.tool); });
 $('switch-account').onclick = () => { localStorage.removeItem(SESSION_KEY); window.location.reload(); };
 $('view-proposal').onclick = () => { if (state.proposals[0]) renderProposal(state.proposals[0].proposal, state.proposals[0].version); };
 $('proposal-close').onclick = () => { $('proposal-screen').classList.add('hidden'); document.body.classList.remove('proposal-open'); };
@@ -309,4 +353,3 @@ async function resumeSavedSession() {
 }
 
 resumeSavedSession();
-
