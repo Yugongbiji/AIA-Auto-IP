@@ -202,13 +202,12 @@ def deepseek_content_plan(profile: dict, planning: dict, current_plan: dict | No
   "insuranceLine":{"title":"保险主线名称","reason":"不超过60字"},
   "candidateDirections":[{"direction":"保险 + 某方向","audienceFit":"人群一致判断","sustainable":"持续输出判断","benefit":"利他价值","recommend":true}],
   "finalPositioning":{"label":"保险 + 某一方向","explanation":"不超过80字，说明为何只选这一条"},
-  "collections":[{"name":"合集名称","audienceQuestion":"要回答的受众问题","contentBoundary":"内容边界","topics":["4个首批选题"]}],
-  "firstMonth":{"ratio":"拓客/增员比例或说明","rhythm":"发布节奏","weeklyPlan":["4条简短的首月安排"]},
+  "contentDirections":[{"direction":"内容方向名称","audienceQuestion":"要回答的受众问题","contentBoundary":"内容边界","topics":["4个首批选题"]}],
   "avoidDirections":[{"direction":"不建议混入的方向","reason":"不超过55字"}],
   "focusReminder":"提醒内容不宜太杂、太随意混发，避免账号像朋友圈，导致平台难判断流量画像。"
 }
 
-candidateDirections 输出 2 到 3 项；collections 输出 3 到 5 项；每个合集 topics 正好 4 项。finalPositioning 必须只选择一个保险以外的方向。"""
+candidateDirections 输出 2 到 3 项；contentDirections 输出 3 到 5 项；每个内容方向 topics 正好 4 项。内容方向是账号的长期创作主题，不等同于小红书合集；如后续创建平台合集，可从内容方向中提炼一个不超过 5 个汉字的短名称。finalPositioning 必须只选择一个保险以外的方向。"""
     request_payload = {
         "profile": profile,
         "planningAnswers": planning,

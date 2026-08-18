@@ -53,7 +53,7 @@ const toolDetails = {
   planning: {
     icon: '🗂️', eyebrow: '账号内容规划', title: '让账号内容不再像朋友圈',
     description: '以当前 IP 为基础，先筛选“保险 + N”，再为账号确定唯一的“保险 + 1”内容结构。',
-    cards: [['保险主线', '确定保障、教育金、养老等适合你的保险内容核心。'], ['泛内容筛选', '从育儿、医疗、运动等候选方向中，只保留最匹配的一项。'], ['作品合集', '按拓客或增员的信任路径，整理合集、选题与优先级。']],
+    cards: [['保险主线', '确定保障、教育金、养老等适合你的保险内容核心。'], ['泛内容筛选', '从育儿、医疗、运动等候选方向中，只保留最匹配的一项。'], ['内容方向', '按拓客或增员的信任路径，整理长期方向、选题与优先级。']],
     note: '内容不能太杂、太随意地混发；平台要先读懂你的账号，才知道该把你推给谁。',
   },
   script: {
@@ -562,7 +562,7 @@ function renderContentPlan(plan, version) {
 
   const core = makeNode('div', 'content-plan-core');
   core.append(contentPlanCard('① 保险主线', plan.insuranceLine?.reason || '从你的 IP、目标人群和服务优势中确定保险内容的核心。'));
-  core.append(contentPlanCard('② 最终账号定位', plan.finalPositioning?.explanation || '每个账号只保留一个最终泛内容主线。'));
+  core.append(contentPlanCard('② 泛内容支线', plan.finalPositioning?.explanation || '每个账号只保留一个最终泛内容主线。'));
   content.appendChild(core);
 
   const candidates = makeNode('div', 'planning-candidate-list');
@@ -574,18 +574,13 @@ function renderContentPlan(plan, version) {
   });
   content.appendChild(contentPlanCard('🧭 保险 + N 候选筛选', candidates));
 
-  const collectionList = makeNode('div', 'collection-list');
-  asArray(plan.collections).slice(0, 5).forEach((item, index) => {
-    const collection = makeNode('article', 'collection-card'); collection.append(makeNode('span', 'collection-number', `合集 ${index + 1}`), makeNode('h4', '', item.name || '内容合集'));
-    collection.append(makeNode('p', '', `解决的问题：${item.audienceQuestion || '围绕目标受众的真实问题展开'}`), makeNode('p', '', `内容边界：${item.contentBoundary || '不偏离账号定位'}`));
-    const topics = makeNode('div', 'topic-pills'); asArray(item.topics).slice(0, 4).forEach((topic) => topics.append(makeNode('span', '', topic))); collection.append(topics); collectionList.append(collection);
+  const directionList = makeNode('div', 'collection-list');
+  asArray(plan.contentDirections || plan.collections).slice(0, 5).forEach((item, index) => {
+    const direction = makeNode('article', 'collection-card'); direction.append(makeNode('span', 'collection-number', `方向 ${index + 1}`), makeNode('h4', '', item.direction || item.name || '内容方向'));
+    direction.append(makeNode('p', '', `解决的问题：${item.audienceQuestion || '围绕目标受众的真实问题展开'}`), makeNode('p', '', `内容边界：${item.contentBoundary || '不偏离账号定位'}`));
+    const topics = makeNode('div', 'topic-pills'); asArray(item.topics).slice(0, 4).forEach((topic) => topics.append(makeNode('span', '', topic))); direction.append(topics); directionList.append(direction);
   });
-  content.appendChild(contentPlanCard('🗂️ 账号作品合集与首批选题', collectionList));
-
-  const firstMonth = makeNode('div', 'compact-list');
-  [['内容比例', plan.firstMonth?.ratio], ['发布节奏', plan.firstMonth?.rhythm]].forEach(([title, text]) => { const row = makeNode('div', 'compact-row'); row.append(makeNode('span', 'item-emoji', title === '内容比例' ? '⚖️' : '🗓️')); const words = makeNode('div'); words.append(makeNode('strong', '', title), makeNode('span', '', text || '结合账号实际情况安排')); row.append(words); firstMonth.append(row); });
-  const weekly = makeNode('div', 'weekly-plan'); asArray(plan.firstMonth?.weeklyPlan).slice(0, 4).forEach((item, index) => weekly.append(makeNode('p', '', `第 ${index + 1} 周 · ${item}`))); firstMonth.append(weekly);
-  content.appendChild(contentPlanCard('📅 首月执行节奏', firstMonth));
+  content.appendChild(contentPlanCard('🧭 内容方向', directionList));
 
   const avoid = makeNode('div', 'avoid-direction-list'); asArray(plan.avoidDirections).slice(0, 3).forEach((item) => { const row = makeNode('div', 'compact-row'); row.append(makeNode('span', 'item-emoji', '⛔')); const words = makeNode('div'); words.append(makeNode('strong', '', item.direction || '不建议混入'), makeNode('span', '', item.reason || '避免内容偏离已确定的人群与定位。')); row.append(words); avoid.append(row); }); content.appendChild(contentPlanCard('⚠️ 不建议混入的方向', avoid));
   const reminder = makeNode('section', 'platform-reminders focus-reminder'); reminder.append(makeNode('h3', '', '📌 内容聚焦提醒'), makeNode('p', '', plan.focusReminder || '内容不要太杂、太随意地混发。账号像朋友圈，平台就难判断该把你推给谁，长期容易让流量画像失焦。')); content.appendChild(reminder);
