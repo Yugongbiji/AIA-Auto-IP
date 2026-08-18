@@ -299,20 +299,18 @@ EMOJI_KEYWORDS = [("风险", "⚠️"), ("注意", "⚠️"), ("重点", "📌")
 
 
 def add_scan_emojis(formatted: str) -> str:
-    """Add one scan cue every two to three sentences, prioritising meaningful keywords."""
-    sentence_count = max(1, len(re.findall(r"[。！？!?]", formatted)))
-    target_count = min(10, max(1, (sentence_count + 1) // 2))
-    existing_count = sum(1 for char in formatted if is_emoji_component(char) and ord(char) not in {0x200D, 0xFE0F, 0x20E3})
-    needed = max(0, target_count - existing_count)
-    if not needed:
-        return formatted
+    """Keep emoji cues distributed: every three sentences get at least one cue."""
     parts = re.split(r"(?<=[。！？!?])", formatted)
-    candidates = [index for index, part in enumerate(parts) if part.strip() and not any(is_emoji_component(char) for char in part)]
-    if not candidates:
+    sentence_indexes = [index for index, part in enumerate(parts) if part.strip()]
+    if not sentence_indexes:
         return formatted
-    step = max(1, len(candidates) // needed)
-    chosen = candidates[::step][:needed]
-    for index in chosen:
+    neutral_emojis = ("📌", "💡", "✨", "✅")
+    neutral_index = 0
+    for group_start in range(0, len(sentence_indexes), 3):
+        group = sentence_indexes[group_start:group_start + 3]
+        if any(any(is_emoji_component(char) for char in parts[index]) for index in group):
+            continue
+        index = group[0]
         part = parts[index]
         inserted = False
         for keyword, emoji in EMOJI_KEYWORDS:
@@ -322,7 +320,8 @@ def add_scan_emojis(formatted: str) -> str:
                 inserted = True
                 break
         if not inserted:
-            parts[index] = f"📌 {part.lstrip()}"
+            parts[index] = f"{neutral_emojis[neutral_index % len(neutral_emojis)]} {part.lstrip()}"
+            neutral_index += 1
     return "".join(parts)
 
 
@@ -541,7 +540,7 @@ def deepseek_xhs_format(source: str, instruction: str = ""):
     display_source = strip_structure_markers(source)
     system_prompt = """你是小红书排版助手，不是改写助手。绝对不能修改、删除、替换、调换待排版原文的任何文字和标点，也不能增加观点、事实、承诺或营销引导。
 脚本库的“正文”“正文1”“正文2”“结尾”“开头”“脚本正文”“结语”等是内部结构标记，绝对不要写进排版结果。若输入给出多个编号标题，必须拆成独立内容：每段对应一个标题，不能把三个标题及正文挤在同一段。系统会在文本框外展示干净标题，formattedSections 的 text 内不要重复编号标题、结构标记或其序号。
-你只能在原文中加入换行、段落空行，以及与段落含义匹配的 emoji。建议每句不超过20个汉字、每段不超过5行；按语义断句，不拆产品名、数字和专有名词。标题独立成行；不要 Markdown、井号或星号。emoji 用于快速扫读，原则上每 2 至 3 句话配置 1 个；优先紧跟“保障、家庭、风险、重点、步骤、建议、教育、养老、健康、理赔”等重要词，也可放在段首。不得修改或拆开任何原文字词，避免连续堆叠或每句都加。
+你只能在原文中加入换行、段落空行，以及与段落含义匹配的 emoji。建议每句不超过20个汉字、每段不超过5行；按语义断句，不拆产品名、数字和专有名词。标题独立成行；不要 Markdown、井号或星号。emoji 用于快速扫读，原则上每 2 至 3 句话配置 1 个；优先紧跟“保障、家庭、风险、重点、步骤、建议、教育、养老、健康、理赔”等重要词，也可放在段首。若连续三句话都没有适合匹配的关键词，也必须选择其中一句在句首加入一个中性 emoji（如📌、💡、✨、✅），保证最多连续三句话没有表情。不得修改或拆开任何原文字词，避免连续堆叠或每句都加。
 同时只做初步表达风险检测，不判断专业事实真假。风险包括绝对化或夸大表达、收益或赔付承诺、恐慌营销、贬低同业、促销限时、返佣返现、站外导流、隐私泄露、违规增员，以及需要核对的产品、理赔、医学、法律、政策或税务表述。风险片段必须逐字来自原文。
 只输出合法 JSON：
 {"formattedText":"无多标题时，只加入换行或 emoji 的完整原文","formattedSections":[{"text":"有多个编号标题时，每个标题对应的排版原文"}],"suggestedTags":["根据全文提炼的标签，不含#，必须给出12个"],"risks":[{"snippet":"原文片段","type":"风险类型","reason":"不超过55字","suggestion":"不超过55字"}]}
