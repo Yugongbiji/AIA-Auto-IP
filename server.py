@@ -13,6 +13,7 @@ import argparse
 import json
 import os
 import mimetypes
+import re
 import sqlite3
 import sys
 from datetime import datetime, timezone
@@ -248,6 +249,65 @@ candidateDirections 输出 2 到 3 项；contentDirections 输出 3 到 5 项；
     return {"plan": plan, "model": body.get("model", payload["model"]), "usage": body.get("usage", {})}
 
 
+STRUCTURE_MARKER_PATTERN = re.compile(r"^\s*(?:正文|结尾|开头|脚本正文|文案正文|结束语|结语)\s*[：:]?\s*", re.IGNORECASE)
+NUMBERED_TITLE_PATTERN = re.compile(r"^\s*(?:第\s*)?(\d{1,2})\s*[、.．:：)）]\s*(.+?)\s*$")
+
+
+def strip_structure_markers(text: str) -> str:
+    """Remove library-only labels such as '正文' and '结尾', while keeping any following wording."""
+    lines = []
+    for line in str(text or "").splitlines():
+        cleaned_line = STRUCTURE_MARKER_PATTERN.sub("", line).strip()
+        if cleaned_line:
+            lines.append(cleaned_line)
+    return "\n".join(lines).strip()
+
+
+def extract_numbered_title_sections(source: str) -> list[dict]:
+    """Recognise a script-library list such as 1. title / body, 2. title / body."""
+    sections = []
+    current = None
+    for raw_line in str(source or "").splitlines():
+        line = raw_line.strip()
+        title_match = NUMBERED_TITLE_PATTERN.match(line)
+        if title_match:
+            if current and current["body"]:
+                sections.append(current)
+            current = {"number": title_match.group(1), "title": title_match.group(2).strip(), "body": []}
+            continue
+        cleaned_line = STRUCTURE_MARKER_PATTERN.sub("", line).strip()
+        if current is not None and cleaned_line:
+            current["body"].append(cleaned_line)
+    if current and current["body"]:
+        sections.append(current)
+    # A single numbered item is usually an ordinary list item, not a multi-title script.
+    if len(sections) < 2:
+        return []
+    return [{"number": item["number"], "title": item["title"], "text": "\n".join(item["body"]).strip()} for item in sections]
+
+
+def add_scan_emojis(formatted: str) -> str:
+    """Give plain formatted copy a restrained scan-friendly cue when the model supplied none."""
+    if any(is_emoji_component(char) for char in formatted):
+        return formatted
+    paragraphs = [part for part in re.split(r"\n\s*\n", formatted.strip()) if part.strip()]
+    if not paragraphs:
+        return formatted
+    total = len(re.sub(r"\s+", "", formatted))
+    cue_count = min(len(paragraphs), max(1, min(4, (total + 119) // 120)))
+    def cue_for(text: str, index: int) -> str:
+        if re.search(r"风险|注意|提醒|避免|不要", text):
+            return "⚠️"
+        if re.search(r"步骤|方法|建议|可以|如何", text):
+            return "💡"
+        if re.search(r"家庭|孩子|父母|养老", text):
+            return "👨‍👩‍👧"
+        if re.search(r"保障|保险|规划", text):
+            return "🛡️"
+        return ("📌", "✨", "✅", "💬")[index % 4]
+    return "\n\n".join(f"{cue_for(paragraph, index)} {paragraph}" if index < cue_count else paragraph for index, paragraph in enumerate(paragraphs))
+
+
 def deepseek_script_rewrite(profile: dict, ip_plan: dict | None, source: str, revision: str = ""):
     """Rewrite a supplied script without inventing facts and with the confirmed IP used only when relevant."""
     api_key = os.getenv("DEEPSEEK_API_KEY", "").strip()
@@ -257,7 +317,8 @@ def deepseek_script_rewrite(profile: dict, ip_plan: dict | None, source: str, re
 必须保留原文的知识点、事实、数字、产品名称、产品责任、适用范围、限制条件和核心结论。不能用外部知识擅自纠正、增加、删除或改写专业信息。无法确认的产品、理赔、医学、法律、政策、税务信息保留原意，并以“需核对”“以官方材料为准”或“建议咨询相应专业人士”处理。
 不得编造作者身份、从业经历、荣誉、客户案例、服务数据、理赔结果、客户对话、客户评价或第三方背书。不得出现绝对化、收益或赔付承诺、恐慌营销、贬低同业、促销限时、返佣返现、站外导流、隐私泄露或违规增员招募。
 可参考已确认的 IP 资料，但仅当原文确实需要个人表达、服务对象、信任建立或个人风格时自然带入；只能使用资料中真实明确的信息，不能强行写成“我的客户”“我从业多年”等。纯知识科普和产品责任说明不强行加入人设。
-默认生成 3 篇完整改写稿：开头、切入角度、结构和结尾行动要明显不同，三篇不得只是替换词语；保持自然口语、短句、手机阅读节奏。每篇正文只包含可直接发布的标题、正文及必要合规提示，不要 Markdown、分析说明或版本编号。
+脚本库的“正文”“结尾”“开头”“脚本正文”“结语”等只是内部结构标记，绝对不要写进改写稿。若输入中有连续的编号标题（例如“1. 标题甲”“2. 标题乙”“3. 标题丙”），必须识别为多个独立选题：每个选题单独改写，不能合并在一篇产出中。输出卡片标签由系统展示为“标题 1：标题甲”等，text 内不要重复编号标题、正文、结尾等结构标记。
+没有多个编号标题时，默认生成 3 篇完整改写稿：开头、切入角度、结构和结尾行动要明显不同，三篇不得只是替换词语；保持自然口语、短句、手机阅读节奏。每篇正文只包含可直接发布的标题、正文及必要合规提示，不要 Markdown、分析说明或版本编号。
 
 只输出合法 JSON：
 {
@@ -275,7 +336,7 @@ def deepseek_script_rewrite(profile: dict, ip_plan: dict | None, source: str, re
         "response_format": {"type": "json_object"},
         "messages": [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": json.dumps({"profile": profile, "ipPlan": ip_plan or {}, "original": source, "revisionRequest": revision or None}, ensure_ascii=False)},
+            {"role": "user", "content": json.dumps({"profile": profile, "ipPlan": ip_plan or {}, "original": strip_structure_markers(source), "numberedTitleSections": extract_numbered_title_sections(source), "revisionRequest": revision or None}, ensure_ascii=False)},
         ],
     }
     request = Request(DEEPSEEK_API_URL, data=json.dumps(payload, ensure_ascii=False).encode("utf-8"), headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}, method="POST")
@@ -292,13 +353,17 @@ def deepseek_script_rewrite(profile: dict, ip_plan: dict | None, source: str, re
     except json.JSONDecodeError as error:
         raise RuntimeError("DeepSeek 返回的改写格式不完整，请重新提交原文。") from error
     versions = result.get("versions") if isinstance(result, dict) else None
-    if not isinstance(versions, list) or len(versions) < 3:
-        raise RuntimeError("DeepSeek 没有返回 3 篇完整改写稿，请重新生成。")
+    title_sections = extract_numbered_title_sections(source)
+    expected_count = len(title_sections) if title_sections else 3
+    if not isinstance(versions, list) or len(versions) < expected_count:
+        raise RuntimeError(f"DeepSeek 没有返回 {expected_count} 篇完整改写稿，请重新生成。")
     cleaned = []
-    for index, item in enumerate(versions[:3], 1):
+    for index, item in enumerate(versions[:expected_count], 1):
         if not isinstance(item, dict) or not clean(item.get("text")):
             raise RuntimeError("DeepSeek 返回的改写稿不完整，请重新生成。")
-        cleaned.append({"label": clean(item.get("label")) or f"改写稿 {index}", "focus": clean(item.get("focus"))[:40], "text": clean(item.get("text"))[:20000]})
+        title = title_sections[index - 1]["title"] if title_sections else ""
+        label = f"标题 {index}：{title}" if title else (clean(item.get("label")) or f"改写稿 {index}")
+        cleaned.append({"label": label[:80], "focus": clean(item.get("focus"))[:40], "text": strip_structure_markers(clean(item.get("text")))[:20000]})
     return {"summary": clean(result.get("summary"))[:160], "versions": cleaned, "model": body.get("model", payload["model"])}
 
 
@@ -326,18 +391,21 @@ def deepseek_xhs_format(source: str, instruction: str = ""):
     api_key = os.getenv("DEEPSEEK_API_KEY", "").strip()
     if not api_key:
         raise RuntimeError("未配置 DEEPSEEK_API_KEY。请在项目根目录的 .env 文件中填写密钥后重试。")
-    system_prompt = """你是小红书排版助手，不是改写助手。绝对不能修改、删除、替换、调换原文的任何文字和标点，也不能增加标题、编号、观点、事实、承诺或营销引导。
-你只能在原文中加入换行、段落空行，以及少量与段落含义匹配的 emoji。建议每句不超过20个汉字、每段不超过5行；按语义断句，不拆产品名、数字和专有名词。标题独立成行；不要 Markdown、井号或星号。
+    title_sections = extract_numbered_title_sections(source)
+    display_source = strip_structure_markers(source)
+    system_prompt = """你是小红书排版助手，不是改写助手。绝对不能修改、删除、替换、调换待排版原文的任何文字和标点，也不能增加观点、事实、承诺或营销引导。
+脚本库的“正文”“结尾”“开头”“脚本正文”“结语”等是内部结构标记，绝对不要写进排版结果。若输入给出多个编号标题，必须拆成独立内容：每段对应一个标题，不能把三个标题及正文挤在同一段。系统会在文本框外显示“标题 1：标题名”等标签，formattedSections 的 text 内不要重复编号标题或结构标记。
+你只能在原文中加入换行、段落空行，以及少量与段落含义匹配的 emoji。建议每句不超过20个汉字、每段不超过5行；按语义断句，不拆产品名、数字和专有名词。标题独立成行；不要 Markdown、井号或星号。emoji 用于快速扫读：每个自然段最多 1 个，优先放在段首；全文每约 120 个汉字使用 1 个，总数控制在 1 至 4 个，避免堆砌。
 同时只做初步表达风险检测，不判断专业事实真假。风险包括绝对化或夸大表达、收益或赔付承诺、恐慌营销、贬低同业、促销限时、返佣返现、站外导流、隐私泄露、违规增员，以及需要核对的产品、理赔、医学、法律、政策或税务表述。风险片段必须逐字来自原文。
 只输出合法 JSON：
-{"formattedText":"只加入换行或 emoji 的完整原文","risks":[{"snippet":"原文片段","type":"风险类型","reason":"不超过55字","suggestion":"不超过55字"}]}
+{"formattedText":"无多标题时，只加入换行或 emoji 的完整原文","formattedSections":[{"text":"有多个编号标题时，每个标题对应的排版原文"}],"risks":[{"snippet":"原文片段","type":"风险类型","reason":"不超过55字","suggestion":"不超过55字"}]}
 risks 最多 8 条；没有明显风险时返回空数组。"""
     payload = {
         "model": os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash"),
         "thinking": {"type": "disabled"},
         "max_tokens": 2600,
         "response_format": {"type": "json_object"},
-        "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": json.dumps({"original": source, "formatInstruction": instruction or None}, ensure_ascii=False)}],
+        "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": json.dumps({"original": display_source, "numberedTitleSections": title_sections, "formatInstruction": instruction or None}, ensure_ascii=False)}],
     }
     request = Request(DEEPSEEK_API_URL, data=json.dumps(payload, ensure_ascii=False).encode("utf-8"), headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}, method="POST")
     try:
@@ -353,8 +421,23 @@ risks 最多 8 条；没有明显风险时返回空数组。"""
     except json.JSONDecodeError as error:
         raise RuntimeError("DeepSeek 返回的排版格式不完整，请重新提交原文。") from error
     formatted = clean(result.get("formattedText")) if isinstance(result, dict) else ""
-    if not formatted or not preserves_source_text(source, formatted):
-        formatted = source
+    formatted_sections = []
+    if title_sections:
+        candidate_sections = result.get("formattedSections") if isinstance(result, dict) else None
+        if isinstance(candidate_sections, list) and len(candidate_sections) >= len(title_sections):
+            for index, section in enumerate(title_sections):
+                candidate = clean(candidate_sections[index].get("text")) if isinstance(candidate_sections[index], dict) else ""
+                if not candidate or not preserves_source_text(section["text"], candidate):
+                    formatted_sections = []
+                    break
+                formatted_sections.append({"label": f"标题 {index + 1}：{section['title']}", "text": add_scan_emojis(candidate)})
+        if not formatted_sections:
+            formatted_sections = [{"label": f"标题 {index + 1}：{section['title']}", "text": add_scan_emojis(section["text"])} for index, section in enumerate(title_sections)]
+        formatted = "\n\n".join(item["text"] for item in formatted_sections)
+    elif not formatted or not preserves_source_text(display_source, formatted):
+        formatted = display_source
+    if not title_sections:
+        formatted = add_scan_emojis(formatted)
     risks = result.get("risks") if isinstance(result, dict) else []
     safe_risks = []
     for item in risks if isinstance(risks, list) else []:
@@ -366,7 +449,7 @@ risks 最多 8 条；没有明显风险时返回空数组。"""
         safe_risks.append({"snippet": snippet[:180], "type": clean(item.get("type"))[:40], "reason": clean(item.get("reason"))[:120], "suggestion": clean(item.get("suggestion"))[:120]})
         if len(safe_risks) == 8:
             break
-    return {"formattedText": formatted, "risks": safe_risks, "model": body.get("model", payload["model"])}
+    return {"formattedText": formatted, "formattedSections": formatted_sections, "risks": safe_risks, "model": body.get("model", payload["model"])}
 
 
 def clean(value):
