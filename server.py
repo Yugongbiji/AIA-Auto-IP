@@ -4,7 +4,7 @@ Run:
     python server.py --import-xlsx data/何不团队报名表20260807.xlsx
 
 The browser only receives the profile returned by an exact name + agent ID match.
-Guest profiles stay in the browser session and are never written to SQLite.
+Guest profiles stay in the browser session and are never written to the database.
 """
 
 from __future__ import annotations
@@ -14,6 +14,7 @@ import json
 import os
 import mimetypes
 import sqlite3
+import sys
 from datetime import datetime, timezone
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -30,22 +31,26 @@ DATA_DIR = ROOT / "data"
 WEB_DIR = ROOT / "web"
 DB_PATH = DATA_DIR / "persona.sqlite3"
 DEEPSEEK_API_URL = "https://api.deepseek.com/chat/completions"
+LOCAL_PACKAGES = ROOT / ".python-packages"
+
+if LOCAL_PACKAGES.exists():
+    sys.path.insert(0, str(LOCAL_PACKAGES))
 
 
 def load_local_env():
     """Load local development secrets without a third-party dependency."""
-    env_file = ROOT / ".env"
-    if not env_file.exists():
-        return
-    for line in env_file.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
+    for env_file in (ROOT / ".env", ROOT / ".env.rds"):
+        if not env_file.exists():
             continue
-        key, value = line.split("=", 1)
-        key = key.strip()
-        value = value.strip().strip('"').strip("'")
-        if key and value:
-            os.environ[key] = value
+        for line in env_file.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key and value:
+                os.environ[key] = value
 
 
 def deepseek_generate(profile: dict):
@@ -182,17 +187,71 @@ def clean(value):
     return str(value).strip()
 
 
+def database_engine() -> str:
+    return os.getenv("DB_ENGINE", "sqlite").strip().lower() or "sqlite"
+
+
+class PostgresConnection:
+    """Small compatibility wrapper so the app can use SQLite or PostgreSQL."""
+
+    def __init__(self, connection):
+        self.connection = connection
+
+    def __enter__(self):
+        self.connection.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        return self.connection.__exit__(exc_type, exc_value, traceback)
+
+    def execute(self, statement: str, params=()):
+        # Existing statements use SQLite's ? placeholders. psycopg uses %s.
+        return self.connection.execute(statement.replace("?", "%s"), params)
+
+    def executescript(self, script: str):
+        for statement in script.split(";"):
+            if statement.strip():
+                self.connection.execute(statement)
+
+
 def database():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+    engine = database_engine()
+    if engine == "sqlite":
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        return conn
+    if engine != "postgresql":
+        raise RuntimeError("DB_ENGINE 只能设置为 sqlite 或 postgresql。")
+
+    required = ("DB_HOST", "DB_NAME", "DB_USER", "DB_PASSWORD")
+    missing = [key for key in required if not os.getenv(key, "").strip()]
+    if missing:
+        raise RuntimeError(f"未配置 PostgreSQL：缺少 {', '.join(missing)}。请检查 .env 文件。")
+    try:
+        import psycopg
+        from psycopg.rows import dict_row
+    except ImportError as error:
+        raise RuntimeError("未安装 PostgreSQL 驱动。请运行：pip install -r requirements.txt") from error
+
+    conn = psycopg.connect(
+        host=os.environ["DB_HOST"].strip(),
+        port=int(os.getenv("DB_PORT", "5432")),
+        dbname=os.environ["DB_NAME"].strip(),
+        user=os.environ["DB_USER"].strip(),
+        password=os.environ["DB_PASSWORD"],
+        sslmode=os.getenv("DB_SSLMODE", "require").strip() or "require",
+        connect_timeout=10,
+        row_factory=dict_row,
+    )
+    return PostgresConnection(conn)
 
 
 def initialize_database():
     DATA_DIR.mkdir(exist_ok=True)
+    id_column = "INTEGER PRIMARY KEY AUTOINCREMENT" if database_engine() == "sqlite" else "BIGSERIAL PRIMARY KEY"
     with database() as conn:
         conn.executescript(
-            """
+            f"""
             CREATE TABLE IF NOT EXISTS agents (
                 agent_id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
@@ -206,7 +265,7 @@ def initialize_database():
                 FOREIGN KEY(agent_id) REFERENCES agents(agent_id)
             );
             CREATE TABLE IF NOT EXISTS conversation_messages (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id {id_column},
                 agent_id TEXT NOT NULL,
                 role TEXT NOT NULL,
                 content TEXT NOT NULL,
@@ -216,7 +275,7 @@ def initialize_database():
             CREATE INDEX IF NOT EXISTS idx_conversation_messages_agent_id
                 ON conversation_messages(agent_id, id);
             CREATE TABLE IF NOT EXISTS proposals (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id {id_column},
                 agent_id TEXT NOT NULL,
                 version INTEGER NOT NULL,
                 proposal_json TEXT NOT NULL,
@@ -409,6 +468,70 @@ def save_proposal(agent_id: str, proposal: dict, model: str):
     return version
 
 
+def database_counts():
+    """Return a small, non-sensitive health summary for the configured database."""
+    with database() as conn:
+        return {
+            "agents": conn.execute("SELECT COUNT(*) AS count FROM agents").fetchone()["count"],
+            "profiles": conn.execute("SELECT COUNT(*) AS count FROM saved_profiles").fetchone()["count"],
+            "messages": conn.execute("SELECT COUNT(*) AS count FROM conversation_messages").fetchone()["count"],
+            "proposals": conn.execute("SELECT COUNT(*) AS count FROM proposals").fetchone()["count"],
+        }
+
+
+def migrate_sqlite_to_postgres(source: Path = DB_PATH):
+    """Copy current local records once; safe to re-run because rows are upserted."""
+    if database_engine() != "postgresql":
+        raise RuntimeError("迁移前请在 .env 中设置 DB_ENGINE=postgresql。")
+    if not source.exists():
+        raise RuntimeError(f"未找到本地数据库：{source}")
+
+    local = sqlite3.connect(source)
+    local.row_factory = sqlite3.Row
+    try:
+        tables = ("agents", "saved_profiles", "conversation_messages", "proposals")
+        with database() as remote:
+            for table in tables:
+                exists = local.execute(
+                    "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (table,)
+                ).fetchone()
+                if not exists:
+                    continue
+                rows = local.execute(f"SELECT * FROM {table} ORDER BY id" if table in {"conversation_messages", "proposals"} else f"SELECT * FROM {table}").fetchall()
+                for row in rows:
+                    if table == "agents":
+                        remote.execute(
+                            """INSERT INTO agents(agent_id, name, survey_json, imported_at) VALUES (?, ?, ?, ?)
+                            ON CONFLICT(agent_id) DO UPDATE SET name=excluded.name, survey_json=excluded.survey_json, imported_at=excluded.imported_at""",
+                            (row["agent_id"], row["name"], row["survey_json"], row["imported_at"]),
+                        )
+                    elif table == "saved_profiles":
+                        remote.execute(
+                            """INSERT INTO saved_profiles(agent_id, profile_json, updated_at) VALUES (?, ?, ?)
+                            ON CONFLICT(agent_id) DO UPDATE SET profile_json=excluded.profile_json, updated_at=excluded.updated_at""",
+                            (row["agent_id"], row["profile_json"], row["updated_at"]),
+                        )
+                    elif table == "conversation_messages":
+                        duplicate = remote.execute(
+                            "SELECT 1 FROM conversation_messages WHERE agent_id = ? AND role = ? AND content = ? AND created_at = ?",
+                            (row["agent_id"], row["role"], row["content"], row["created_at"]),
+                        ).fetchone()
+                        if not duplicate:
+                            remote.execute(
+                                "INSERT INTO conversation_messages(agent_id, role, content, created_at) VALUES (?, ?, ?, ?)",
+                                (row["agent_id"], row["role"], row["content"], row["created_at"]),
+                            )
+                    else:
+                        remote.execute(
+                            """INSERT INTO proposals(agent_id, version, proposal_json, model, created_at) VALUES (?, ?, ?, ?, ?)
+                            ON CONFLICT(agent_id, version) DO UPDATE SET proposal_json=excluded.proposal_json, model=excluded.model, created_at=excluded.created_at""",
+                            (row["agent_id"], row["version"], row["proposal_json"], row["model"], row["created_at"]),
+                        )
+    finally:
+        local.close()
+    return database_counts()
+
+
 class AppHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         return
@@ -508,11 +631,19 @@ class AppHandler(BaseHTTPRequestHandler):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--import-xlsx", type=Path)
+    parser.add_argument("--migrate-sqlite", action="store_true", help="一次性迁移本地 SQLite 历史数据到 PostgreSQL")
+    parser.add_argument("--check-db", action="store_true", help="检查当前数据库连接和记录数量")
     parser.add_argument("--port", type=int, default=8000)
     args = parser.parse_args()
 
     load_local_env()
     initialize_database()
+    if args.migrate_sqlite:
+        print("迁移完成：" + json.dumps(migrate_sqlite_to_postgres(), ensure_ascii=False))
+        return
+    if args.check_db:
+        print("数据库连接正常：" + json.dumps(database_counts(), ensure_ascii=False))
+        return
     if args.import_xlsx:
         print(f"已导入 {import_signup_sheet(args.import_xlsx)} 条营销员报名资料。")
     server = ThreadingHTTPServer(("127.0.0.1", args.port), AppHandler)
@@ -522,4 +653,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
