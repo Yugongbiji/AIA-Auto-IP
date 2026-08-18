@@ -461,6 +461,42 @@ async function handleScriptConversation(content) {
   creativeSaveState('script').textContent = state.matched ? '已保存到历史档案' : '本次会话';
 }
 
+function fallbackXhsIntent(text) {
+  if (looksLikeNewScript(text) || /(?:这|以下|这是).{0,8}(?:新|另一|新的).{0,4}(?:文章|文案|笔记|内容)/.test(text)) return { intent: 'new_content', reply: '收到，这是一篇新的文章。我会切换到新内容，重新按小红书阅读习惯排版。', formatInstruction: '' };
+  if (/(?:重新|再|按.*(?:重排|排版)|根据.*(?:修改|建议).*(?:重排|排版)|请.*(?:重排|排版)|帮我.*(?:重排|排版))/.test(text)) return { intent: 'format_request', reply: '收到，我会按你的要求重新排版当前文章。', formatInstruction: text };
+  if (/(?:为什么|怎么|是不是|还是|吗|？|\?)/.test(text)) return { intent: 'question', reply: '我理解你的疑问。刚才如果把新文章误当成旧文章处理，是我识别得不够准确；粘贴完整新文章后，我会切换到它重新排版。', formatInstruction: '' };
+  return { intent: 'feedback', reply: '收到这些排版想法，我先记下了。你还可以继续补充；确认后直接说“按这些重新排版”，我再给你新的版本。', formatInstruction: '' };
+}
+
+async function handleXhsConversation(content) {
+  const toolState = creativeState.xhs;
+  if (toolState.generating) return;
+  toolState.generating = true; creativeSaveState('xhs').textContent = '正在理解你的意思…';
+  let result;
+  try {
+    const response = await fetch('/api/xhs/intent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ profile: state.profile, source: toolState.source, message: content }) });
+    const body = await response.json(); if (!response.ok) throw new Error(body.error || '理解失败'); result = body;
+  } catch (_) {
+    result = fallbackXhsIntent(content);
+  }
+  if (looksLikeNewScript(content)) result.intent = 'new_content';
+  const intent = result.intent;
+  const reply = result.reply || fallbackXhsIntent(content).reply;
+  toolState.generating = false;
+  if (intent === 'new_content') {
+    toolState.source = content;
+    toolState.pendingRisks = false;
+    addCreativeMessage('xhs', reply, 'system');
+    return runXhsFormat(content);
+  }
+  if (intent === 'format_request') {
+    addCreativeMessage('xhs', reply, 'system');
+    return runXhsFormat(toolState.source, result.formatInstruction || content);
+  }
+  addCreativeMessage('xhs', reply, 'assistant');
+  creativeSaveState('xhs').textContent = state.matched ? '已保存到历史档案' : '本次会话';
+}
+
 async function submitCreativeTool(tool, value) {
   const content = value.trim(); if (!content) return;
   const toolState = creativeState[tool];
@@ -468,7 +504,7 @@ async function submitCreativeTool(tool, value) {
   addCreativeMessage(tool, content, 'user');
   if (!toolState.source) { toolState.source = content; return tool === 'script' ? runScriptRewrite(content) : runXhsFormat(content); }
   if (tool === 'script') return handleScriptConversation(content);
-  return runXhsFormat(toolState.source, content);
+  return handleXhsConversation(content);
 }
 
 function restoreContentPlanHistoryItem(item) {
