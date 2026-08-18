@@ -357,6 +357,13 @@ def clean_suggested_tags(raw_tags, source: str) -> list[str]:
     return tags[:15]
 
 
+def strip_publish_tags(text: str) -> str:
+    """Keep hashtags in the dedicated tag module, never inside a copy-ready script."""
+    without_tags = re.sub(r"(^|[\s。！？!?，,；;：:])[#＃][\w\-\u4e00-\u9fff]{1,30}", r"\1", text)
+    without_tags = re.sub(r"[ \t]{2,}", " ", without_tags)
+    return re.sub(r"\n{3,}", "\n\n", without_tags).strip()
+
+
 def deepseek_script_rewrite(profile: dict, ip_plan: dict | None, source: str, revision: str = ""):
     """Rewrite a supplied script without inventing facts and with the confirmed IP used only when relevant."""
     api_key = os.getenv("DEEPSEEK_API_KEY", "").strip()
@@ -367,7 +374,7 @@ def deepseek_script_rewrite(profile: dict, ip_plan: dict | None, source: str, re
 合规诊断与改写只能依据用户提供的《爆款文案合规改写指令 V5.0》；不得使用模型自行扩展的敏感词库、未提供的平台规则或主观判断。仅处理该文件明确列出的风险：绝对化或极限表达、保险责任与赔付承诺、收益暗示、贬低同业/社保/医保/惠民保、促销限时、返佣返现或赠礼诱导、站外引流与直接销售引导、悲情恐慌营销、隐私泄露、未经核对的产品/理赔/医学/法律/政策/税务表述，以及未经审核的增员承诺。普通正向形容词本身不构成风险；“非常实用”“很实用”“有帮助”“值得看”等单独出现时必须保留，不得标为夸大或强制改写，除非同时形成文件中明确禁止的承诺、极限表达或误导。
 可参考已确认的 IP 资料，但仅当原文确实需要个人表达、服务对象、信任建立或个人风格时自然带入；只能使用资料中真实明确的信息，不能强行写成“我的客户”“我从业多年”等。纯知识科普和产品责任说明不强行加入人设。
 脚本库的“正文”“正文1”“正文2”“结尾”“开头”“脚本正文”“结语”等只是内部结构标记，绝对不要写进改写稿。若输入中有连续的编号标题（例如“1. 标题甲”“2. 标题乙”“3. 标题丙”），必须识别为多个独立选题：每个选题单独改写，不能合并在一篇产出中。输出卡片标签只展示干净的标题名称，text 内不要重复编号标题、正文、结尾或其序号。
-没有多个编号标题时，默认生成 3 篇完整改写稿：开头、切入角度、结构和结尾行动要明显不同，三篇不得只是替换词语；保持自然口语、短句、手机阅读节奏。每篇正文只包含可直接发布的标题、正文及必要合规提示，不要 Markdown、分析说明或版本编号。
+没有多个编号标题时，默认生成 3 篇完整改写稿：开头、切入角度、结构和结尾行动要明显不同，三篇不得只是替换词语；保持自然口语、短句、手机阅读节奏。每篇正文只包含可直接发布的标题、正文及必要合规提示，不要 Markdown、分析说明、版本编号或任何 # 标签。标签只能输出到 JSON 的 suggestedTags 字段，由页面外部的“建议标签”模块单独展示。
 在改写稿前，必须输出一份面向营销员的简明“稿件处理说明”。它只陈述基于原稿可核对的编辑结论，不展示冗长推理，不虚构原文没有的知识点或风险。说明需写清：锁定的知识点（2 至 5 条）、推荐的开头方式、正文结构、结尾方式、人设带入情况，以及合规调整。合规调整只记录命中文件明列类别的内容；若未发现需要调整的合规表达，要明确写“未发现 V5.0 文件中需改动的明显风险表达，仍请以最新公司规则核对”。
 
 只输出合法 JSON：
@@ -422,7 +429,7 @@ def deepseek_script_rewrite(profile: dict, ip_plan: dict | None, source: str, re
             raise RuntimeError("DeepSeek 返回的改写稿不完整，请重新生成。")
         title = title_sections[index - 1]["title"] if title_sections else ""
         label = f"标题 · {title}" if title else (clean(item.get("label")) or f"改写稿 {index}")
-        cleaned.append({"label": label[:80], "focus": clean(item.get("focus"))[:40], "text": strip_structure_markers(clean(item.get("text")))[:20000]})
+        cleaned.append({"label": label[:80], "focus": clean(item.get("focus"))[:40], "text": strip_publish_tags(strip_structure_markers(clean(item.get("text"))))[:20000]})
     breakdown = result.get("breakdown") if isinstance(result, dict) else {}
     breakdown = breakdown if isinstance(breakdown, dict) else {}
     knowledge_points = [clean(item)[:120] for item in breakdown.get("knowledgePoints", []) if clean(item)][:5] if isinstance(breakdown.get("knowledgePoints"), list) else []
