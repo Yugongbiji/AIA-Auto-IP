@@ -276,11 +276,36 @@ function addCreativeCopyBlock(parent, label, focus, text) {
   block.append(heading, textarea); parent.appendChild(block);
 }
 
+function addScriptBreakdown(parent, breakdown) {
+  if (!breakdown || typeof breakdown !== 'object') return;
+  const hasContent = (Array.isArray(breakdown.knowledgePoints) && breakdown.knowledgePoints.length) || breakdown.opening || breakdown.structure || breakdown.closing || breakdown.ipUse || (Array.isArray(breakdown.complianceAdjustments) && breakdown.complianceAdjustments.length);
+  if (!hasContent) return;
+  const card = makeNode('section', 'script-breakdown-card');
+  card.append(makeNode('div', 'script-breakdown-kicker', '🧭 稿件处理说明'), makeNode('p', 'script-breakdown-intro', '以下内容基于本次原稿整理，方便你快速判断改写方向与合规处理。'));
+  const grid = document.createElement('div'); grid.className = 'script-breakdown-grid';
+  const addItem = (icon, title, text, items = []) => {
+    if (!text && !items.length) return;
+    const item = document.createElement('section'); item.className = 'script-breakdown-item';
+    item.append(makeNode('strong', '', `${icon} ${title}`));
+    if (text) item.append(makeNode('p', '', text));
+    if (items.length) { const list = document.createElement('ul'); items.forEach((value) => list.append(makeNode('li', '', value))); item.append(list); }
+    grid.append(item);
+  };
+  addItem('🔎', '锁定知识点', '', Array.isArray(breakdown.knowledgePoints) ? breakdown.knowledgePoints : []);
+  addItem('🎬', '开头方式', breakdown.opening || '按原稿核心问题切入。');
+  addItem('🧩', '正文结构', breakdown.structure || '围绕原稿事实进行清晰展开。');
+  addItem('🎯', '结尾方式', breakdown.closing || '以低风险的行动建议收束。');
+  addItem('✨', '人设带入', breakdown.ipUse || '按内容需要决定是否带入已确认的人设。');
+  addItem('🛡️', '合规调整', '', Array.isArray(breakdown.complianceAdjustments) ? breakdown.complianceAdjustments : []);
+  card.append(grid); parent.append(card);
+}
+
 function renderCreativeResult(node, tool, result) {
   node.className = 'message assistant creative-result-card'; node.innerHTML = '';
   if (tool === 'script') {
     node.append(makeNode('strong', 'creative-result-title', '脚本改写完成'));
     if (result.summary) node.append(makeNode('p', 'creative-result-summary', result.summary));
+    addScriptBreakdown(node, result.breakdown);
     (result.versions || []).slice(0, 3).forEach((item, index) => addCreativeCopyBlock(node, item.label || `改写稿 ${index + 1}`, item.focus || '', item.text || ''));
     return;
   }
