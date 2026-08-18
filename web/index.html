@@ -61,6 +61,19 @@
         </form>
       </section>
 
+      <section id="planning-panel" class="chat-panel planning-panel hidden">
+        <header class="panel-header">
+          <div><p class="eyebrow">账号内容规划</p><h2 id="planning-title">用对话确定你的 1 + 1</h2></div>
+          <div class="panel-header-actions"><span id="planning-save-state" class="status-pill">本次会话</span><button id="view-content-plan" class="secondary-button hidden" type="button">查看最新方案</button></div>
+        </header>
+        <div id="planning-messages" class="messages" aria-live="polite"></div>
+        <div id="planning-quick-replies" class="quick-replies"></div>
+        <form id="planning-form" class="composer">
+          <input id="planning-input" autocomplete="off" placeholder="输入你的回答…">
+          <button class="primary" type="submit">发送</button>
+        </form>
+      </section>
+
       <section id="tool-placeholder" class="tool-placeholder hidden" aria-live="polite"></section>
 
       <aside class="profile-panel">
@@ -77,6 +90,14 @@
         <div class="proposal-header-actions"><span id="proposal-version" class="status-pill"></span><button id="proposal-close" class="secondary-button" type="button">返回对话</button></div>
       </header>
       <main id="proposal-content" class="proposal-content"></main>
+    </section>
+
+    <section id="content-plan-screen" class="proposal-screen content-plan-screen hidden" aria-label="内容规划方案预览">
+      <header class="proposal-header">
+        <div><p class="eyebrow">账号内容规划</p><h2>内容规划方案</h2></div>
+        <div class="proposal-header-actions"><span id="content-plan-version" class="status-pill"></span><button id="content-plan-close" class="secondary-button" type="button">返回对话</button></div>
+      </header>
+      <main id="content-plan-content" class="proposal-content"></main>
     </section>
   </main>
   <script src="app.js"></script>

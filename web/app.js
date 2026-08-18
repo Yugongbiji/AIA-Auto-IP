@@ -1,5 +1,6 @@
 const SESSION_KEY = 'aia-auto-ip-session';
 const state = { matched: false, profile: {}, currentQuestion: 0, done: false, version: 1, pendingUpdate: null, multiSelection: new Set(), hasHistory: false, proposals: [], generating: false, activeTool: 'ip', requestedTool: 'ip' };
+const planningState = { context: {}, currentQuestion: 0, done: false, started: false, hasHistory: false, messages: [], plans: [], version: 1, generating: false };
 const COMPLIANCE_TIPS = {
   allowed: [
     { emoji: '✅', title: '真实信息', text: '可表达真实的个人经历、城市、专业服务方向与已获得的荣誉。' },
@@ -39,6 +40,13 @@ const labels = {
   department: '营销服务部', generationNotes: '生成偏好',
 };
 
+const planningQuestions = [
+  { key: 'primaryGoal', ask: '亲，这个账号接下来最想解决什么？先确定主目标，后面的合集才不会东一块、西一块。', chips: ['拓客为主', '增员为主', '两者兼顾'] },
+  { key: 'insuranceFocus', ask: '保险这条主线，你更希望重点讲什么？可以从下面选，也可以直接说你的想法。', chips: ['家庭保障', '教育金规划', '养老规划', '财富保障'] },
+  { key: 'secondaryMaterials', ask: '除了保险，你有哪些适合长期分享的真实积累？例如育儿、医疗背景、骑行、职业经历。想到什么就说什么，我来帮你筛选。', chips: ['育儿与升学', '健康生活', '高质量运动', '职业成长'] },
+  { key: 'audienceHelp', ask: '你最希望这类人从账号里得到什么帮助？一句话就够，例如“让新手爸妈看懂教育金”。', chips: ['风险保障思路', '家庭教育规划', '养老准备常识', '职业转型参考'] },
+];
+
 const $ = (id) => document.getElementById(id);
 const messages = $('messages');
 
@@ -74,14 +82,143 @@ function selectTool(tool) {
   state.activeTool = tool;
   document.querySelectorAll('[data-tool]').forEach((button) => button.classList.toggle('active', button.dataset.tool === tool));
   const isIp = tool === 'ip';
+  const isPlanning = tool === 'planning';
   $('ip-chat-panel').classList.toggle('hidden', !isIp);
-  $('tool-placeholder').classList.toggle('hidden', isIp);
-  if (!isIp) renderToolPlaceholder(tool);
+  $('planning-panel').classList.toggle('hidden', !isPlanning);
+  $('tool-placeholder').classList.toggle('hidden', isIp || isPlanning);
+  $('generate-button').classList.toggle('hidden', !isIp);
+  if (!isIp) $('view-proposal').classList.add('hidden');
+  else refreshProposalButton();
+  if (isPlanning) activatePlanning();
+  else if (!isIp) renderToolPlaceholder(tool);
 }
 
 function chooseToolBeforeLogin(tool) {
   state.requestedTool = tool;
   document.querySelectorAll('.identity-tool').forEach((button) => button.classList.toggle('active', button.dataset.tool === tool));
+}
+
+const planningMessages = () => $('planning-messages');
+
+function addPlanningMessage(text, kind = 'assistant', persist = true) {
+  const node = document.createElement('div');
+  node.className = `message ${kind}`;
+  node.textContent = text;
+  planningMessages().appendChild(node);
+  planningMessages().scrollTop = planningMessages().scrollHeight;
+  if (persist && state.matched) persistPlanningMessage(kind, text);
+  return node;
+}
+
+async function persistPlanningMessage(role, content) {
+  try {
+    await fetch('/api/content-plan/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agentId: state.profile.agentId, role, content }) });
+  } catch (_) { $('planning-save-state').textContent = '暂未保存，请检查网络'; }
+}
+
+function setPlanningChips(question) {
+  const area = $('planning-quick-replies');
+  area.innerHTML = '';
+  if (!question) return;
+  question.chips.forEach((chip) => {
+    const button = document.createElement('button');
+    button.textContent = chip;
+    button.onclick = () => planningAnswer(chip);
+    area.appendChild(button);
+  });
+}
+
+function planningReadyPrompt() {
+  const node = document.createElement('div');
+  node.className = 'message assistant';
+  const words = document.createElement('div');
+  words.textContent = '亲，关键素材已经收到。现在可以按“保险 + N → 保险 + 1”给你做第一版内容规划。';
+  const button = document.createElement('button');
+  button.className = 'primary confirm-update';
+  button.textContent = '生成我的内容规划';
+  button.onclick = () => generateContentPlan();
+  node.append(words, button); planningMessages().appendChild(node); planningMessages().scrollTop = planningMessages().scrollHeight;
+}
+
+function presentPlanningQuestion() {
+  const question = planningQuestions[planningState.currentQuestion];
+  if (!question) {
+    planningState.done = true;
+    $('planning-title').textContent = '可以生成你的专属内容规划';
+    $('planning-input').placeholder = '也可以直接说“生成内容规划”…';
+    setPlanningChips(null); planningReadyPrompt(); return;
+  }
+  if (planningState.context[question.key]) { planningState.currentQuestion += 1; return presentPlanningQuestion(); }
+  $('planning-title').textContent = '通过对话确定你的 1 + 1';
+  $('planning-input').placeholder = '输入你的回答…';
+  addPlanningMessage(question.ask); setPlanningChips(question);
+}
+
+function refreshContentPlanButton() {
+  const button = $('view-content-plan');
+  if (planningState.plans.length) { button.classList.remove('hidden'); button.textContent = `查看最新方案 · V${planningState.plans[0].version}`; }
+  else button.classList.add('hidden');
+}
+
+function activatePlanning() {
+  if (planningState.started) return;
+  planningState.started = true;
+  $('planning-save-state').textContent = state.matched ? '内容规划将保存到历史档案' : '本次会话';
+  if (planningState.messages.length) {
+    planningState.messages.forEach((item) => addPlanningMessage(item.content, item.role, false));
+    planningState.done = planningState.plans.length > 0;
+  }
+  if (planningState.plans.length) {
+    planningState.context = { primaryGoal: planningState.plans[0].plan.primaryGoal || '', insuranceFocus: planningState.plans[0].plan.insuranceLine?.title || '' };
+    $('planning-title').textContent = '继续聊聊，随时调整方案';
+    if (!planningState.messages.length) addPlanningMessage('亲，你已经有一版内容规划了。直接告诉我想调整什么，例如“第二主线更偏育儿”或“合集增加增员内容”，我会生成新版本。');
+    refreshContentPlanButton(); return;
+  }
+  addPlanningMessage(state.profile.name ? `亲，${state.profile.name}，IP 资料会自动带入。我们再补四个和内容方向有关的问题，就能生成你的内容规划。` : '亲，IP 资料会自动带入。我们再补四个和内容方向有关的问题，就能生成你的内容规划。');
+  presentPlanningQuestion();
+}
+
+function isContentPlanRequest(text) {
+  return /(?:生成|出|做|看看).{0,8}(?:内容规划|规划方案|合集)|^(?:帮我|请|现在|直接|可以).{0,10}(?:规划|出方案)/.test(text);
+}
+
+async function planningAnswer(value) {
+  const content = value.trim(); if (!content) return;
+  if (planningState.done) {
+    addPlanningMessage(content, 'user');
+    if (!planningState.plans.length || isContentPlanRequest(content)) return generateContentPlan();
+    return reviseContentPlan(content);
+  }
+  const question = planningQuestions[planningState.currentQuestion];
+  addPlanningMessage(content, 'user'); planningState.context[question.key] = content; planningState.currentQuestion += 1;
+  setPlanningChips(null); presentPlanningQuestion();
+}
+
+async function generateContentPlan() {
+  if (planningState.generating) return;
+  planningState.generating = true; $('planning-save-state').textContent = '正在生成方案…';
+  const card = addPlanningMessage('亲，正在梳理你的保险主线、泛内容候选和合集结构，马上给你第一版。', 'assistant', false);
+  try {
+    const response = await fetch('/api/content-plan/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agentId: state.matched ? state.profile.agentId : '', profile: state.profile, planning: planningState.context }) });
+    const result = await response.json(); if (!response.ok) throw new Error(result.error || '生成失败');
+    const version = result.version || planningState.version; const saved = { version, plan: result.plan, model: result.model }; if (state.matched) planningState.plans.unshift(saved); else planningState.plans = [saved]; planningState.version = version + 1;
+    card.textContent = `内容规划 V${version} 已生成，正在打开方案预览。`; if (state.matched) persistPlanningMessage('assistant', `内容规划 V${version} 已生成。`); refreshContentPlanButton(); renderContentPlan(result.plan, version);
+  } catch (error) { card.textContent = `生成失败：${error.message}`; }
+  finally { planningState.generating = false; $('planning-save-state').textContent = state.matched ? '已保存到历史档案' : '本次会话'; }
+}
+
+async function reviseContentPlan(revision) {
+  if (planningState.generating) return;
+  const current = planningState.plans[0]; if (!current) return generateContentPlan();
+  planningState.generating = true; $('planning-save-state').textContent = '正在调整方案…';
+  const card = addPlanningMessage('收到，亲。我会保留合理部分，再按你的补充重新整理成一个可执行的新版本。', 'assistant', false);
+  try {
+    const response = await fetch('/api/content-plan/revise', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agentId: state.matched ? state.profile.agentId : '', profile: state.profile, planning: planningState.context, currentPlan: current.plan, revision }) });
+    const result = await response.json(); if (!response.ok) throw new Error(result.error || '调整失败');
+    const version = result.version || planningState.version; const saved = { version, plan: result.plan, model: result.model }; if (state.matched) planningState.plans.unshift(saved); else planningState.plans.unshift(saved); planningState.version = version + 1;
+    card.textContent = `已按你的补充生成内容规划 V${version}，正在打开预览。`; if (state.matched) persistPlanningMessage('assistant', `内容规划 V${version} 已按对话调整。`); refreshContentPlanButton(); renderContentPlan(result.plan, version);
+  } catch (error) { card.textContent = `调整失败：${error.message}`; }
+  finally { planningState.generating = false; $('planning-save-state').textContent = state.matched ? '已保存到历史档案' : '本次会话'; }
 }
 
 function addMessage(text, kind = 'assistant', persist = true) {
@@ -277,9 +414,10 @@ function completeProfile() {
   renderProfile();
 }
 
-function startWorkspace(profile, matched, history = [], proposals = []) {
+function startWorkspace(profile, matched, history = [], proposals = [], planningHistory = [], contentPlans = []) {
   state.matched = matched; state.profile = profile; state.currentQuestion = 0; state.done = false; state.hasHistory = history.length > 0;
   state.proposals = proposals.sort((a, b) => b.version - a.version); state.version = (state.proposals[0]?.version || 0) + 1; messages.innerHTML = '';
+  planningState.context = {}; planningState.currentQuestion = 0; planningState.done = false; planningState.started = false; planningState.hasHistory = planningHistory.length > 0; planningState.messages = planningHistory; planningState.plans = contentPlans.sort((a, b) => b.version - a.version); planningState.version = (planningState.plans[0]?.version || 0) + 1; planningMessages().innerHTML = '';
   if (matched) localStorage.setItem(SESSION_KEY, JSON.stringify({ name: profile.name, agentId: profile.agentId }));
   $('identity-screen').classList.add('hidden'); $('workspace').classList.remove('hidden');
   $('identity-state').textContent = matched ? `已匹配：${profile.name}（${profile.agentId}）` : '访客模式：资料仅保留本次会话';
@@ -323,14 +461,62 @@ function renderProposal(proposal, version) {
   $('proposal-screen').classList.remove('hidden'); document.body.classList.add('proposal-open');
 }
 
-$('lookup-form').addEventListener('submit', async (event) => { event.preventDefault(); const name = $('name-input').value.trim(); const agentId = $('agent-id-input').value.trim(); const response = await fetch(`/api/lookup?name=${encodeURIComponent(name)}&agentId=${encodeURIComponent(agentId)}`); const result = await response.json(); if (result.matched) return startWorkspace(result.profile, true, result.history || [], result.proposals || []); startWorkspace({ name, agentId }, false); });
+function contentPlanCard(title, body, className = '') {
+  const card = makeNode('section', `proposal-card ${className}`.trim());
+  card.append(makeNode('h3', '', title));
+  if (typeof body === 'string') card.append(makeNode('p', 'proposal-copy', body)); else card.append(body);
+  return card;
+}
+
+function renderContentPlan(plan, version) {
+  const content = $('content-plan-content'); content.innerHTML = ''; $('content-plan-version').textContent = `内容规划 V${version}`;
+  const hero = makeNode('section', 'proposal-hero content-plan-hero');
+  hero.append(makeNode('p', 'eyebrow', '你的账号内容规划'), makeNode('h1', '', plan.finalPositioning?.label || '保险 + 1 内容结构'), makeNode('p', 'proposal-subheadline', plan.summary || '围绕明确的保险主线与一个泛内容方向，持续建立信任。'));
+  const tags = makeNode('div', 'proposal-tags'); [plan.primaryGoal || '内容规划', plan.insuranceLine?.title || '保险主线', '固定 1 + 1'].forEach((tag) => tags.append(makeNode('span', '', tag))); hero.append(tags); content.appendChild(hero);
+
+  const core = makeNode('div', 'content-plan-core');
+  core.append(contentPlanCard('① 保险主线', plan.insuranceLine?.reason || '从你的 IP、目标人群和服务优势中确定保险内容的核心。'));
+  core.append(contentPlanCard('② 最终账号定位', plan.finalPositioning?.explanation || '每个账号只保留一个最终泛内容主线。'));
+  content.appendChild(core);
+
+  const candidates = makeNode('div', 'planning-candidate-list');
+  asArray(plan.candidateDirections).slice(0, 3).forEach((item) => {
+    const card = makeNode('article', `planning-candidate ${item.recommend ? 'recommended' : ''}`);
+    const heading = makeNode('div', 'planning-candidate-heading'); heading.append(makeNode('strong', '', item.direction || '候选方向')); if (item.recommend) heading.append(makeNode('span', '', '推荐')); card.append(heading);
+    [['人群匹配', item.audienceFit], ['持续输出', item.sustainable], ['利他价值', item.benefit]].forEach(([label, value]) => { const row = makeNode('p', ''); row.append(makeNode('b', '', `${label}：`), document.createTextNode(value || '待结合实际经历验证')); card.append(row); });
+    candidates.append(card);
+  });
+  content.appendChild(contentPlanCard('🧭 保险 + N 候选筛选', candidates));
+
+  const collectionList = makeNode('div', 'collection-list');
+  asArray(plan.collections).slice(0, 5).forEach((item, index) => {
+    const collection = makeNode('article', 'collection-card'); collection.append(makeNode('span', 'collection-number', `合集 ${index + 1}`), makeNode('h4', '', item.name || '内容合集'));
+    collection.append(makeNode('p', '', `解决的问题：${item.audienceQuestion || '围绕目标受众的真实问题展开'}`), makeNode('p', '', `内容边界：${item.contentBoundary || '不偏离账号定位'}`));
+    const topics = makeNode('div', 'topic-pills'); asArray(item.topics).slice(0, 4).forEach((topic) => topics.append(makeNode('span', '', topic))); collection.append(topics); collectionList.append(collection);
+  });
+  content.appendChild(contentPlanCard('🗂️ 账号作品合集与首批选题', collectionList));
+
+  const firstMonth = makeNode('div', 'compact-list');
+  [['内容比例', plan.firstMonth?.ratio], ['发布节奏', plan.firstMonth?.rhythm]].forEach(([title, text]) => { const row = makeNode('div', 'compact-row'); row.append(makeNode('span', 'item-emoji', title === '内容比例' ? '⚖️' : '🗓️')); const words = makeNode('div'); words.append(makeNode('strong', '', title), makeNode('span', '', text || '结合账号实际情况安排')); row.append(words); firstMonth.append(row); });
+  const weekly = makeNode('div', 'weekly-plan'); asArray(plan.firstMonth?.weeklyPlan).slice(0, 4).forEach((item, index) => weekly.append(makeNode('p', '', `第 ${index + 1} 周 · ${item}`))); firstMonth.append(weekly);
+  content.appendChild(contentPlanCard('📅 首月执行节奏', firstMonth));
+
+  const avoid = makeNode('div', 'avoid-direction-list'); asArray(plan.avoidDirections).slice(0, 3).forEach((item) => { const row = makeNode('div', 'compact-row'); row.append(makeNode('span', 'item-emoji', '⛔')); const words = makeNode('div'); words.append(makeNode('strong', '', item.direction || '不建议混入'), makeNode('span', '', item.reason || '避免内容偏离已确定的人群与定位。')); row.append(words); avoid.append(row); }); content.appendChild(contentPlanCard('⚠️ 不建议混入的方向', avoid));
+  const reminder = makeNode('section', 'platform-reminders focus-reminder'); reminder.append(makeNode('h3', '', '📌 内容聚焦提醒'), makeNode('p', '', plan.focusReminder || '内容不要太杂、太随意地混发。账号像朋友圈，平台就难判断该把你推给谁，长期容易让流量画像失焦。')); content.appendChild(reminder);
+  $('content-plan-screen').classList.remove('hidden'); document.body.classList.add('proposal-open');
+}
+
+$('lookup-form').addEventListener('submit', async (event) => { event.preventDefault(); const name = $('name-input').value.trim(); const agentId = $('agent-id-input').value.trim(); const response = await fetch(`/api/lookup?name=${encodeURIComponent(name)}&agentId=${encodeURIComponent(agentId)}`); const result = await response.json(); if (result.matched) return startWorkspace(result.profile, true, result.history || [], result.proposals || [], result.planningHistory || [], result.contentPlans || []); startWorkspace({ name, agentId }, false); });
 $('guest-start').onclick = () => startWorkspace({}, false);
 document.querySelectorAll('.identity-tool').forEach((button) => { button.onclick = () => chooseToolBeforeLogin(button.dataset.tool); });
 document.querySelectorAll('.tool-tab').forEach((button) => { button.onclick = () => selectTool(button.dataset.tool); });
 $('switch-account').onclick = () => { localStorage.removeItem(SESSION_KEY); window.location.reload(); };
 $('view-proposal').onclick = () => { if (state.proposals[0]) renderProposal(state.proposals[0].proposal, state.proposals[0].version); };
 $('proposal-close').onclick = () => { $('proposal-screen').classList.add('hidden'); document.body.classList.remove('proposal-open'); };
+$('content-plan-close').onclick = () => { $('content-plan-screen').classList.add('hidden'); document.body.classList.remove('proposal-open'); };
+$('view-content-plan').onclick = () => { if (planningState.plans[0]) renderContentPlan(planningState.plans[0].plan, planningState.plans[0].version); };
 $('chat-form').addEventListener('submit', (event) => { event.preventDefault(); answer($('chat-input').value); $('chat-input').value = ''; });
+$('planning-form').addEventListener('submit', (event) => { event.preventDefault(); planningAnswer($('planning-input').value); $('planning-input').value = ''; });
 async function generateProposal() {
   if (state.generating) return;
   state.generating = true;
@@ -348,7 +534,7 @@ $('generate-button').onclick = generateProposal;
 async function resumeSavedSession() {
   let saved; try { saved = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch (_) { localStorage.removeItem(SESSION_KEY); }
   if (!saved?.name || !saved?.agentId) return;
-  try { const response = await fetch(`/api/lookup?name=${encodeURIComponent(saved.name)}&agentId=${encodeURIComponent(saved.agentId)}`); const result = await response.json(); if (result.matched) startWorkspace(result.profile, true, result.history || [], result.proposals || []); else localStorage.removeItem(SESSION_KEY); }
+  try { const response = await fetch(`/api/lookup?name=${encodeURIComponent(saved.name)}&agentId=${encodeURIComponent(saved.agentId)}`); const result = await response.json(); if (result.matched) startWorkspace(result.profile, true, result.history || [], result.proposals || [], result.planningHistory || [], result.contentPlans || []); else localStorage.removeItem(SESSION_KEY); }
   catch (_) { $('save-state').textContent = '无法连接资料服务'; }
 }
 
