@@ -297,7 +297,7 @@ def header_key(header: str) -> str | None:
         return "city"
     if "培训确认" in header:
         return "trainingConfirm"
-    if "简单的自我介绍" in header:
+    if "简单的自我介绍" in header or header == "自我介绍":
         return "selfIntro"
     if header == "微信视频号昵称":
         return "videoNickname"
@@ -327,6 +327,12 @@ def header_key(header: str) -> str | None:
         return "timeInvest"
     if "暂未达到预期" in header:
         return "planB"
+    if header == "入职日期":
+        return "joinDate"
+    if header == "年龄":
+        return "age"
+    if header == "最新职级":
+        return "jobLevel"
     return None
 
 
@@ -348,6 +354,11 @@ def import_signup_sheet(source: Path):
             }
             if not record.get("name") or not record.get("agentId"):
                 continue
+            existing = conn.execute(
+                "SELECT survey_json FROM agents WHERE agent_id = ?", (record["agentId"],)
+            ).fetchone()
+            merged_record = json.loads(existing["survey_json"]) if existing else {}
+            merged_record.update(record)
             conn.execute(
                 """
                 INSERT INTO agents(agent_id, name, survey_json, imported_at)
@@ -357,7 +368,7 @@ def import_signup_sheet(source: Path):
                   survey_json=excluded.survey_json,
                   imported_at=excluded.imported_at
                 """,
-                (record["agentId"], record["name"], json.dumps(record, ensure_ascii=False), now),
+                (record["agentId"], record["name"], json.dumps(merged_record, ensure_ascii=False), now),
             )
             imported += 1
     return imported
