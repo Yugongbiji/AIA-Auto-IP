@@ -300,6 +300,23 @@ function addScriptBreakdown(parent, breakdown) {
   card.append(grid); parent.append(card);
 }
 
+function addScriptFinalReview(parent) {
+  const card = makeNode('section', 'script-final-review');
+  card.append(makeNode('p', 'script-final-review-kicker', '发布前人工微调'), makeNode('h3', '', '再花 2 分钟，让它真正像你说的话'));
+  const grid = document.createElement('div'); grid.className = 'script-final-review-grid';
+  [
+    ['①', '事实核对', '知识点是否与原文一致；数字、期限、政策是否准确。', '先看准不准'],
+    ['②', '合规检查', '再确认夸大、承诺、引流和敏感表述是否已妥善处理。', '再看稳不稳'],
+    ['③', '口播检查', '大声读一遍：顺不顺口、会不会太长、重点是否一听就懂。', '再听顺不顺'],
+    ['④', '人设匹配', '是否像这个账号在说话，是否贴近平台、受众和目标客户。', '最后像不像'],
+  ].forEach(([number, title, text, tag]) => {
+    const item = document.createElement('section'); item.className = 'script-final-review-item';
+    item.append(makeNode('span', '', number), makeNode('strong', '', title), makeNode('p', '', text), makeNode('b', '', tag)); grid.append(item);
+  });
+  card.append(grid, makeNode('p', 'script-final-review-footer', 'AI 给的是高质量初稿；发布前请再加入你的真实表达与判断。'));
+  parent.append(card);
+}
+
 function renderCreativeResult(node, tool, result) {
   node.className = 'message assistant creative-result-card'; node.innerHTML = '';
   if (tool === 'script') {
@@ -307,6 +324,7 @@ function renderCreativeResult(node, tool, result) {
     if (result.summary) node.append(makeNode('p', 'creative-result-summary', result.summary));
     addScriptBreakdown(node, result.breakdown);
     (result.versions || []).slice(0, 3).forEach((item, index) => addCreativeCopyBlock(node, item.label || `改写稿 ${index + 1}`, item.focus || '', item.text || ''));
+    addScriptFinalReview(node);
     return;
   }
   node.append(makeNode('strong', 'creative-result-title', '小红书排版完成'));
