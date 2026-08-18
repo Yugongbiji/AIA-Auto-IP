@@ -343,7 +343,7 @@ function renderCreativeResult(node, tool, result) {
   }
   node.append(makeNode('strong', 'creative-result-title', '小红书排版完成'));
   const formattedSections = Array.isArray(result.formattedSections) ? result.formattedSections : [];
-  if (formattedSections.length) formattedSections.forEach((section) => addCreativeCopyBlock(node, section.label || '可直接复制的排版文本', '仅调整换行、留白与表情', section.text || ''));
+  if (formattedSections.length) formattedSections.forEach((section) => addCreativeCopyBlock(node, (section.label || '可直接复制的排版文本').replace(/^标题\s*\d+\s*[：:]/, '标题 ·'), '仅调整换行、留白与表情', section.text || ''));
   else addCreativeCopyBlock(node, '可直接复制的排版文本', '仅调整换行、留白与表情', result.formattedText || '');
   const risks = Array.isArray(result.risks) ? result.risks : [];
   const riskBox = makeNode('section', `risk-check ${risks.length ? 'has-risk' : 'no-risk'}`);

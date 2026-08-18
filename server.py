@@ -251,6 +251,7 @@ candidateDirections 输出 2 到 3 项；contentDirections 输出 3 到 5 项；
 
 STRUCTURE_MARKER_PATTERN = re.compile(r"^\s*(?:正文|结尾|开头|脚本正文|文案正文|结束语|结语)\s*[：:]?\s*", re.IGNORECASE)
 NUMBERED_TITLE_PATTERN = re.compile(r"^\s*(?:第\s*)?(\d{1,2})\s*[、.．:：)）]\s*(.+?)\s*$")
+INLINE_LIBRARY_TITLE_PATTERN = re.compile(r"^\s*(?:第\s*)?(\d{1,2})\s*[、.．:：)）]\s*(.*?)\s*(?:正文|文案正文|脚本正文)\s*[：:]?\s*(.*)$", re.IGNORECASE)
 
 
 def strip_structure_markers(text: str) -> str:
@@ -269,6 +270,14 @@ def extract_numbered_title_sections(source: str) -> list[dict]:
     current = None
     for raw_line in str(source or "").splitlines():
         line = raw_line.strip()
+        inline_match = INLINE_LIBRARY_TITLE_PATTERN.match(line)
+        if inline_match:
+            if current and current["body"]:
+                sections.append(current)
+            current = {"number": inline_match.group(1), "title": inline_match.group(2).strip(), "body": []}
+            if inline_match.group(3).strip():
+                current["body"].append(inline_match.group(3).strip())
+            continue
         title_match = NUMBERED_TITLE_PATTERN.match(line)
         if title_match:
             if current and current["body"]:
@@ -287,25 +296,51 @@ def extract_numbered_title_sections(source: str) -> list[dict]:
 
 
 def add_scan_emojis(formatted: str) -> str:
-    """Give plain formatted copy a restrained scan-friendly cue when the model supplied none."""
-    if any(is_emoji_component(char) for char in formatted):
-        return formatted
-    paragraphs = [part for part in re.split(r"\n\s*\n", formatted.strip()) if part.strip()]
+    """Ensure enough restrained scan-friendly emoji cues, even if the model added only one."""
+    paragraphs = [part.strip() for part in re.split(r"\n\s*\n", formatted.strip()) if part.strip()]
     if not paragraphs:
         return formatted
     total = len(re.sub(r"\s+", "", formatted))
-    cue_count = min(len(paragraphs), max(1, min(4, (total + 119) // 120)))
+    target_count = 1 if total < 80 else 2 if total < 220 else 3 if total < 500 else 4 if total < 800 else 5
+    existing_count = sum(1 for char in formatted if is_emoji_component(char) and ord(char) not in {0x200D, 0xFE0F, 0x20E3})
+    needed = max(0, target_count - existing_count)
+    if not needed:
+        return formatted
     def cue_for(text: str, index: int) -> str:
         if re.search(r"风险|注意|提醒|避免|不要", text):
             return "⚠️"
         if re.search(r"步骤|方法|建议|可以|如何", text):
             return "💡"
         if re.search(r"家庭|孩子|父母|养老", text):
-            return "👨‍👩‍👧"
+            return "👪"
         if re.search(r"保障|保险|规划", text):
             return "🛡️"
         return ("📌", "✨", "✅", "💬")[index % 4]
-    return "\n\n".join(f"{cue_for(paragraph, index)} {paragraph}" if index < cue_count else paragraph for index, paragraph in enumerate(paragraphs))
+    enhanced = []
+    for index, paragraph in enumerate(paragraphs):
+        if needed <= 0:
+            enhanced.append(paragraph)
+            continue
+        if any(is_emoji_component(char) for char in paragraph[:8]):
+            enhanced.append(paragraph)
+            continue
+        enhanced.append(f"{cue_for(paragraph, index)} {paragraph}")
+        needed -= 1
+    # When there are few long paragraphs, add remaining cues at natural sentence starts rather than stacking them.
+    if needed > 0:
+        combined = "\n\n".join(enhanced)
+        parts = re.split(r"(?<=[。！？!?])\s*", combined)
+        rebuilt = []
+        for index, part in enumerate(parts):
+            if not part:
+                continue
+            if needed > 0 and index > 0 and not any(is_emoji_component(char) for char in part[:8]):
+                rebuilt.append(f"{cue_for(part, index + 1)} {part}")
+                needed -= 1
+            else:
+                rebuilt.append(part)
+        return "\n".join(rebuilt)
+    return "\n\n".join(enhanced)
 
 
 def deepseek_script_rewrite(profile: dict, ip_plan: dict | None, source: str, revision: str = ""):
