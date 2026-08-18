@@ -221,6 +221,23 @@ function renderPlanCard(card, { eyebrow, title, subtitle, buttonText, onView }) 
   card.append(top, button);
 }
 
+function restoreContentPlanHistoryItem(item) {
+  const matched = item.role === 'assistant' && String(item.content || '').match(/^内容规划\s*V(\d+)\s*已(生成|按对话调整)。?$/);
+  const saved = matched && planningState.plans.find((entry) => Number(entry.version) === Number(matched[1]));
+  if (!saved) return addPlanningMessage(item.content, item.role, false);
+  const card = addPlanningMessage('', 'assistant', false);
+  const updated = matched[2] === '按对话调整';
+  renderPlanCard(card, { eyebrow: `内容规划 V${saved.version} 已${updated ? '更新' : '完成'}`, title: '你的专属内容规划方案', subtitle: updated ? '已按当时的补充重新整理。' : '已梳理保险主线、泛内容支线与内容方向。', buttonText: updated ? '查看该版本' : '查看内容规划', onView: () => renderContentPlan(saved.plan, saved.version) });
+}
+
+function restoreIpPlanHistoryItem(item) {
+  const matched = item.role === 'assistant' && String(item.content || '').match(/^IP\s*方案\s*V(\d+)\s*已生成。?$/);
+  const saved = matched && state.proposals.find((entry) => Number(entry.version) === Number(matched[1]));
+  if (!saved) return addMessage(item.content, item.role, false);
+  const card = addMessage('', 'assistant', false);
+  renderPlanCard(card, { eyebrow: `专属 IP 方案 V${saved.version} 已完成`, title: '你的专属 IP 方案', subtitle: '昵称、平台简介与合规提示已经整理好。', buttonText: '查看 IP 方案', onView: () => renderProposal(saved.proposal, saved.version) });
+}
+
 function presentPlanningQuestion() {
   const question = planningQuestions[planningState.currentQuestion];
   if (!question) {
@@ -253,7 +270,7 @@ function activatePlanning() {
   planningState.started = true;
   $('planning-save-state').textContent = state.matched ? '内容规划将保存到历史档案' : '本次会话';
   if (planningState.messages.length) {
-    planningState.messages.forEach((item) => addPlanningMessage(item.content, item.role, false));
+    planningState.messages.forEach((item) => restoreContentPlanHistoryItem(item));
     planningState.done = planningState.plans.length > 0;
   }
   if (planningState.plans.length) {
@@ -522,7 +539,7 @@ function startWorkspace(profile, matched, history = [], proposals = [], planning
   $('identity-screen').classList.add('hidden'); $('workspace').classList.remove('hidden');
   $('identity-state').textContent = matched ? `已匹配：${profile.name}（${profile.agentId}）` : '访客模式：资料仅保留本次会话';
   $('save-state').textContent = matched ? '已载入历史档案' : '本次会话';
-  if (history.length) history.forEach((item) => addMessage(item.content, item.role, false));
+  if (history.length) history.forEach((item) => restoreIpPlanHistoryItem(item));
   else addMessage(matched ? `你好，${profile.name}。你的报名资料已经带入，接下来补充生成方案需要的关键信息。` : '欢迎进入友邦红人计划。我们会通过对话建立本次 IP 档案。');
   renderProfile(); refreshProposalButton(); presentQuestion(); selectTool(state.requestedTool || 'ip');
 }
