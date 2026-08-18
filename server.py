@@ -248,6 +248,127 @@ candidateDirections 输出 2 到 3 项；contentDirections 输出 3 到 5 项；
     return {"plan": plan, "model": body.get("model", payload["model"]), "usage": body.get("usage", {})}
 
 
+def deepseek_script_rewrite(profile: dict, ip_plan: dict | None, source: str, revision: str = ""):
+    """Rewrite a supplied script without inventing facts and with the confirmed IP used only when relevant."""
+    api_key = os.getenv("DEEPSEEK_API_KEY", "").strip()
+    if not api_key:
+        raise RuntimeError("未配置 DEEPSEEK_API_KEY。请在项目根目录的 .env 文件中填写密钥后重试。")
+    system_prompt = """你是友邦红人计划的脚本改写助手。任务是改写营销员粘贴的原文，不是重新创作相反观点。
+必须保留原文的知识点、事实、数字、产品名称、产品责任、适用范围、限制条件和核心结论。不能用外部知识擅自纠正、增加、删除或改写专业信息。无法确认的产品、理赔、医学、法律、政策、税务信息保留原意，并以“需核对”“以官方材料为准”或“建议咨询相应专业人士”处理。
+不得编造作者身份、从业经历、荣誉、客户案例、服务数据、理赔结果、客户对话、客户评价或第三方背书。不得出现绝对化、收益或赔付承诺、恐慌营销、贬低同业、促销限时、返佣返现、站外导流、隐私泄露或违规增员招募。
+可参考已确认的 IP 资料，但仅当原文确实需要个人表达、服务对象、信任建立或个人风格时自然带入；只能使用资料中真实明确的信息，不能强行写成“我的客户”“我从业多年”等。纯知识科普和产品责任说明不强行加入人设。
+默认生成 3 篇完整改写稿：开头、切入角度、结构和结尾行动要明显不同，三篇不得只是替换词语；保持自然口语、短句、手机阅读节奏。每篇正文只包含可直接发布的标题、正文及必要合规提示，不要 Markdown、分析说明或版本编号。
+
+只输出合法 JSON：
+{
+  "summary":"不超过60字的改写说明",
+  "versions":[
+    {"label":"改写稿 1","focus":"不超过20字","text":"完整可发布文案"},
+    {"label":"改写稿 2","focus":"不超过20字","text":"完整可发布文案"},
+    {"label":"改写稿 3","focus":"不超过20字","text":"完整可发布文案"}
+  ]
+}"""
+    payload = {
+        "model": os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash"),
+        "thinking": {"type": "disabled"},
+        "max_tokens": 4200,
+        "response_format": {"type": "json_object"},
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": json.dumps({"profile": profile, "ipPlan": ip_plan or {}, "original": source, "revisionRequest": revision or None}, ensure_ascii=False)},
+        ],
+    }
+    request = Request(DEEPSEEK_API_URL, data=json.dumps(payload, ensure_ascii=False).encode("utf-8"), headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}, method="POST")
+    try:
+        with urlopen(request, timeout=120) as response:
+            body = json.loads(response.read().decode("utf-8"))
+    except HTTPError as error:
+        detail = error.read().decode("utf-8", errors="replace")[:500]
+        raise RuntimeError(f"DeepSeek 请求失败（HTTP {error.code}）：{detail}") from error
+    except URLError as error:
+        raise RuntimeError("无法连接 DeepSeek API，请检查网络或代理设置。") from error
+    try:
+        result = json.loads(body.get("choices", [{}])[0].get("message", {}).get("content", "").strip())
+    except json.JSONDecodeError as error:
+        raise RuntimeError("DeepSeek 返回的改写格式不完整，请重新提交原文。") from error
+    versions = result.get("versions") if isinstance(result, dict) else None
+    if not isinstance(versions, list) or len(versions) < 3:
+        raise RuntimeError("DeepSeek 没有返回 3 篇完整改写稿，请重新生成。")
+    cleaned = []
+    for index, item in enumerate(versions[:3], 1):
+        if not isinstance(item, dict) or not clean(item.get("text")):
+            raise RuntimeError("DeepSeek 返回的改写稿不完整，请重新生成。")
+        cleaned.append({"label": clean(item.get("label")) or f"改写稿 {index}", "focus": clean(item.get("focus"))[:40], "text": clean(item.get("text"))[:20000]})
+    return {"summary": clean(result.get("summary"))[:160], "versions": cleaned, "model": body.get("model", payload["model"])}
+
+
+def is_emoji_component(char: str) -> bool:
+    point = ord(char)
+    return point in {0x200D, 0xFE0F, 0x20E3} or 0x1F000 <= point <= 0x1FAFF or 0x2600 <= point <= 0x27BF
+
+
+def preserves_source_text(source: str, formatted: str) -> bool:
+    """Allow whitespace and emoji insertions only; all original characters must remain in order."""
+    original = [char for char in source if not char.isspace()]
+    cursor = 0
+    for char in formatted:
+        if char.isspace():
+            continue
+        if cursor < len(original) and char == original[cursor]:
+            cursor += 1
+        elif not is_emoji_component(char):
+            return False
+    return cursor == len(original)
+
+
+def deepseek_xhs_format(source: str, instruction: str = ""):
+    """Format text for Xiaohongshu while enforcing that no source wording changes."""
+    api_key = os.getenv("DEEPSEEK_API_KEY", "").strip()
+    if not api_key:
+        raise RuntimeError("未配置 DEEPSEEK_API_KEY。请在项目根目录的 .env 文件中填写密钥后重试。")
+    system_prompt = """你是小红书排版助手，不是改写助手。绝对不能修改、删除、替换、调换原文的任何文字和标点，也不能增加标题、编号、观点、事实、承诺或营销引导。
+你只能在原文中加入换行、段落空行，以及少量与段落含义匹配的 emoji。建议每句不超过20个汉字、每段不超过5行；按语义断句，不拆产品名、数字和专有名词。标题独立成行；不要 Markdown、井号或星号。
+同时只做初步表达风险检测，不判断专业事实真假。风险包括绝对化或夸大表达、收益或赔付承诺、恐慌营销、贬低同业、促销限时、返佣返现、站外导流、隐私泄露、违规增员，以及需要核对的产品、理赔、医学、法律、政策或税务表述。风险片段必须逐字来自原文。
+只输出合法 JSON：
+{"formattedText":"只加入换行或 emoji 的完整原文","risks":[{"snippet":"原文片段","type":"风险类型","reason":"不超过55字","suggestion":"不超过55字"}]}
+risks 最多 8 条；没有明显风险时返回空数组。"""
+    payload = {
+        "model": os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash"),
+        "thinking": {"type": "disabled"},
+        "max_tokens": 2600,
+        "response_format": {"type": "json_object"},
+        "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": json.dumps({"original": source, "formatInstruction": instruction or None}, ensure_ascii=False)}],
+    }
+    request = Request(DEEPSEEK_API_URL, data=json.dumps(payload, ensure_ascii=False).encode("utf-8"), headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}, method="POST")
+    try:
+        with urlopen(request, timeout=90) as response:
+            body = json.loads(response.read().decode("utf-8"))
+    except HTTPError as error:
+        detail = error.read().decode("utf-8", errors="replace")[:500]
+        raise RuntimeError(f"DeepSeek 请求失败（HTTP {error.code}）：{detail}") from error
+    except URLError as error:
+        raise RuntimeError("无法连接 DeepSeek API，请检查网络或代理设置。") from error
+    try:
+        result = json.loads(body.get("choices", [{}])[0].get("message", {}).get("content", "").strip())
+    except json.JSONDecodeError as error:
+        raise RuntimeError("DeepSeek 返回的排版格式不完整，请重新提交原文。") from error
+    formatted = clean(result.get("formattedText")) if isinstance(result, dict) else ""
+    if not formatted or not preserves_source_text(source, formatted):
+        formatted = source
+    risks = result.get("risks") if isinstance(result, dict) else []
+    safe_risks = []
+    for item in risks if isinstance(risks, list) else []:
+        if not isinstance(item, dict):
+            continue
+        snippet = clean(item.get("snippet"))
+        if not snippet or snippet not in source:
+            continue
+        safe_risks.append({"snippet": snippet[:180], "type": clean(item.get("type"))[:40], "reason": clean(item.get("reason"))[:120], "suggestion": clean(item.get("suggestion"))[:120]})
+        if len(safe_risks) == 8:
+            break
+    return {"formattedText": formatted, "risks": safe_risks, "model": body.get("model", payload["model"])}
+
+
 def clean(value):
     if value is None:
         return ""
@@ -371,6 +492,18 @@ def initialize_database():
                 FOREIGN KEY(agent_id) REFERENCES agents(agent_id),
                 UNIQUE(agent_id, version)
             );
+            CREATE TABLE IF NOT EXISTS creative_tool_messages (
+                id {id_column},
+                agent_id TEXT NOT NULL,
+                tool TEXT NOT NULL,
+                role TEXT NOT NULL,
+                content TEXT NOT NULL,
+                result_json TEXT,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY(agent_id) REFERENCES agents(agent_id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_creative_tool_messages_agent_id
+                ON creative_tool_messages(agent_id, tool, id);
             """
         )
 
@@ -594,6 +727,35 @@ def save_content_planning_message(agent_id: str, role: str, content: str):
     return True
 
 
+def save_creative_tool_message(agent_id: str, tool: str, role: str, content: str, result: dict | None = None):
+    if tool not in {"script", "xhs"} or role not in {"user", "assistant", "system"} or not content or len(content) > 30000:
+        return False
+    now = datetime.now(timezone.utc).isoformat()
+    with database() as conn:
+        exists = conn.execute("SELECT 1 FROM agents WHERE agent_id = ?", (agent_id,)).fetchone()
+        if not exists:
+            return False
+        conn.execute(
+            "INSERT INTO creative_tool_messages(agent_id, tool, role, content, result_json, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+            (agent_id, tool, role, content, json.dumps(result, ensure_ascii=False) if isinstance(result, dict) else None, now),
+        )
+    return True
+
+
+def creative_tool_history(agent_id: str):
+    with database() as conn:
+        rows = conn.execute(
+            "SELECT tool, role, content, result_json, created_at FROM creative_tool_messages WHERE agent_id = ? ORDER BY id ASC",
+            (agent_id,),
+        ).fetchall()
+    history = []
+    for row in rows:
+        item = dict(row)
+        item["result"] = json.loads(item.pop("result_json")) if item.get("result_json") else None
+        history.append(item)
+    return history
+
+
 def content_plan_history(agent_id: str):
     with database() as conn:
         rows = conn.execute(
@@ -713,13 +875,14 @@ class AppHandler(BaseHTTPRequestHandler):
                 "proposals": proposal_history(agent_id),
                 "planningHistory": content_planning_history(agent_id),
                 "contentPlans": content_plan_history(agent_id),
+                "creativeHistory": creative_tool_history(agent_id),
             })
             return
         self.serve_static(parsed.path)
 
     def do_POST(self):
         endpoint = urlparse(self.path).path
-        if endpoint not in ("/api/profile", "/api/generate", "/api/message", "/api/chat", "/api/content-plan/message", "/api/content-plan/generate", "/api/content-plan/revise"):
+        if endpoint not in ("/api/profile", "/api/generate", "/api/message", "/api/chat", "/api/content-plan/message", "/api/content-plan/generate", "/api/content-plan/revise", "/api/creative/message", "/api/script/rewrite", "/api/xhs/format"):
             self.send_error(HTTPStatus.NOT_FOUND)
             return
         try:
@@ -727,11 +890,16 @@ class AppHandler(BaseHTTPRequestHandler):
             payload = json.loads(self.rfile.read(size).decode("utf-8"))
             agent_id = clean(payload.get("agentId"))
             profile = payload.get("profile")
-            if endpoint in ("/api/message", "/api/content-plan/message"):
+            if endpoint in ("/api/message", "/api/content-plan/message", "/api/creative/message"):
                 role = clean(payload.get("role"))
                 content = clean(payload.get("content"))
                 if not agent_id or not role or not content:
                     raise ValueError("Invalid message payload")
+                if endpoint == "/api/creative/message":
+                    tool = clean(payload.get("tool"))
+                    result = payload.get("result") if isinstance(payload.get("result"), dict) else None
+                    if tool not in {"script", "xhs"}:
+                        raise ValueError("Invalid creative tool")
             elif endpoint == "/api/chat":
                 content = clean(payload.get("message"))
                 if not isinstance(profile, dict) or not content:
@@ -744,6 +912,12 @@ class AppHandler(BaseHTTPRequestHandler):
                     raise ValueError("Invalid content planning payload")
                 if endpoint == "/api/content-plan/revise" and (not revision or not isinstance(current_plan, dict)):
                     raise ValueError("Invalid content planning revision payload")
+            elif endpoint in ("/api/script/rewrite", "/api/xhs/format"):
+                source = clean(payload.get("source"))
+                revision = clean(payload.get("revision"))
+                ip_plan = payload.get("ipPlan") if isinstance(payload.get("ipPlan"), dict) else None
+                if not isinstance(profile, dict) or not source or len(source) > 30000:
+                    raise ValueError("Invalid creative content payload")
             elif not isinstance(profile, dict) or (endpoint == "/api/profile" and not agent_id):
                 raise ValueError("Invalid profile payload")
         except (ValueError, json.JSONDecodeError):
@@ -771,6 +945,18 @@ class AppHandler(BaseHTTPRequestHandler):
             except RuntimeError as error:
                 self.send_json({"error": str(error)}, HTTPStatus.BAD_GATEWAY)
             return
+        if endpoint == "/api/script/rewrite":
+            try:
+                self.send_json({"ok": True, **deepseek_script_rewrite(profile, ip_plan, source, revision)})
+            except RuntimeError as error:
+                self.send_json({"error": str(error)}, HTTPStatus.BAD_GATEWAY)
+            return
+        if endpoint == "/api/xhs/format":
+            try:
+                self.send_json({"ok": True, **deepseek_xhs_format(source, revision)})
+            except RuntimeError as error:
+                self.send_json({"error": str(error)}, HTTPStatus.BAD_GATEWAY)
+            return
         if endpoint == "/api/content-plan/message":
             if not save_content_planning_message(agent_id, role, content):
                 self.send_json({"error": "无法保存此条内容规划对话"}, HTTPStatus.BAD_REQUEST)
@@ -780,6 +966,12 @@ class AppHandler(BaseHTTPRequestHandler):
         if endpoint == "/api/message":
             if not save_conversation_message(agent_id, role, content):
                 self.send_json({"error": "无法保存此条对话"}, HTTPStatus.BAD_REQUEST)
+                return
+            self.send_json({"saved": True})
+            return
+        if endpoint == "/api/creative/message":
+            if not save_creative_tool_message(agent_id, tool, role, content, result):
+                self.send_json({"error": "无法保存此条创作对话"}, HTTPStatus.BAD_REQUEST)
                 return
             self.send_json({"saved": True})
             return
