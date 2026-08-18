@@ -202,12 +202,12 @@ def deepseek_content_plan(profile: dict, planning: dict, current_plan: dict | No
   "insuranceLine":{"title":"保险主线名称","reason":"不超过60字"},
   "candidateDirections":[{"direction":"保险 + 某方向","audienceFit":"人群一致判断","sustainable":"持续输出判断","benefit":"利他价值","recommend":true}],
   "finalPositioning":{"label":"保险 + 某一方向","explanation":"不超过80字，说明为何只选这一条"},
-  "contentDirections":[{"direction":"内容方向名称","audienceQuestion":"要回答的受众问题","contentBoundary":"内容边界","topics":["4个首批选题"]}],
+  "contentDirections":[{"direction":"内容方向名称","audienceQuestion":"要回答的受众问题","contentBoundary":"内容边界","collectionReferences":["不超过5个汉字的合集名称参考"],"roles":["该方向对吸粉、教育、信任或转化的具体作用"],"topics":["4个首批选题"]}],
   "avoidDirections":[{"direction":"不建议混入的方向","reason":"不超过55字"}],
   "focusReminder":"提醒内容不宜太杂、太随意混发，避免账号像朋友圈，导致平台难判断流量画像。"
 }
 
-candidateDirections 输出 2 到 3 项；contentDirections 输出 3 到 5 项；每个内容方向 topics 正好 4 项。内容方向是账号的长期创作主题，不等同于小红书合集；如后续创建平台合集，可从内容方向中提炼一个不超过 5 个汉字的短名称。finalPositioning 必须只选择一个保险以外的方向。"""
+candidateDirections 输出 2 到 3 项；contentDirections 输出 3 到 5 项；每个内容方向 topics 正好 4 项。每个方向必须输出 1 到 2 个 collectionReferences，且每个合集名称严格不超过 5 个汉字，并用作参考而非方向名称。每个方向必须输出 1 到 3 个 roles，从内容对账号吸粉、教育、建立信任、咨询转化或增员转化的作用出发，必须结合该方向与主目标判断：拓客可使用“让粉丝理解保障需求”“帮助粉丝看懂保障方案”“建立专业与服务信任”等；增员可使用“让准增员理解行业与转型”“展示团队支持与价值观”“建立个人职业可信度”等。内容方向是账号的长期创作主题，不等同于小红书合集。finalPositioning 必须只选择一个保险以外的方向。"""
     request_payload = {
         "profile": profile,
         "planningAnswers": planning,
