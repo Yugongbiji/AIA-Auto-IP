@@ -331,6 +331,15 @@ function addScriptFinalReview(parent) {
   parent.append(card);
 }
 
+function addSuggestedTags(parent, tags) {
+  if (!Array.isArray(tags) || tags.length < 10) return;
+  const card = makeNode('section', 'suggested-tags-card');
+  card.append(makeNode('strong', '', '🏷️ 建议标签'), makeNode('p', '', '标签仅供参考。发布小红书时请在发布页搜索并观察浏览量与相关性，选择表现更好的标签组合。'));
+  const list = document.createElement('div'); list.className = 'suggested-tags-list';
+  tags.slice(0, 15).forEach((tag) => list.append(makeNode('span', '', `#${String(tag).replace(/^[#＃]+/, '')}`)));
+  card.append(list); parent.append(card);
+}
+
 function renderCreativeResult(node, tool, result) {
   node.className = 'message assistant creative-result-card'; node.innerHTML = '';
   if (tool === 'script') {
@@ -345,6 +354,7 @@ function renderCreativeResult(node, tool, result) {
   const formattedSections = Array.isArray(result.formattedSections) ? result.formattedSections : [];
   if (formattedSections.length) formattedSections.forEach((section) => addCreativeCopyBlock(node, (section.label || '可直接复制的排版文本').replace(/^标题\s*\d+\s*[：:]/, '标题 ·'), '仅调整换行、留白与表情', section.text || ''));
   else addCreativeCopyBlock(node, '可直接复制的排版文本', '仅调整换行、留白与表情', result.formattedText || '');
+  addSuggestedTags(node, result.suggestedTags);
   const risks = Array.isArray(result.risks) ? result.risks : [];
   const riskBox = makeNode('section', `risk-check ${risks.length ? 'has-risk' : 'no-risk'}`);
   if (!risks.length) {

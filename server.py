@@ -249,9 +249,9 @@ candidateDirections 输出 2 到 3 项；contentDirections 输出 3 到 5 项；
     return {"plan": plan, "model": body.get("model", payload["model"]), "usage": body.get("usage", {})}
 
 
-STRUCTURE_MARKER_PATTERN = re.compile(r"^\s*(?:正文|结尾|开头|脚本正文|文案正文|结束语|结语)\s*[：:]?\s*", re.IGNORECASE)
+STRUCTURE_MARKER_PATTERN = re.compile(r"^\s*(?:正文|结尾|开头|脚本正文|文案正文|结束语|结语)\s*\d{0,2}\s*[：:]?\s*", re.IGNORECASE)
 NUMBERED_TITLE_PATTERN = re.compile(r"^\s*(?:第\s*)?(\d{1,2})\s*[、.．:：)）]\s*(.+?)\s*$")
-INLINE_LIBRARY_TITLE_PATTERN = re.compile(r"^\s*(?:第\s*)?(\d{1,2})\s*[、.．:：)）]\s*(.*?)\s*(?:正文|文案正文|脚本正文)\s*[：:]?\s*(.*)$", re.IGNORECASE)
+INLINE_LIBRARY_TITLE_PATTERN = re.compile(r"^\s*(?:第\s*)?(\d{1,2})\s*[、.．:：)）]\s*(.*?)\s*(?:正文|文案正文|脚本正文)\s*\d{0,2}\s*[：:]?\s*(.*)$", re.IGNORECASE)
 
 
 def strip_structure_markers(text: str) -> str:
@@ -295,52 +295,54 @@ def extract_numbered_title_sections(source: str) -> list[dict]:
     return [{"number": item["number"], "title": item["title"], "text": "\n".join(item["body"]).strip()} for item in sections]
 
 
+EMOJI_KEYWORDS = [("风险", "⚠️"), ("注意", "⚠️"), ("重点", "📌"), ("保障", "🛡️"), ("保险", "🛡️"), ("家庭", "👪"), ("孩子", "🎓"), ("教育", "🎓"), ("养老", "🌿"), ("健康", "❤️"), ("理赔", "✅"), ("步骤", "🧭"), ("方法", "💡"), ("建议", "💡")]
+
+
 def add_scan_emojis(formatted: str) -> str:
-    """Ensure enough restrained scan-friendly emoji cues, even if the model added only one."""
-    paragraphs = [part.strip() for part in re.split(r"\n\s*\n", formatted.strip()) if part.strip()]
-    if not paragraphs:
-        return formatted
-    total = len(re.sub(r"\s+", "", formatted))
-    target_count = 1 if total < 80 else 2 if total < 220 else 3 if total < 500 else 4 if total < 800 else 5
+    """Add one scan cue every two to three sentences, prioritising meaningful keywords."""
+    sentence_count = max(1, len(re.findall(r"[。！？!?]", formatted)))
+    target_count = min(10, max(1, (sentence_count + 1) // 2))
     existing_count = sum(1 for char in formatted if is_emoji_component(char) and ord(char) not in {0x200D, 0xFE0F, 0x20E3})
     needed = max(0, target_count - existing_count)
     if not needed:
         return formatted
-    def cue_for(text: str, index: int) -> str:
-        if re.search(r"风险|注意|提醒|避免|不要", text):
-            return "⚠️"
-        if re.search(r"步骤|方法|建议|可以|如何", text):
-            return "💡"
-        if re.search(r"家庭|孩子|父母|养老", text):
-            return "👪"
-        if re.search(r"保障|保险|规划", text):
-            return "🛡️"
-        return ("📌", "✨", "✅", "💬")[index % 4]
-    enhanced = []
-    for index, paragraph in enumerate(paragraphs):
-        if needed <= 0:
-            enhanced.append(paragraph)
-            continue
-        if any(is_emoji_component(char) for char in paragraph[:8]):
-            enhanced.append(paragraph)
-            continue
-        enhanced.append(f"{cue_for(paragraph, index)} {paragraph}")
-        needed -= 1
-    # When there are few long paragraphs, add remaining cues at natural sentence starts rather than stacking them.
-    if needed > 0:
-        combined = "\n\n".join(enhanced)
-        parts = re.split(r"(?<=[。！？!?])\s*", combined)
-        rebuilt = []
-        for index, part in enumerate(parts):
-            if not part:
-                continue
-            if needed > 0 and index > 0 and not any(is_emoji_component(char) for char in part[:8]):
-                rebuilt.append(f"{cue_for(part, index + 1)} {part}")
-                needed -= 1
-            else:
-                rebuilt.append(part)
-        return "\n".join(rebuilt)
-    return "\n\n".join(enhanced)
+    parts = re.split(r"(?<=[。！？!?])", formatted)
+    candidates = [index for index, part in enumerate(parts) if part.strip() and not any(is_emoji_component(char) for char in part)]
+    if not candidates:
+        return formatted
+    step = max(1, len(candidates) // needed)
+    chosen = candidates[::step][:needed]
+    for index in chosen:
+        part = parts[index]
+        inserted = False
+        for keyword, emoji in EMOJI_KEYWORDS:
+            position = part.find(keyword)
+            if position >= 0:
+                parts[index] = f"{part[:position + len(keyword)]}{emoji}{part[position + len(keyword):]}"
+                inserted = True
+                break
+        if not inserted:
+            parts[index] = f"📌 {part.lstrip()}"
+    return "".join(parts)
+
+
+def clean_suggested_tags(raw_tags, source: str) -> list[str]:
+    """Keep 10–15 short, de-duplicated publishing suggestions outside the copied text."""
+    tags = []
+    for item in raw_tags if isinstance(raw_tags, list) else []:
+        tag = re.sub(r"^[#＃\s]+", "", clean(item)).strip()
+        tag = re.sub(r"\s+", "", tag)
+        if 2 <= len(tag) <= 12 and tag not in tags:
+            tags.append(tag)
+        if len(tags) == 15:
+            return tags
+    fallback = ["保险科普", "保障规划", "风险管理", "家庭保障", "保险知识", "长期规划", "保障意识", "安心生活", "家庭规划", "生活保障", "风险防范", "保险干货", "规划建议", "生活方式", "专业分享"]
+    for tag in fallback:
+        if tag not in tags:
+            tags.append(tag)
+        if len(tags) >= 10:
+            break
+    return tags[:15]
 
 
 def deepseek_script_rewrite(profile: dict, ip_plan: dict | None, source: str, revision: str = ""):
@@ -352,7 +354,7 @@ def deepseek_script_rewrite(profile: dict, ip_plan: dict | None, source: str, re
 必须保留原文的知识点、事实、数字、产品名称、产品责任、适用范围、限制条件和核心结论。不能用外部知识擅自纠正、增加、删除或改写专业信息。无法确认的产品、理赔、医学、法律、政策、税务信息保留原意，并以“需核对”“以官方材料为准”或“建议咨询相应专业人士”处理。
 不得编造作者身份、从业经历、荣誉、客户案例、服务数据、理赔结果、客户对话、客户评价或第三方背书。不得出现绝对化、收益或赔付承诺、恐慌营销、贬低同业、促销限时、返佣返现、站外导流、隐私泄露或违规增员招募。
 可参考已确认的 IP 资料，但仅当原文确实需要个人表达、服务对象、信任建立或个人风格时自然带入；只能使用资料中真实明确的信息，不能强行写成“我的客户”“我从业多年”等。纯知识科普和产品责任说明不强行加入人设。
-脚本库的“正文”“结尾”“开头”“脚本正文”“结语”等只是内部结构标记，绝对不要写进改写稿。若输入中有连续的编号标题（例如“1. 标题甲”“2. 标题乙”“3. 标题丙”），必须识别为多个独立选题：每个选题单独改写，不能合并在一篇产出中。输出卡片标签由系统展示为“标题 1：标题甲”等，text 内不要重复编号标题、正文、结尾等结构标记。
+脚本库的“正文”“正文1”“正文2”“结尾”“开头”“脚本正文”“结语”等只是内部结构标记，绝对不要写进改写稿。若输入中有连续的编号标题（例如“1. 标题甲”“2. 标题乙”“3. 标题丙”），必须识别为多个独立选题：每个选题单独改写，不能合并在一篇产出中。输出卡片标签只展示干净的标题名称，text 内不要重复编号标题、正文、结尾或其序号。
 没有多个编号标题时，默认生成 3 篇完整改写稿：开头、切入角度、结构和结尾行动要明显不同，三篇不得只是替换词语；保持自然口语、短句、手机阅读节奏。每篇正文只包含可直接发布的标题、正文及必要合规提示，不要 Markdown、分析说明或版本编号。
 在改写稿前，必须输出一份面向营销员的简明“稿件处理说明”。它只陈述基于原稿可核对的编辑结论，不展示冗长推理，不虚构原文没有的知识点或风险。说明需写清：锁定的知识点（2 至 5 条）、推荐的开头方式、正文结构、结尾方式、人设带入情况，以及合规调整。若未发现需要调整的合规表达，要明确写“未发现需改动的明显风险表达，仍请以最新公司规则核对”。
 
@@ -406,7 +408,7 @@ def deepseek_script_rewrite(profile: dict, ip_plan: dict | None, source: str, re
         if not isinstance(item, dict) or not clean(item.get("text")):
             raise RuntimeError("DeepSeek 返回的改写稿不完整，请重新生成。")
         title = title_sections[index - 1]["title"] if title_sections else ""
-        label = f"标题 {index}：{title}" if title else (clean(item.get("label")) or f"改写稿 {index}")
+        label = f"标题 · {title}" if title else (clean(item.get("label")) or f"改写稿 {index}")
         cleaned.append({"label": label[:80], "focus": clean(item.get("focus"))[:40], "text": strip_structure_markers(clean(item.get("text")))[:20000]})
     breakdown = result.get("breakdown") if isinstance(result, dict) else {}
     breakdown = breakdown if isinstance(breakdown, dict) else {}
@@ -494,11 +496,11 @@ def deepseek_xhs_format(source: str, instruction: str = ""):
     title_sections = extract_numbered_title_sections(source)
     display_source = strip_structure_markers(source)
     system_prompt = """你是小红书排版助手，不是改写助手。绝对不能修改、删除、替换、调换待排版原文的任何文字和标点，也不能增加观点、事实、承诺或营销引导。
-脚本库的“正文”“结尾”“开头”“脚本正文”“结语”等是内部结构标记，绝对不要写进排版结果。若输入给出多个编号标题，必须拆成独立内容：每段对应一个标题，不能把三个标题及正文挤在同一段。系统会在文本框外显示“标题 1：标题名”等标签，formattedSections 的 text 内不要重复编号标题或结构标记。
-你只能在原文中加入换行、段落空行，以及少量与段落含义匹配的 emoji。建议每句不超过20个汉字、每段不超过5行；按语义断句，不拆产品名、数字和专有名词。标题独立成行；不要 Markdown、井号或星号。emoji 用于快速扫读：每个自然段最多 1 个，优先放在段首；全文每约 120 个汉字使用 1 个，总数控制在 1 至 4 个，避免堆砌。
+脚本库的“正文”“正文1”“正文2”“结尾”“开头”“脚本正文”“结语”等是内部结构标记，绝对不要写进排版结果。若输入给出多个编号标题，必须拆成独立内容：每段对应一个标题，不能把三个标题及正文挤在同一段。系统会在文本框外展示干净标题，formattedSections 的 text 内不要重复编号标题、结构标记或其序号。
+你只能在原文中加入换行、段落空行，以及与段落含义匹配的 emoji。建议每句不超过20个汉字、每段不超过5行；按语义断句，不拆产品名、数字和专有名词。标题独立成行；不要 Markdown、井号或星号。emoji 用于快速扫读，原则上每 2 至 3 句话配置 1 个；优先紧跟“保障、家庭、风险、重点、步骤、建议、教育、养老、健康、理赔”等重要词，也可放在段首。不得修改或拆开任何原文字词，避免连续堆叠或每句都加。
 同时只做初步表达风险检测，不判断专业事实真假。风险包括绝对化或夸大表达、收益或赔付承诺、恐慌营销、贬低同业、促销限时、返佣返现、站外导流、隐私泄露、违规增员，以及需要核对的产品、理赔、医学、法律、政策或税务表述。风险片段必须逐字来自原文。
 只输出合法 JSON：
-{"formattedText":"无多标题时，只加入换行或 emoji 的完整原文","formattedSections":[{"text":"有多个编号标题时，每个标题对应的排版原文"}],"risks":[{"snippet":"原文片段","type":"风险类型","reason":"不超过55字","suggestion":"不超过55字"}]}
+{"formattedText":"无多标题时，只加入换行或 emoji 的完整原文","formattedSections":[{"text":"有多个编号标题时，每个标题对应的排版原文"}],"suggestedTags":["根据全文提炼的标签，不含#，必须给出12个"],"risks":[{"snippet":"原文片段","type":"风险类型","reason":"不超过55字","suggestion":"不超过55字"}]}
 risks 最多 8 条；没有明显风险时返回空数组。"""
     payload = {
         "model": os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash"),
@@ -530,9 +532,9 @@ risks 最多 8 条；没有明显风险时返回空数组。"""
                 if not candidate or not preserves_source_text(section["text"], candidate):
                     formatted_sections = []
                     break
-                formatted_sections.append({"label": f"标题 {index + 1}：{section['title']}", "text": add_scan_emojis(candidate)})
+                formatted_sections.append({"label": f"标题 · {section['title']}", "text": add_scan_emojis(candidate)})
         if not formatted_sections:
-            formatted_sections = [{"label": f"标题 {index + 1}：{section['title']}", "text": add_scan_emojis(section["text"])} for index, section in enumerate(title_sections)]
+            formatted_sections = [{"label": f"标题 · {section['title']}", "text": add_scan_emojis(section["text"])} for section in title_sections]
         formatted = "\n\n".join(item["text"] for item in formatted_sections)
     elif not formatted or not preserves_source_text(display_source, formatted):
         formatted = display_source
@@ -549,7 +551,8 @@ risks 最多 8 条；没有明显风险时返回空数组。"""
         safe_risks.append({"snippet": snippet[:180], "type": clean(item.get("type"))[:40], "reason": clean(item.get("reason"))[:120], "suggestion": clean(item.get("suggestion"))[:120]})
         if len(safe_risks) == 8:
             break
-    return {"formattedText": formatted, "formattedSections": formatted_sections, "risks": safe_risks, "model": body.get("model", payload["model"])}
+    suggested_tags = clean_suggested_tags(result.get("suggestedTags") if isinstance(result, dict) else [], "\n".join(section["text"] for section in title_sections) if title_sections else display_source)
+    return {"formattedText": formatted, "formattedSections": formatted_sections, "suggestedTags": suggested_tags, "risks": safe_risks, "model": body.get("model", payload["model"])}
 
 
 def clean(value):
