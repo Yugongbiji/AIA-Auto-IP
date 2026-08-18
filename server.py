@@ -554,9 +554,10 @@ def save_proposal(agent_id: str, proposal: dict, model: str):
         exists = conn.execute("SELECT 1 FROM agents WHERE agent_id = ?", (agent_id,)).fetchone()
         if not exists:
             return None
-        version = conn.execute(
-            "SELECT COALESCE(MAX(version), 0) + 1 FROM proposals WHERE agent_id = ?", (agent_id,)
-        ).fetchone()[0]
+        version_row = conn.execute(
+            "SELECT COALESCE(MAX(version), 0) + 1 AS next_version FROM proposals WHERE agent_id = ?", (agent_id,)
+        ).fetchone()
+        version = version_row["next_version"] if isinstance(version_row, dict) else version_row[0]
         conn.execute(
             """
             INSERT INTO proposals(agent_id, version, proposal_json, model, created_at)
@@ -609,7 +610,10 @@ def save_content_plan(agent_id: str, plan: dict, model: str):
         exists = conn.execute("SELECT 1 FROM agents WHERE agent_id = ?", (agent_id,)).fetchone()
         if not exists:
             return None
-        version = conn.execute("SELECT COALESCE(MAX(version), 0) + 1 FROM content_plans WHERE agent_id = ?", (agent_id,)).fetchone()[0]
+        version_row = conn.execute(
+            "SELECT COALESCE(MAX(version), 0) + 1 AS next_version FROM content_plans WHERE agent_id = ?", (agent_id,)
+        ).fetchone()
+        version = version_row["next_version"] if isinstance(version_row, dict) else version_row[0]
         conn.execute(
             "INSERT INTO content_plans(agent_id, version, plan_json, model, created_at) VALUES (?, ?, ?, ?, ?)",
             (agent_id, version, json.dumps(plan, ensure_ascii=False), model, now),
