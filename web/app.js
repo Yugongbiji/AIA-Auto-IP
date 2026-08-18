@@ -331,12 +331,18 @@ function addScriptFinalReview(parent) {
   parent.append(card);
 }
 
-function addSuggestedTags(parent, tags) {
+function addSuggestedTags(parent, tags, tool = 'xhs') {
   if (!Array.isArray(tags) || tags.length < 10) return;
   const card = makeNode('section', 'suggested-tags-card');
-  card.append(makeNode('strong', '', '🏷️ 建议标签'), makeNode('p', '', '标签仅供参考。发布小红书时请在发布页搜索并观察浏览量与相关性，选择表现更好的标签组合。'));
+  const tip = tool === 'script'
+    ? '前 5 个为重点推荐，适合优先在抖音发布页尝试；其余标签作为备选。具体以发布页的搜索热度和相关性为准。'
+    : '前 5 个为重点推荐；发布小红书时请在发布页搜索并观察浏览量与相关性，再选择表现更好的标签组合。';
+  card.append(makeNode('strong', '', '🏷️ 建议标签 · 前 5 个重点推荐'), makeNode('p', '', tip));
   const list = document.createElement('div'); list.className = 'suggested-tags-list';
-  tags.slice(0, 15).forEach((tag) => list.append(makeNode('span', '', `#${String(tag).replace(/^[#＃]+/, '')}`)));
+  tags.slice(0, 15).forEach((tag, index) => {
+    const item = makeNode('span', index < 5 ? 'priority-tag' : '', `#${String(tag).replace(/^[#＃]+/, '')}`);
+    list.append(item);
+  });
   card.append(list); parent.append(card);
 }
 
@@ -347,6 +353,7 @@ function renderCreativeResult(node, tool, result) {
     if (result.summary) node.append(makeNode('p', 'creative-result-summary', result.summary));
     addScriptBreakdown(node, result.breakdown);
     (result.versions || []).slice(0, 3).forEach((item, index) => addCreativeCopyBlock(node, item.label || `改写稿 ${index + 1}`, item.focus || '', item.text || ''));
+    addSuggestedTags(node, result.suggestedTags, 'script');
     addScriptFinalReview(node);
     return;
   }
