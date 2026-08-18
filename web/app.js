@@ -63,15 +63,15 @@ const toolDetails = {
   },
   script: {
     icon: '✍️', eyebrow: '脚本改写', title: '把一个好选题，写成像你说的话',
-    description: '粘贴已有脚本或从内容规划中选择选题；系统会先判断是否需要带入你的 IP。',
-    cards: [['识别场景', '判断内容是否需要体现你的城市、专业方向和个人经历。'], ['多版改写', '保留原意，调整结构、表达方式与手机阅读节奏。'], ['合规核对', '避免未经确认的个人经历、夸大承诺和不合规表达。']],
-    note: '脚本方法将以确认后的内部指令文档为准，并与当前 IP 方案协同使用。',
+    description: '已锁定内部脚本改写知识库与合规规则；粘贴原稿后，系统会判断是否需要带入你的 IP。',
+    cards: [['知识库护航', '按已确认的内部方法整理结构与表达，不靠随意发挥。'], ['人设化改写', '只在需要时带入你的城市、专业方向和真实经历，让内容更像你。'], ['多维合规检测', '逐项检视夸大承诺、引流、医疗、招募等常见风险表达。']],
+    note: '每次输出提供 3 个不同侧重点的完整版本，事实与核心观点始终以原稿和已确认资料为准。',
   },
   xhs: {
     icon: '📱', eyebrow: '小红书排版', title: '让内容看起来更像一篇愿意读完的笔记',
-    description: '将确认后的文案整理为标题、段落、小标题与表情建议，并提供可直接复制的发布版本。',
-    cards: [['阅读节奏', '根据手机屏幕自动控制段落长度与留白。'], ['账号风格', '需要时带入当前 IP 的表达气质和目标人群。'], ['发布前提示', '在复制前核对敏感词、引流和夸大承诺风险。']],
-    note: '排版服务于清晰表达，不会为了“好看”添加虚构经历或不合规信息。',
+    description: '把原文整理成更清爽、更有呼吸感的笔记；不动任何文字，只优化阅读体验。',
+    cards: [['原文零改动', '文字、标点和事实保持原样，不会偷偷改写你的观点。'], ['手机友好排版', '优化断句、分段、留白和少量表情，让重点更容易被看到。'], ['发布前风险提示', '沿用脚本改写的合规规则，只标出风险，不会擅自修改原文。']],
+    note: '检测到风险时由你决定：保留原文，或一键交给脚本改写进行合规调整。',
   },
 };
 
@@ -249,6 +249,25 @@ function addCreativeMessage(tool, content, role = 'assistant', persist = true, r
   return node;
 }
 
+function renderCreativeWelcome(tool) {
+  const isScript = tool === 'script';
+  const node = document.createElement('section');
+  node.className = `message assistant creative-welcome-card ${tool}-welcome`;
+  const eyebrow = makeNode('p', 'creative-welcome-eyebrow', isScript ? '✍️ 你的专属脚本编辑台' : '📱 你的笔记发布整理台');
+  const title = makeNode('h3', '', isScript ? '一段原稿，改出更像你的 3 个版本' : '原文不动，也能让一篇笔记更有吸引力');
+  const intro = makeNode('p', 'creative-welcome-intro', isScript
+    ? '这里不是普通的“换个说法”。系统已锁定内部脚本改写知识库与多维合规规则，并会按需结合你已确认的 IP 人设。'
+    : '这里不做改写，只做“变好读”：把内容整理成更适合手机阅读和直接发布的笔记版式。');
+  const list = document.createElement('div'); list.className = 'creative-welcome-list';
+  const items = isScript
+    ? [['🧠', '知识库锁定', '按内部方法梳理，不靠随机发挥。'], ['✨', '人设自然带入', '涉及个人表达时，才引用已确认的定位与优势。'], ['🛡️', '合规逐项核对', '重点检查夸大承诺、引流、医疗、招募等常见风险。']]
+    : [['🔒', '原文零改动', '不改文字、不改标点，只调整呈现。'], ['📖', '更顺的阅读节奏', '断句、分段、留白与少量表情，让重点更清楚。'], ['🛡️', '发布前先检测', '沿用合规规则标出风险；是否修改，由你决定。']];
+  items.forEach(([icon, name, text]) => { const item = document.createElement('div'); item.append(makeNode('span', '', icon)); const words = document.createElement('div'); words.append(makeNode('strong', '', name), makeNode('p', '', text)); item.append(words); list.append(item); });
+  const hint = makeNode('p', 'creative-welcome-hint', isScript ? '把原脚本粘贴在下方，开始生成你的 3 个改写版本。' : '把完成的文案粘贴在下方，生成可直接复制的排版版本。');
+  node.append(eyebrow, title, intro, list, hint);
+  creativeMessages(tool).appendChild(node); creativeMessages(tool).scrollTop = creativeMessages(tool).scrollHeight;
+}
+
 function addCreativeCopyBlock(parent, label, focus, text) {
   const block = makeNode('section', 'creative-copy-block');
   const heading = makeNode('div', 'creative-copy-heading'); const words = makeNode('div'); words.append(makeNode('strong', '', label), makeNode('span', '', focus || ''));
@@ -293,8 +312,7 @@ function activateCreativeTool(tool) {
     if (item.role === 'user' && !toolState.source) toolState.source = item.content;
   });
   if (toolState.messages.length) return;
-  if (tool === 'script') addCreativeMessage('script', '把需要改写的原脚本直接粘贴过来即可。我会保留事实与核心观点，必要时结合已确认的 IP 方案，给你 3 篇可直接复制的改写稿。');
-  else addCreativeMessage('xhs', '把需要排版的原文粘贴过来即可。我只调整换行、留白和少量表情，不改任何原文字；完成后会额外做一次只提示、不修改的初步风险检测。');
+  renderCreativeWelcome(tool);
 }
 
 function latestIpPlanReference() { return state.proposals[0]?.proposal || {}; }
