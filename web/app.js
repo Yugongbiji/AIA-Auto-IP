@@ -410,13 +410,54 @@ function handoffXhsToScript(source) {
 
 function isXhsConfirmRevision(text) { return /^(?:确认修改|确认改|修改吧|改一下|按建议修改|处理风险)/.test(text.trim()); }
 
+function looksLikeNewScript(text) {
+  const structured = /(?:^|\n)\s*(?:标题|开头|正文|结尾|脚本正文|文案正文|\d{1,2}\s*[、.．:：)）])/.test(text);
+  const sentenceCount = (text.match(/[。！？!?]/g) || []).length;
+  return (structured && text.length >= 100) || (text.length >= 280 && sentenceCount >= 3);
+}
+
+function fallbackScriptIntent(text) {
+  if (looksLikeNewScript(text) || /(?:这|以下|这是).{0,8}(?:新|另一|新的).{0,4}(?:脚本|稿)/.test(text)) return { intent: 'new_script', reply: '收到，这是一篇新的脚本。我会切换到新稿，重新按它的内容进行改写。', revisionInstruction: '' };
+  if (/(?:重新|再|按.*(?:重写|改写)|根据.*(?:修改|建议).*(?:重写|改写)|请.*(?:重写|改写)|帮我.*(?:重写|改写))/.test(text)) return { intent: 'rewrite_request', reply: '收到，我会按你的要求重新改写当前脚本。', revisionInstruction: text };
+  if (/(?:为什么|怎么|是不是|还是|吗|？|\?)/.test(text)) return { intent: 'question', reply: '我理解你的疑问了。刚才如果把新稿误当成旧稿修改，是我识别得不够准确；粘贴完整新稿后，我会按新脚本重新处理。', revisionInstruction: '' };
+  return { intent: 'feedback', reply: '收到这些修改想法，我先记下了。你还可以继续补充；确认后直接说“按这些重新改写”，我再给你新的版本。', revisionInstruction: '' };
+}
+
+async function handleScriptConversation(content) {
+  const toolState = creativeState.script;
+  if (toolState.generating) return;
+  toolState.generating = true; creativeSaveState('script').textContent = '正在理解你的意思…';
+  let result;
+  try {
+    const response = await fetch('/api/script/intent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ profile: state.profile, ipPlan: latestIpPlanReference(), source: toolState.source, message: content }) });
+    const body = await response.json(); if (!response.ok) throw new Error(body.error || '理解失败'); result = body;
+  } catch (_) {
+    result = fallbackScriptIntent(content);
+  }
+  if (looksLikeNewScript(content)) result.intent = 'new_script';
+  const intent = result.intent;
+  const reply = result.reply || fallbackScriptIntent(content).reply;
+  toolState.generating = false;
+  if (intent === 'new_script') {
+    toolState.source = content;
+    addCreativeMessage('script', reply, 'system');
+    return runScriptRewrite(content);
+  }
+  if (intent === 'rewrite_request') {
+    addCreativeMessage('script', reply, 'system');
+    return runScriptRewrite(toolState.source, result.revisionInstruction || content);
+  }
+  addCreativeMessage('script', reply, 'assistant');
+  creativeSaveState('script').textContent = state.matched ? '已保存到历史档案' : '本次会话';
+}
+
 async function submitCreativeTool(tool, value) {
   const content = value.trim(); if (!content) return;
   const toolState = creativeState[tool];
   if (tool === 'xhs' && toolState.source && toolState.pendingRisks && isXhsConfirmRevision(content)) return handoffXhsToScript(toolState.source);
   addCreativeMessage(tool, content, 'user');
   if (!toolState.source) { toolState.source = content; return tool === 'script' ? runScriptRewrite(content) : runXhsFormat(content); }
-  if (tool === 'script') return runScriptRewrite(toolState.source, content);
+  if (tool === 'script') return handleScriptConversation(content);
   return runXhsFormat(toolState.source, content);
 }
 

@@ -423,6 +423,50 @@ def deepseek_script_rewrite(profile: dict, ip_plan: dict | None, source: str, re
     return {"summary": clean(result.get("summary"))[:160], "breakdown": safe_breakdown, "versions": cleaned, "model": body.get("model", payload["model"])}
 
 
+def deepseek_script_intent(profile: dict, ip_plan: dict | None, current_source: str, message: str):
+    """Classify a follow-up in the script workspace before deciding whether to rewrite."""
+    api_key = os.getenv("DEEPSEEK_API_KEY", "").strip()
+    if not api_key:
+        raise RuntimeError("未配置 DEEPSEEK_API_KEY。请在项目根目录的 .env 文件中填写密钥后重试。")
+    system_prompt = """你是友邦红人计划的脚本改写对话助手。营销员已经有一篇当前脚本，现在发送了一条新消息。
+请判断该消息属于且只属于以下一种 intent：
+1. new_script：消息本身是一篇新的、可直接改写的完整脚本，和当前脚本不是同一篇。
+2. rewrite_request：营销员明确要求按照某些意见重新改写当前脚本，例如“按这个重写”“改成更口语后重新出稿”。
+3. feedback：只是给出一两条修改建议或偏好，但没有明确要求立刻重新改写。
+4. question：提问、质疑、澄清或其他聊天内容。
+
+只有 new_script 或 rewrite_request 才会触发改写。feedback 必须自然确认已收到的要点，并邀请营销员继续补充，或明确说“按这些重新改写”后再出稿；question 要直接、友好地回答，特别是营销员说“我发的是新的脚本”时，先承认并说明会将其按新稿处理。不要机械地重复固定句式，不要使用 Markdown、列表符号、字段名或技术术语。不得编造任何原文事实。
+
+只输出合法 JSON：
+{"intent":"new_script/rewrite_request/feedback/question","reply":"不超过110字的自然回复","revisionInstruction":"仅 rewrite_request 时，提炼不超过160字的改写要求；其他情况为空"}"""
+    payload = {
+        "model": os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash"),
+        "thinking": {"type": "disabled"},
+        "max_tokens": 500,
+        "response_format": {"type": "json_object"},
+        "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": json.dumps({"profile": profile, "ipPlan": ip_plan or {}, "currentScript": current_source[-8000:], "message": message}, ensure_ascii=False)}],
+    }
+    request = Request(DEEPSEEK_API_URL, data=json.dumps(payload, ensure_ascii=False).encode("utf-8"), headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}, method="POST")
+    try:
+        with urlopen(request, timeout=60) as response:
+            body = json.loads(response.read().decode("utf-8"))
+    except HTTPError as error:
+        detail = error.read().decode("utf-8", errors="replace")[:500]
+        raise RuntimeError(f"DeepSeek 请求失败（HTTP {error.code}）：{detail}") from error
+    except URLError as error:
+        raise RuntimeError("无法连接 DeepSeek API，请检查网络或代理设置。") from error
+    try:
+        result = json.loads(body.get("choices", [{}])[0].get("message", {}).get("content", "").strip())
+    except json.JSONDecodeError as error:
+        raise RuntimeError("DeepSeek 没有理解这条消息，请换一种说法。") from error
+    intent = clean(result.get("intent")) if isinstance(result, dict) else ""
+    if intent not in {"new_script", "rewrite_request", "feedback", "question"}:
+        intent = "question"
+    reply = clean(result.get("reply"))[:220] or "我已经理解你的意思了。"
+    revision_instruction = clean(result.get("revisionInstruction"))[:300]
+    return {"intent": intent, "reply": reply, "revisionInstruction": revision_instruction, "model": body.get("model", payload["model"])}
+
+
 def is_emoji_component(char: str) -> bool:
     point = ord(char)
     return point in {0x200D, 0xFE0F, 0x20E3} or 0x1F000 <= point <= 0x1FAFF or 0x2600 <= point <= 0x27BF
@@ -1021,7 +1065,7 @@ class AppHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         endpoint = urlparse(self.path).path
-        if endpoint not in ("/api/profile", "/api/generate", "/api/message", "/api/chat", "/api/content-plan/message", "/api/content-plan/generate", "/api/content-plan/revise", "/api/creative/message", "/api/script/rewrite", "/api/xhs/format"):
+        if endpoint not in ("/api/profile", "/api/generate", "/api/message", "/api/chat", "/api/content-plan/message", "/api/content-plan/generate", "/api/content-plan/revise", "/api/creative/message", "/api/script/rewrite", "/api/script/intent", "/api/xhs/format"):
             self.send_error(HTTPStatus.NOT_FOUND)
             return
         try:
@@ -1051,12 +1095,16 @@ class AppHandler(BaseHTTPRequestHandler):
                     raise ValueError("Invalid content planning payload")
                 if endpoint == "/api/content-plan/revise" and (not revision or not isinstance(current_plan, dict)):
                     raise ValueError("Invalid content planning revision payload")
-            elif endpoint in ("/api/script/rewrite", "/api/xhs/format"):
+            elif endpoint in ("/api/script/rewrite", "/api/script/intent", "/api/xhs/format"):
                 source = clean(payload.get("source"))
                 revision = clean(payload.get("revision"))
                 ip_plan = payload.get("ipPlan") if isinstance(payload.get("ipPlan"), dict) else None
                 if not isinstance(profile, dict) or not source or len(source) > 30000:
                     raise ValueError("Invalid creative content payload")
+                if endpoint == "/api/script/intent":
+                    content = clean(payload.get("message"))
+                    if not content or len(content) > 30000:
+                        raise ValueError("Invalid script intent payload")
             elif not isinstance(profile, dict) or (endpoint == "/api/profile" and not agent_id):
                 raise ValueError("Invalid profile payload")
         except (ValueError, json.JSONDecodeError):
@@ -1087,6 +1135,12 @@ class AppHandler(BaseHTTPRequestHandler):
         if endpoint == "/api/script/rewrite":
             try:
                 self.send_json({"ok": True, **deepseek_script_rewrite(profile, ip_plan, source, revision)})
+            except RuntimeError as error:
+                self.send_json({"error": str(error)}, HTTPStatus.BAD_GATEWAY)
+            return
+        if endpoint == "/api/script/intent":
+            try:
+                self.send_json({"ok": True, **deepseek_script_intent(profile, ip_plan, source, content)})
             except RuntimeError as error:
                 self.send_json({"error": str(error)}, HTTPStatus.BAD_GATEWAY)
             return
