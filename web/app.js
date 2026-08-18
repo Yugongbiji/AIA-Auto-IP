@@ -210,6 +210,16 @@ function planningReadyPrompt() {
   node.append(words, button); planningMessages().appendChild(node); planningMessages().scrollTop = planningMessages().scrollHeight;
 }
 
+function renderPlanGiftCard(card, { eyebrow, title, subtitle, buttonText, onView }) {
+  card.className = 'message assistant plan-gift-card'; card.innerHTML = '';
+  const sparkle = makeNode('span', 'gift-sparkle', '✦');
+  const icon = makeNode('span', 'gift-icon', '🎁');
+  const words = makeNode('div', 'gift-words'); words.append(makeNode('p', '', eyebrow), makeNode('strong', '', title), makeNode('span', '', subtitle));
+  const top = makeNode('div', 'gift-top'); top.append(icon, words, sparkle);
+  const button = makeNode('button', 'gift-view-button', buttonText); button.type = 'button'; button.onclick = onView;
+  card.append(top, button);
+}
+
 function presentPlanningQuestion() {
   const question = planningQuestions[planningState.currentQuestion];
   if (!question) {
@@ -284,7 +294,7 @@ async function generateContentPlan() {
     const response = await fetch('/api/content-plan/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agentId: state.matched ? state.profile.agentId : '', profile: state.profile, planning: planningPayload() }) });
     const result = await response.json(); if (!response.ok) throw new Error(result.error || '生成失败');
     const version = result.version || planningState.version; const saved = { version, plan: result.plan, model: result.model }; if (state.matched) planningState.plans.unshift(saved); else planningState.plans = [saved]; planningState.version = version + 1;
-    card.textContent = `内容规划 V${version} 已生成，正在打开方案预览。`; if (state.matched) persistPlanningMessage('assistant', `内容规划 V${version} 已生成。`); refreshContentPlanButton(); renderContentPlan(result.plan, version);
+    renderPlanGiftCard(card, { eyebrow: `内容规划 V${version} 已完成`, title: '你的内容方向礼物已送达', subtitle: '已梳理保险主线、泛内容支线与内容方向。', buttonText: '查看内容规划', onView: () => renderContentPlan(result.plan, version) }); if (state.matched) persistPlanningMessage('assistant', `内容规划 V${version} 已生成。`); refreshContentPlanButton();
   } catch (error) { card.textContent = `生成失败：${error.message}`; }
   finally { planningState.generating = false; $('planning-save-state').textContent = state.matched ? '已保存到历史档案' : '本次会话'; }
 }
@@ -298,7 +308,7 @@ async function reviseContentPlan(revision) {
     const response = await fetch('/api/content-plan/revise', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agentId: state.matched ? state.profile.agentId : '', profile: state.profile, planning: planningPayload(), currentPlan: current.plan, revision }) });
     const result = await response.json(); if (!response.ok) throw new Error(result.error || '调整失败');
     const version = result.version || planningState.version; const saved = { version, plan: result.plan, model: result.model }; if (state.matched) planningState.plans.unshift(saved); else planningState.plans.unshift(saved); planningState.version = version + 1;
-    card.textContent = `已按你的补充生成内容规划 V${version}，正在打开预览。`; if (state.matched) persistPlanningMessage('assistant', `内容规划 V${version} 已按对话调整。`); refreshContentPlanButton(); renderContentPlan(result.plan, version);
+    renderPlanGiftCard(card, { eyebrow: `内容规划 V${version} 已更新`, title: '新的内容方向礼物已送达', subtitle: '已按你的补充保留合理部分并重新整理。', buttonText: '查看新版本', onView: () => renderContentPlan(result.plan, version) }); if (state.matched) persistPlanningMessage('assistant', `内容规划 V${version} 已按对话调整。`); refreshContentPlanButton();
   } catch (error) { card.textContent = `调整失败：${error.message}`; }
   finally { planningState.generating = false; $('planning-save-state').textContent = state.matched ? '已保存到历史档案' : '本次会话'; }
 }
@@ -606,7 +616,7 @@ async function generateProposal() {
     const response = await fetch('/api/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agentId: state.matched ? state.profile.agentId : '', profile: state.profile }) });
     const result = await response.json(); if (!response.ok) throw new Error(result.error || '生成失败');
     const version = result.version || state.version; const saved = { version, proposal: result.proposal, model: result.model }; if (state.matched) state.proposals.unshift(saved); state.version = version + 1;
-    card.textContent = `方案 V${version} 已生成，正在打开预览页。`; if (state.matched) persistMessage('assistant', `IP 方案 V${version} 已生成。`); refreshProposalButton(); renderProposal(result.proposal, version);
+    renderPlanGiftCard(card, { eyebrow: `专属 IP 方案 V${version} 已完成`, title: '你的 IP 定位礼物已送达', subtitle: '昵称、平台简介与合规提示已经整理好。', buttonText: '查看 IP 方案', onView: () => renderProposal(result.proposal, version) }); if (state.matched) persistMessage('assistant', `IP 方案 V${version} 已生成。`); refreshProposalButton();
   } catch (error) { card.textContent = `生成失败：${error.message}`; }
   finally { state.generating = false; button.disabled = false; button.textContent = '重新生成专属 IP 方案'; }
 }
