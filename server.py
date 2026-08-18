@@ -546,6 +546,34 @@ def preserves_source_text(source: str, formatted: str) -> bool:
     return cursor == len(original)
 
 
+def enforce_xhs_readability(formatted: str) -> str:
+    """Apply the non-negotiable mobile reading layout without changing any wording."""
+    sentences = [part.strip() for part in re.split(r"(?<=[。！？!?])\s*", formatted.strip()) if part.strip()]
+    if not sentences:
+        return formatted
+
+    def wrap_long_sentence(sentence: str) -> str:
+        wrapped = []
+        visible_length = 0
+        for char in sentence:
+            wrapped.append(char)
+            if char == "\n":
+                visible_length = 0
+                continue
+            if not char.isspace():
+                visible_length += 1
+            if char in "，、；：" and visible_length >= 16:
+                wrapped.append("\n")
+                visible_length = 0
+        return "".join(wrapped)
+
+    paragraphs = []
+    for index in range(0, len(sentences), 2):
+        # Two complete sentences are the hard maximum for one Xiaohongshu paragraph.
+        paragraphs.append("\n".join(wrap_long_sentence(sentence) for sentence in sentences[index:index + 2]))
+    return "\n\n".join(paragraphs)
+
+
 def deepseek_xhs_format(source: str, instruction: str = ""):
     """Format text for Xiaohongshu while enforcing that no source wording changes."""
     api_key = os.getenv("DEEPSEEK_API_KEY", "").strip()
@@ -555,7 +583,7 @@ def deepseek_xhs_format(source: str, instruction: str = ""):
     display_source = strip_structure_markers(source)
     system_prompt = """你是小红书排版助手，不是改写助手。绝对不能修改、删除、替换、调换待排版原文的任何文字和标点，也不能增加观点、事实、承诺或营销引导。
 脚本库的“正文”“正文1”“正文2”“结尾”“开头”“脚本正文”“结语”等是内部结构标记，绝对不要写进排版结果。若输入给出多个编号标题，必须拆成独立内容：每段对应一个标题，不能把三个标题及正文挤在同一段。系统会在文本框外展示干净标题，formattedSections 的 text 内不要重复编号标题、结构标记或其序号。
-你只能在原文中加入换行、段落空行，以及与段落含义匹配的 emoji。建议每句不超过20个汉字、每段不超过5行；按语义断句，不拆产品名、数字和专有名词。标题独立成行；不要 Markdown、井号或星号。emoji 用于快速扫读，原则上每 2 至 3 句话配置 1 个；必须根据标题或句中核心词、场景和语义自动匹配，不局限于固定几个表情。例如理赔✅、合同📄、健康❤️、医疗🏥、教育🎓、育儿🧸、养老🌿、财富💰、职场💼、运动🏅、旅行✈️、政策🏛️、法律⚖️、数据📊、案例🔎、沟通💬、清单📋等；可根据实际语义选用其他同样恰当的 emoji，避免全文反复使用同一种。表情可放在段首，也可紧跟关键词。若连续三句话都没有适合匹配的关键词，也必须选择其中一句在句首加入一个中性 emoji（如📌、💡、✨、✅），保证最多连续三句话没有表情。不得修改或拆开任何原文字词，避免连续堆叠或每句都加。
+你只能在原文中加入换行、段落空行，以及与段落含义匹配的 emoji。每段最多只能有 2 个完整句子，这是硬规则；不得出现大段连续文字。建议每句不超过20个汉字，句子较长时优先在逗号、分号、冒号等自然停顿处换行；按语义断句，不拆产品名、数字和专有名词。标题独立成行；不要 Markdown、井号或星号。emoji 用于快速扫读，原则上每 2 至 3 句话配置 1 个；必须根据标题或句中核心词、场景和语义自动匹配，不局限于固定几个表情。例如理赔✅、合同📄、健康❤️、医疗🏥、教育🎓、育儿🧸、养老🌿、财富💰、职场💼、运动🏅、旅行✈️、政策🏛️、法律⚖️、数据📊、案例🔎、沟通💬、清单📋等；可根据实际语义选用其他同样恰当的 emoji，避免全文反复使用同一种。表情可放在段首，也可紧跟关键词。若连续三句话都没有适合匹配的关键词，也必须选择其中一句在句首加入一个中性 emoji（如📌、💡、✨、✅），保证最多连续三句话没有表情。不得修改或拆开任何原文字词，避免连续堆叠或每句都加。
 同时只做初步表达风险检测，不判断专业事实真假。风险判断只能依据用户提供的《爆款文案合规改写指令 V5.0》，不得自行扩展为泛化敏感词检测。仅识别文件明列的绝对化或极限表达、收益或赔付承诺、恐慌营销、贬低同业/社保/医保/惠民保、促销限时、返佣返现或赠礼诱导、站外导流与直接销售引导、隐私泄露、违规增员承诺，以及需要核对的产品、理赔、医学、法律、政策或税务表述。“非常实用”“很实用”“有帮助”“值得看”等普通正向形容词单独出现时不是风险，不得提示。风险片段必须逐字来自原文。
 只输出合法 JSON：
 {"formattedText":"无多标题时，只加入换行或 emoji 的完整原文","formattedSections":[{"text":"有多个编号标题时，每个标题对应的排版原文"}],"suggestedTags":["根据全文提炼的标签，不含#，必须给出12个并按优先级排序，前5个必须是最应优先尝试的核心标签"],"risks":[{"snippet":"原文片段","type":"风险类型","reason":"不超过55字","suggestion":"不超过55字"}]}
@@ -590,14 +618,14 @@ risks 最多 8 条；没有明显风险时返回空数组。"""
                 if not candidate or not preserves_source_text(section["text"], candidate):
                     formatted_sections = []
                     break
-                formatted_sections.append({"label": f"标题 · {section['title']}", "text": add_scan_emojis(candidate)})
+                formatted_sections.append({"label": f"标题 · {section['title']}", "text": add_scan_emojis(enforce_xhs_readability(candidate))})
         if not formatted_sections:
-            formatted_sections = [{"label": f"标题 · {section['title']}", "text": add_scan_emojis(section["text"])} for section in title_sections]
+            formatted_sections = [{"label": f"标题 · {section['title']}", "text": add_scan_emojis(enforce_xhs_readability(section["text"]))} for section in title_sections]
         formatted = "\n\n".join(item["text"] for item in formatted_sections)
     elif not formatted or not preserves_source_text(display_source, formatted):
         formatted = display_source
     if not title_sections:
-        formatted = add_scan_emojis(formatted)
+        formatted = add_scan_emojis(enforce_xhs_readability(formatted))
     risks = result.get("risks") if isinstance(result, dict) else []
     safe_risks = []
     for item in risks if isinstance(risks, list) else []:
