@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AIA Auto IP</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section id="identity-screen" class="identity-screen">
+      <div class="brand">AIA Auto IP <span>内部工具</span></div>
+      <div class="identity-logo-lockup">
+        <img class="hongren-logo" src="assets/hongren-plan-logo.png" alt="红人计划">
+        <p class="identity-slogan">让卓越的你，被更多人看见！</p>
+      </div>
+      <div class="identity-card">
+        <p class="eyebrow">开始创建你的账号人设</p>
+        <h1>先找到你的已有资料</h1>
+        <p class="muted">输入姓名和营销员编号后，我们会带入你此前填写的报名资料。</p>
+        <form id="lookup-form">
+          <label>姓名<input id="name-input" required placeholder="例如：张三"></label>
+          <label>营销员编号<input id="agent-id-input" required placeholder="请输入编号"></label>
+          <button class="primary" type="submit">匹配我的资料</button>
+        </form>
+        <button id="guest-start" class="text-button">我不在名单中，直接开始</button>
+      </div>
+    </section>
+
+    <section id="workspace" class="workspace hidden">
+      <aside class="sidebar">
+        <div class="brand">AIA Auto IP</div>
+        <div id="identity-state" class="identity-state"></div>
+        <button id="switch-account" class="text-button">切换账号</button>
+        <p class="sidebar-note">未匹配用户的资料只保留在本次浏览器会话中。</p>
+      </aside>
+
+      <section class="chat-panel">
+        <header class="panel-header">
+          <div><p class="eyebrow">IP 定位助手</p><h2 id="chat-title">正在核验资料</h2></div>
+          <span id="save-state" class="status-pill">本次会话</span>
+        </header>
+        <div id="messages" class="messages" aria-live="polite"></div>
+        <div id="quick-replies" class="quick-replies"></div>
+        <form id="chat-form" class="composer">
+          <input id="chat-input" autocomplete="off" placeholder="输入你的回答…">
+          <button class="primary" type="submit">发送</button>
+        </form>
+      </section>
+
+      <aside class="profile-panel">
+        <div class="profile-title"><div><p class="eyebrow">实时档案</p><h2>我的 IP 信息</h2></div><span id="completion">0%</span></div>
+        <div id="profile-card" class="profile-card"></div>
+        <button id="generate-button" class="primary full-width" disabled>确认资料，生成方案</button>
+        <button id="view-proposal" class="secondary-button full-width hidden" type="button">查看最新方案</button>
+      </aside>
+    </section>
+
+    <section id="proposal-screen" class="proposal-screen hidden" aria-label="IP 方案预览">
+      <header class="proposal-header">
+        <div><p class="eyebrow">AIA Auto IP</p><h2>方案预览</h2></div>
+        <div class="proposal-header-actions"><span id="proposal-version" class="status-pill"></span><button id="proposal-close" class="secondary-button" type="button">返回对话</button></div>
+      </header>
+      <main id="proposal-content" class="proposal-content"></main>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
+
