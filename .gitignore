@@ -1,0 +1,6 @@
+__pycache__/
+data/persona.sqlite3
+.env
+node_modules/
+outputs/
+
