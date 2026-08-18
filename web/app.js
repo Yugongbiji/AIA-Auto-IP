@@ -588,12 +588,13 @@ function renderContentPlan(plan, version) {
   const directionList = makeNode('div', 'collection-list');
   asArray(plan.contentDirections || plan.collections).slice(0, 5).forEach((item, index) => {
     const direction = makeNode('article', 'collection-card'); direction.append(makeNode('span', 'collection-number', `方向 ${index + 1}`), makeNode('h4', '', item.direction || item.name || '内容方向'));
-    direction.append(makeNode('p', '', `解决的问题：${item.audienceQuestion || '围绕目标受众的真实问题展开'}`), makeNode('p', '', `内容边界：${item.contentBoundary || '不偏离账号定位'}`));
+    direction.append(makeNode('p', '', `内容边界：${item.contentBoundary || '不偏离账号定位'}`));
     const collections = asArray(item.collectionReferences).slice(0, 2).map((name) => String(name).trim().slice(0, 5)).filter(Boolean);
     if (collections.length) { const note = makeNode('p', 'direction-collection-note', '合集参考：'); collections.forEach((name) => note.append(makeNode('span', '', `《${name}》`))); direction.append(note); }
     const roles = asArray(item.roles).slice(0, 3);
     if (roles.length) { const roleBlock = makeNode('div', 'direction-role-list'); roleBlock.append(makeNode('b', '', '作用')); roles.forEach((role) => roleBlock.append(makeNode('span', '', role))); direction.append(roleBlock); }
-    const topics = makeNode('div', 'topic-pills'); asArray(item.topics).slice(0, 4).forEach((topic) => topics.append(makeNode('span', '', topic))); direction.append(topics); directionList.append(direction);
+    const topicBlock = makeNode('div', 'direction-topics'); topicBlock.append(makeNode('b', '', '选题举例'));
+    const topics = makeNode('div', 'topic-pills'); asArray(item.topics).slice(0, 4).forEach((topic) => topics.append(makeNode('span', '', topic))); topicBlock.append(topics); direction.append(topicBlock); directionList.append(direction);
   });
   content.appendChild(contentPlanCard('🧭 内容方向', directionList));
 
