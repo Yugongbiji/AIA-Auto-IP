@@ -780,6 +780,13 @@ $('chat-form').addEventListener('submit', (event) => { event.preventDefault(); a
 $('planning-form').addEventListener('submit', (event) => { event.preventDefault(); planningAnswer($('planning-input').value); $('planning-input').value = ''; });
 $('script-form').addEventListener('submit', (event) => { event.preventDefault(); submitCreativeTool('script', $('script-input').value); $('script-input').value = ''; });
 $('xhs-form').addEventListener('submit', (event) => { event.preventDefault(); submitCreativeTool('xhs', $('xhs-input').value); $('xhs-input').value = ''; });
+['script', 'xhs'].forEach((tool) => {
+  $(`${tool}-input`).addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' || event.shiftKey || event.isComposing) return;
+    event.preventDefault();
+    $(`${tool}-form`).requestSubmit();
+  });
+});
 async function generateProposal() {
   if (state.generating) return;
   state.generating = true;
