@@ -25,3 +25,8 @@ input { min-width:0; border:1px solid #dcd7d9; border-radius:9px; padding:11px 1
 @media (max-width:390px) { .identity-card { padding:22px 16px; }.profile-card { grid-template-columns:1fr; }.panel-header h2 { font-size:16px; }.status-pill { font-size:11px; }.composer { gap:7px; }.composer input { padding:10px; } }
 .compliance-card { padding:24px; border:1px solid #b9ddcf; border-radius:18px; background:#f5fcf8; box-shadow:0 10px 30px #24583a0a; }.compliance-card h3 { margin:0 0 14px; font-size:18px; }.compliance-grid { display:grid; grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr); gap:14px; margin-top:16px; }.compliance-column { padding:15px; border-radius:12px; }.compliance-column h4 { margin:0 0 9px; font-size:15px; }.compliance-column.allowed { background:#eaf8f0; }.compliance-column.avoid { background:#fff0f2; }.compliance-row { display:flex; gap:8px; align-items:flex-start; padding:8px 0; border-top:1px solid #d6eee0; }.compliance-row:first-of-type { border-top:0; }.avoid .compliance-row { border-color:#f1d4d9; }.compliance-row p { margin:0; color:#4f4650; font-size:13px; line-height:1.6; }
 @media (max-width:680px) { .compliance-card { padding:20px; border-radius:15px; }.compliance-grid { grid-template-columns:1fr; gap:12px; } }
+
+/* Keep every chat item at its natural height; generated-plan cards must never shrink into a strip. */
+.messages > .message { flex:0 0 auto; }
+.messages > .plan-gift-card { width:min(86%,430px); min-height:158px; white-space:normal; }
+@media (max-width:680px) { .messages > .plan-gift-card { width:min(94%,430px); } }
