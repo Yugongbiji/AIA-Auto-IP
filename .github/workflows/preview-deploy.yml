@@ -120,7 +120,7 @@ jobs:
             systemctl is-active --quiet aia-auto-ip-preview
             curl -fsS --retry 5 --retry-delay 1 http://127.0.0.1:8001/ >/dev/null
 
-            echo '=== 6. Insert /preview safely into the existing production nginx server ==='
+            echo '=== 6. Insert /preview safely into the active production nginx location ==='
             PROD_NGINX=$(grep -Rsl 'proxy_pass http://127.0.0.1:8000' /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null | head -1 || true)
             if [ -z "$PROD_NGINX" ]; then
               echo 'Could not locate the existing AIA nginx server config; stopping before any nginx change.' >&2
@@ -161,9 +161,13 @@ jobs:
                 pattern = re.compile(re.escape(begin) + r'.*?' + re.escape(end), re.S)
                 text = pattern.sub(block, text, count=1)
             else:
-                marker = re.search(r'(?m)^\s*location\s+/\s*\{', text)
-                if not marker:
-                    raise SystemExit('Existing nginx server has no location / block')
+                proxy_pos = text.find('proxy_pass http://127.0.0.1:8000')
+                if proxy_pos < 0:
+                    raise SystemExit('Production proxy_pass 8000 was not found in target nginx file')
+                candidates = list(re.finditer(r'(?m)^\s*location\s+/\s*\{', text[:proxy_pos]))
+                if not candidates:
+                    raise SystemExit('Could not find the location / block that owns production proxy_pass')
+                marker = candidates[-1]
                 text = text[:marker.start()] + block + text[marker.start():]
             path.write_text(text)
             PY
@@ -183,9 +187,7 @@ jobs:
               nginx -t && systemctl reload nginx
               exit 1
             fi
-            # Confirm Preview JS is rewritten to its isolated API path.
             curl -fsS http://127.0.0.1/preview/app.js | grep -q "fetch('/preview/api/"
-            # Confirm production root/service remains healthy and untouched.
             curl -fsS --retry 5 --retry-delay 1 http://127.0.0.1/ >/dev/null
             systemctl is-active --quiet aia-auto-ip
             curl -fsS --retry 3 http://127.0.0.1:8000/ >/dev/null
