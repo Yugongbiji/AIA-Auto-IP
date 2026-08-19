@@ -58,9 +58,14 @@
         remove.addEventListener('click', (event) => {
           event.preventDefault();
           event.stopPropagation();
-          selected.delete(value);
-          renderTray();
-          syncOptionButtons();
+          const option = [...replies.querySelectorAll('button[data-v3-option]')].find((button) => button.dataset.v3Option === value);
+          // 让原业务层自己完成取消，公共组件只负责视觉同步。
+          if (option) option.click();
+          else {
+            selected.delete(value);
+            renderTray();
+            syncOptionButtons();
+          }
         });
         chip.append(label, remove);
         tray.appendChild(chip);
@@ -81,28 +86,24 @@
       ensureEditor();
       replies.classList.add('quick-replies-v3');
       replies.querySelectorAll('.custom-multi-input').forEach((node) => node.remove());
-      replies.querySelectorAll('button').forEach((original) => {
-        const text = original.textContent.trim();
-        if (!text || original.classList.contains('multi-confirm')) return;
-        if (original.dataset.v3Ready === '1') return;
+      replies.querySelectorAll('button').forEach((button) => {
+        const text = button.textContent.trim();
+        if (!text || button.classList.contains('multi-confirm')) return;
+        if (button.dataset.v3Ready === '1') return;
 
-        const button = original.cloneNode(true);
         button.dataset.v3Ready = '1';
         button.dataset.v3Option = text;
-        button.classList.remove('selected');
-        button.setAttribute('aria-pressed', 'false');
+        button.setAttribute('aria-pressed', selected.has(text) ? 'true' : 'false');
         button.addEventListener('pointerdown', (event) => event.preventDefault());
-        button.addEventListener('click', (event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          // “其他”不再主动拉起键盘；用户只有点输入框本身才进入文字输入。
+        button.addEventListener('click', () => {
+          // 不阻止原业务点击处理：业务层仍负责真正的多选状态。
+          // 公共层只镜像选择结果，避免维护第二套业务状态。
           if (isOtherLabel(text)) return;
           if (selected.has(text)) selected.delete(text);
           else selected.add(text);
           renderTray();
-          syncOptionButtons();
+          requestAnimationFrame(syncOptionButtons);
         });
-        original.replaceWith(button);
       });
       syncOptionButtons();
     }
@@ -113,10 +114,13 @@
 
     form.addEventListener('submit', () => {
       if (!selected.size) return;
+      // 快捷标签已经通过原按钮点击同步进业务层；输入框只保留用户自由文字，
+      // 避免把标签再次作为一整段文本重复加入 multiSelection。
       const freeText = input.value.trim();
-      const optionText = Array.from(selected).join('、');
-      input.value = freeText ? `${optionText}；${freeText}` : optionText;
+      input.value = freeText;
       setTimeout(() => {
+        const confirm = replies.querySelector('.multi-confirm');
+        if (confirm && !confirm.disabled) confirm.click();
         selected.clear();
         renderTray();
         syncOptionButtons();
