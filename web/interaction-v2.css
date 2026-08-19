@@ -1,0 +1,120 @@
+/* 通用交互 V2：快捷选项 + 底部输入统一发送；新消息自动跟随。 */
+.quick-replies.quick-replies-v2 {
+  flex-wrap:nowrap;
+  gap:8px;
+  padding:8px 16px 10px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;
+  scroll-snap-type:x proximity;
+}
+.quick-replies.quick-replies-v2::-webkit-scrollbar { display:none; }
+.quick-replies.quick-replies-v2 > button {
+  flex:0 0 auto;
+  min-height:36px;
+  max-width:78vw;
+  padding:7px 12px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  scroll-snap-align:start;
+}
+.quick-replies.quick-replies-v2 > button.selected {
+  color:#A10F39;
+  border-color:#E5708F;
+  background:#FFF5F7;
+  box-shadow:inset 0 0 0 1px #F6CFDA;
+}
+.quick-replies.quick-replies-v2 .multi-confirm,
+.quick-replies.quick-replies-v2 .custom-multi-input,
+.quick-replies.quick-replies-v2 button:empty { display:none!important; }
+
+.composer.has-selection-tray {
+  align-items:center;
+  flex-wrap:wrap;
+}
+.composer-selection-tray {
+  display:flex;
+  flex:1 1 100%;
+  gap:6px;
+  min-width:0;
+  padding:0 0 2px;
+  overflow-x:auto;
+  scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;
+}
+.composer-selection-tray:empty { display:none; }
+.composer-selection-tray::-webkit-scrollbar { display:none; }
+.composer-selection-chip {
+  display:inline-flex;
+  flex:0 0 auto;
+  align-items:center;
+  gap:5px;
+  max-width:70vw;
+  padding:4px 8px;
+  color:#A10F39;
+  font-size:12px;
+  line-height:1.35;
+  border:1px solid #EDA0B5;
+  border-radius:999px;
+  background:#FFF5F7;
+}
+.composer-selection-chip span {
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.composer-selection-chip button {
+  flex:0 0 auto;
+  width:18px;
+  height:18px;
+  padding:0;
+  color:#8A6571;
+  line-height:16px;
+  border:0;
+  border-radius:50%;
+  background:transparent;
+}
+.composer-selection-chip button:hover { background:#F6CFDA; }
+
+.chat-latest-button {
+  position:absolute;
+  z-index:8;
+  right:18px;
+  bottom:84px;
+  display:none;
+  padding:7px 11px;
+  color:#A10F39;
+  font-size:12px;
+  font-weight:700;
+  border:1px solid #EDA0B5;
+  border-radius:999px;
+  background:#FFFFFFF2;
+  box-shadow:0 6px 18px #3C071218;
+  backdrop-filter:blur(8px);
+}
+.chat-panel.show-latest-button .chat-latest-button { display:block; }
+
+/* IP 资料说明：仅展开时出现，作为弱注释。 */
+.profile-conversation-hint {
+  display:none;
+  margin:0 14px 12px;
+  padding-top:9px;
+  color:#7A7278;
+  font-size:11px;
+  line-height:1.55;
+  border-top:1px solid #E8E5E7;
+  overflow-wrap:anywhere;
+}
+.profile-panel.profile-float-expanded .profile-conversation-hint { display:block; }
+
+@media (max-width:720px) {
+  .quick-replies.quick-replies-v2 { padding:7px 12px 9px; }
+  .quick-replies.quick-replies-v2 > button { min-height:38px; max-width:82vw; }
+  .composer.has-selection-tray { gap:8px; padding-top:10px; }
+  .composer-selection-tray { padding-bottom:1px; }
+  .composer-selection-chip { max-width:76vw; font-size:12px; }
+  .profile-conversation-hint { margin:0 12px 10px; font-size:10.5px; line-height:1.5; }
+  .chat-latest-button { right:12px; bottom:76px; }
+}
