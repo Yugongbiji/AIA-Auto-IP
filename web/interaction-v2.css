@@ -1,4 +1,11 @@
-/* 通用交互 V3：快捷选项横向滑动；已选标签嵌入同一输入框；新消息自动跟随。 */
+/* 通用交互 V4：快捷选项横向滑动；已选标签嵌入同一输入框；新消息自动跟随；移动端视口与错误态统一。 */
+:root {
+  --aia-viewport-height:100dvh;
+  --aia-keyboard-inset:0px;
+}
+
+.workspace { height:var(--aia-viewport-height,100dvh); }
+
 .quick-replies.quick-replies-v3 {
   flex-wrap:nowrap;
   gap:8px;
@@ -8,6 +15,7 @@
   scrollbar-width:none;
   -webkit-overflow-scrolling:touch;
   scroll-snap-type:x proximity;
+  overscroll-behavior-x:contain;
 }
 .quick-replies.quick-replies-v3::-webkit-scrollbar { display:none; }
 .quick-replies.quick-replies-v3 > button {
@@ -44,6 +52,7 @@
   flex-wrap:wrap;
   gap:6px;
   padding:6px 10px;
+  overflow-x:hidden;
   overflow-y:auto;
   border:1px solid #DCD7D9;
   border-radius:10px;
@@ -65,9 +74,7 @@
   box-shadow:none!important;
   background:transparent;
 }
-.composer-selection-tray {
-  display:contents;
-}
+.composer-selection-tray { display:contents; }
 .composer-selection-chip {
   display:inline-flex;
   flex:0 1 auto;
@@ -104,6 +111,19 @@
 }
 .composer-selection-chip button:hover { background:#F6CFDA; }
 
+/* 任何聊天内容都必须在自身宽度内换行，避免手机号、URL、长英文或 AI 异常文本撑出页面。 */
+.message,
+.message *,
+.result-card,
+.result-card *,
+.planning-suggestion-card,
+.planning-suggestion-card * {
+  min-width:0;
+  max-width:100%;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+
 .chat-latest-button {
   position:absolute;
   z-index:8;
@@ -122,6 +142,21 @@
 }
 .chat-panel.show-latest-button .chat-latest-button { display:block; }
 
+.feedback-error {
+  border-color:#F0B8C8;
+  background:#FFF7F9;
+}
+.feedback-actions {
+  display:flex;
+  gap:8px;
+  margin-top:10px;
+}
+.feedback-retry {
+  min-height:34px;
+  padding:7px 11px;
+  font-size:12px;
+}
+
 /* IP 资料说明：仅展开时出现，作为弱注释。 */
 .profile-conversation-hint {
   display:none;
@@ -136,6 +171,15 @@
 .profile-panel.profile-float-expanded .profile-conversation-hint { display:block; }
 
 @media (max-width:720px) {
+  body.keyboard-open { overscroll-behavior:none; }
+  body.keyboard-open .workspace { height:var(--aia-viewport-height,100dvh); }
+  body.keyboard-open .workspace-toolbar { padding-top:max(8px,env(safe-area-inset-top)); }
+  body.keyboard-open .chat-panel { min-height:0; }
+  body.keyboard-open .messages { overscroll-behavior:contain; }
+  body.keyboard-open .composer {
+    padding-bottom:max(10px,env(safe-area-inset-bottom));
+  }
+
   .quick-replies.quick-replies-v3 {
     gap:7px;
     padding:7px 12px 9px;
@@ -163,6 +207,7 @@
     flex:0 0 auto;
     min-height:44px;
   }
+  .message { max-width:88%; }
   .profile-conversation-hint {
     margin:0 12px 10px;
     font-size:10.5px;
