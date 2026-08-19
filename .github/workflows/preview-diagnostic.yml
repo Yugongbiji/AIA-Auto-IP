@@ -1,0 +1,44 @@
+name: Preview Environment Diagnostic
+
+on:
+  push:
+    branches:
+      - agent/frontend-engineering-v1
+    paths:
+      - .github/workflows/preview-diagnostic.yml
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect ECS environment (read only)
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.ECS_HOST }}
+          username: ${{ secrets.ECS_USER }}
+          key: ${{ secrets.ECS_SSH_KEY }}
+          script: |
+            set -e
+            echo '=== identity ==='
+            whoami
+            id
+            echo '=== app directories ==='
+            ls -ld /opt/AIA-Auto-IP /opt/AIA-Auto-IP-preview 2>/dev/null || true
+            echo '=== app service ==='
+            systemctl status aia-auto-ip --no-pager -l 2>/dev/null | sed -n '1,18p' || true
+            echo '=== nginx ==='
+            if command -v nginx >/dev/null 2>&1; then
+              nginx -v 2>&1 || true
+              systemctl is-active nginx 2>/dev/null || true
+              nginx -T 2>/dev/null | grep -E 'listen |server_name|proxy_pass|location ' | head -80 || true
+            else
+              echo 'nginx: not installed'
+            fi
+            echo '=== listening ports ==='
+            ss -lntp 2>/dev/null | sed -n '1,80p' || true
+            echo '=== python / service hints ==='
+            ps -ef | grep -E '[u]vicorn|[g]unicorn|server.py|aia-auto-ip' | head -30 || true
+            echo '=== repo state ==='
+            git -C /opt/AIA-Auto-IP rev-parse --abbrev-ref HEAD 2>/dev/null || true
+            git -C /opt/AIA-Auto-IP rev-parse --short HEAD 2>/dev/null || true
+            echo '=== done: no changes were made ==='
