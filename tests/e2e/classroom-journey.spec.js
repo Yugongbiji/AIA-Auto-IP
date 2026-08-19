@@ -1,5 +1,8 @@
 const { test, expect } = require('@playwright/test');
 
+// 真实课堂连续路径回归：不是分别验证四个页面，而是模拟同一个营销员连续使用。
+// 覆盖：完整资料自动生成 IP → 内容规划承接 IP → 自动进入脚本 → 小红书排版 → 切回结果仍在；
+// 同时覆盖历史档案恢复、刷新后自动登录，以及已有 IP + 内容规划时直接回到脚本工作位置。
 const fullProfile = {
   name: '课堂测试用户', agentId: 'CLASS001', city: '成都', customerGroups: ['宝爸宝妈'],
   customerAges: ['35–45 岁'], insuranceYears: '8', strengths: ['专业靠谱'], honors: ['MDRT'],
