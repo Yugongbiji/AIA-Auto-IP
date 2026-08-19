@@ -179,16 +179,17 @@ jobs:
               exit 1
             fi
             systemctl reload nginx
+            sleep 2
 
             echo '=== 7. Verify Preview AND production after routing change ==='
-            if ! curl -fsS --retry 5 --retry-delay 1 http://127.0.0.1/preview/ >/dev/null; then
+            if ! curl --fail --silent --show-error --retry 8 --retry-delay 1 --retry-all-errors http://127.0.0.1/preview/ >/dev/null; then
               echo 'Preview route failed; restoring production nginx config.' >&2
               cp "$NGINX_BACKUP" "$PROD_NGINX"
               nginx -t && systemctl reload nginx
               exit 1
             fi
-            curl -fsS http://127.0.0.1/preview/app.js | grep -q "fetch('/preview/api/"
-            curl -fsS --retry 5 --retry-delay 1 http://127.0.0.1/ >/dev/null
+            curl --fail --silent --show-error --retry 5 --retry-delay 1 --retry-all-errors http://127.0.0.1/preview/app.js | grep -q "fetch('/preview/api/"
+            curl --fail --silent --show-error --retry 5 --retry-delay 1 --retry-all-errors http://127.0.0.1/ >/dev/null
             systemctl is-active --quiet aia-auto-ip
             curl -fsS --retry 3 http://127.0.0.1:8000/ >/dev/null
 
