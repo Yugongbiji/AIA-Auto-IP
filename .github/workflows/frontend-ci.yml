@@ -1,0 +1,53 @@
+name: Frontend QA
+
+on:
+  pull_request:
+    paths:
+      - 'web/**'
+      - 'tests/**'
+      - 'package.json'
+      - 'playwright.config.js'
+      - '.github/workflows/frontend-ci.yml'
+      - 'docs/**'
+  push:
+    branches:
+      - agent/frontend-engineering-v1
+    paths:
+      - 'web/**'
+      - 'tests/**'
+      - 'package.json'
+      - 'playwright.config.js'
+      - '.github/workflows/frontend-ci.yml'
+      - 'docs/**'
+
+jobs:
+  playwright:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright QA
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
