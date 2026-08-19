@@ -1,3 +1,4 @@
+# Preview is intentionally isolated from production: separate checkout, service, port and SQLite data.
 name: Deploy Preview
 
 on:
@@ -71,8 +72,6 @@ jobs:
             fi
             "$PREVIEW_DIR/.venv/bin/pip" install -r "$PREVIEW_DIR/requirements.txt"
 
-            # Preview may reuse only the DeepSeek credential/model from the server.
-            # It MUST NOT inherit the production RDS connection.
             : > "$PREVIEW_DIR/.env"
             for SRC in "$PROD_DIR/.env" "$PROD_DIR/.env.rds"; do
               if [ -f "$SRC" ]; then
@@ -138,9 +137,6 @@ jobs:
                     add_header X-AIA-Environment preview always;
                 }
 
-                # The browser code currently calls absolute /api/* URLs.
-                # Requests originating from /preview/ are routed to 8001;
-                # all normal production API traffic stays on 8000.
                 location /api/ {
                     set \$aia_backend http://127.0.0.1:8000;
                     if (\$http_referer ~* "^https?://[^/]+/preview/") {
