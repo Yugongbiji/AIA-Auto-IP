@@ -1,4 +1,4 @@
-/* IP 人设资料：仅在 IP 页出现的一行悬浮资料条；点击后展开编辑。 */
+/* IP 人设资料：仅在 IP 页出现的一行悬浮资料条；点击后展开查看。 */
 .workspace { grid-template-columns:minmax(0,1fr)!important; }
 
 #ip-chat-panel { padding-top:58px; }
@@ -44,17 +44,29 @@
 
 .profile-panel:not(.profile-float-expanded) .profile-card,
 .profile-panel:not(.profile-float-expanded) #generate-button,
-.profile-panel:not(.profile-float-expanded) #view-proposal { display:none!important; }
+.profile-panel:not(.profile-float-expanded) #view-proposal,
+.profile-panel:not(.profile-float-expanded) .profile-conversation-hint { display:none!important; }
 
 .profile-panel.profile-float-expanded .profile-card {
   display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr));
   gap:0 16px;
-  padding:4px 14px 12px;
+  padding:4px 14px 8px;
   border-top:1px solid var(--line);
 }
 .profile-panel.profile-float-expanded #generate-button,
 .profile-panel.profile-float-expanded #view-proposal { width:calc(100% - 28px); margin:0 14px 12px; }
+
+.profile-conversation-hint {
+  margin:0 14px 12px;
+  padding:8px 0 0;
+  color:#7A7278;
+  font-size:11px;
+  font-weight:400;
+  line-height:1.55;
+  border-top:1px solid #eee9eb;
+  overflow-wrap:anywhere;
+}
 
 .profile-group {
   min-width:0;
@@ -62,26 +74,27 @@
   border-top:1px solid var(--line);
 }
 .profile-group:nth-child(-n+2) { border-top:0; }
-.profile-edit-row {
-  display:flex;
-  width:100%;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  padding:0;
-  text-align:left;
-  border:0;
-  background:transparent;
+.profile-inline-hint { margin:5px 0 0; color:#7A7278; font-size:11px; line-height:1.55; }
+
+/* 多选题：选项区可滚动，但确认按钮始终留在选项区底部。 */
+.quick-replies:has(.multi-confirm) {
+  max-height:min(36dvh,280px);
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  align-content:flex-start;
+  padding-bottom:10px;
+  background:#fff;
 }
-.profile-edit-row:hover .profile-value { color:#a10f39; }
-.profile-edit-icon { flex:0 0 auto; color:#bc6b84; font-size:12px; }
-.profile-edit-locked { cursor:default; }
-.profile-edit-locked .profile-edit-icon { color:#aaa; }
-.profile-inline-editor { display:grid; grid-template-columns:1fr auto auto; gap:6px; margin-top:6px; }
-.profile-inline-editor input,.profile-inline-editor textarea { width:100%; min-width:0; padding:7px 9px; border:1px solid #dcd7d9; border-radius:8px; font:inherit; resize:vertical; }
-.profile-inline-editor textarea { grid-column:1/-1; min-height:72px; }
-.profile-inline-editor button { padding:6px 9px; border-radius:8px; font-size:12px; }
-.profile-inline-hint { margin:5px 0 0; color:#8a6571; font-size:11px; }
+.quick-replies:has(.multi-confirm) .multi-confirm {
+  position:sticky;
+  z-index:4;
+  bottom:0;
+  flex:1 0 100%;
+  width:100%;
+  min-height:42px;
+  margin-top:2px;
+  box-shadow:0 -8px 16px #ffffff,0 5px 12px #d3114538;
+}
 
 @media (max-width:720px) {
   #ip-chat-panel { padding-top:54px; }
@@ -90,8 +103,34 @@
   .profile-title h2 { font-size:13px; }
   .profile-title h2::after { content:' · 点击展开'; font-size:11px; }
   .profile-float-expanded .profile-title h2::after { content:' · 点击收起'; }
-  .profile-panel.profile-float-expanded .profile-card { grid-template-columns:1fr; padding:2px 11px 10px; }
+  .profile-panel.profile-float-expanded .profile-card { grid-template-columns:1fr; padding:2px 11px 8px; }
   .profile-group:nth-child(2) { border-top:1px solid var(--line); }
   .profile-panel.profile-float-expanded #generate-button,
   .profile-panel.profile-float-expanded #view-proposal { width:calc(100% - 22px); margin:0 11px 10px; }
+  .profile-conversation-hint {
+    margin:0 11px 10px;
+    padding-top:7px;
+    font-size:10.5px;
+    line-height:1.5;
+  }
+
+  .quick-replies:has(.multi-confirm) {
+    max-height:min(32dvh,230px);
+    padding:0 12px 8px;
+    gap:7px;
+    border-top:1px solid #f1edef;
+  }
+  .quick-replies:has(.multi-confirm) button:not(.multi-confirm) {
+    max-width:100%;
+    white-space:normal;
+    text-align:left;
+  }
+  .quick-replies:has(.multi-confirm) .custom-multi-input {
+    flex:1 0 100%;
+    min-width:0;
+  }
+  .quick-replies:has(.multi-confirm) .multi-confirm {
+    min-height:44px;
+    border-radius:10px;
+  }
 }
