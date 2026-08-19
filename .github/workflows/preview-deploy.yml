@@ -130,6 +130,13 @@ jobs:
             NGINX_BACKUP="${PROD_NGINX}.preview-backup"
             cp "$PROD_NGINX" "$NGINX_BACKUP"
 
+            rollback_nginx() {
+              echo 'Restoring production nginx config.' >&2
+              cp "$NGINX_BACKUP" "$PROD_NGINX"
+              nginx -t
+              systemctl reload nginx
+            }
+
             python3 - "$PROD_NGINX" <<'PY'
             from pathlib import Path
             import re, sys
@@ -173,9 +180,7 @@ jobs:
             PY
 
             if ! nginx -t; then
-              echo 'Nginx Preview insertion invalid; restoring production config.' >&2
-              cp "$NGINX_BACKUP" "$PROD_NGINX"
-              nginx -t
+              rollback_nginx
               exit 1
             fi
             systemctl reload nginx
@@ -183,14 +188,31 @@ jobs:
 
             echo '=== 7. Verify Preview AND production after routing change ==='
             if ! curl --fail --silent --show-error --retry 8 --retry-delay 1 --retry-all-errors http://127.0.0.1/preview/ >/dev/null; then
-              echo 'Preview route failed; restoring production nginx config.' >&2
-              cp "$NGINX_BACKUP" "$PROD_NGINX"
-              nginx -t && systemctl reload nginx
+              rollback_nginx
               exit 1
             fi
-            curl --fail --silent --show-error --retry 5 --retry-delay 1 --retry-all-errors http://127.0.0.1/preview/app.js | grep -q "fetch('/preview/api/"
-            curl --fail --silent --show-error --retry 5 --retry-delay 1 --retry-all-errors http://127.0.0.1/ >/dev/null
-            systemctl is-active --quiet aia-auto-ip
-            curl -fsS --retry 3 http://127.0.0.1:8000/ >/dev/null
+
+            TMP_JS=$(mktemp)
+            if ! curl --fail --silent --show-error --retry 5 --retry-delay 1 --retry-all-errors http://127.0.0.1/preview/app.js -o "$TMP_JS"; then
+              rm -f "$TMP_JS"
+              rollback_nginx
+              exit 1
+            fi
+            if ! grep -q "fetch('/preview/api/" "$TMP_JS"; then
+              echo 'Preview JS did not receive isolated API rewrite.' >&2
+              rm -f "$TMP_JS"
+              rollback_nginx
+              exit 1
+            fi
+            rm -f "$TMP_JS"
+
+            if ! curl --fail --silent --show-error --retry 5 --retry-delay 1 --retry-all-errors http://127.0.0.1/ >/dev/null; then
+              rollback_nginx
+              exit 1
+            fi
+            if ! systemctl is-active --quiet aia-auto-ip || ! curl -fsS --retry 3 http://127.0.0.1:8000/ >/dev/null; then
+              rollback_nginx
+              exit 1
+            fi
 
             echo "Preview healthy at /preview/; commit: $(git -C "$PREVIEW_DIR" rev-parse --short HEAD)"
