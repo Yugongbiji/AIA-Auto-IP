@@ -1,12 +1,17 @@
 name: Deploy to ECS
 
 on:
-  push:
+  workflow_run:
+    workflows:
+      - Frontend QA
+    types:
+      - completed
     branches:
       - main
 
 jobs:
   deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
