@@ -1,5 +1,5 @@
-// 通用交互 V2：多选快捷项只负责填充答案；统一由底部“发送”提交。
-// 同时为所有聊天功能加入合理的自动跟随新消息规则。
+// 通用交互 V3：快捷选项只负责填充答案；统一由底部“发送”提交。
+// 选项点击不得主动聚焦输入框；已选标签真正嵌入同一个输入容器；所有聊天功能统一自动跟随。
 (function () {
   const configs = [
     { replies:'quick-replies', form:'chat-form', input:'chat-input', messages:'messages', panel:'ip-chat-panel' },
@@ -17,28 +17,34 @@
     if (!replies || !form || !input) return;
 
     const selected = new Set();
+    let editor = null;
     let tray = null;
 
-    function ensureTray() {
-      if (tray && tray.isConnected) return tray;
+    function ensureEditor() {
+      if (editor && editor.isConnected) return editor;
+      editor = document.createElement('div');
+      editor.className = 'composer-editor';
       tray = document.createElement('div');
       tray.className = 'composer-selection-tray';
       tray.setAttribute('aria-label', '已选择的快捷答案');
-      form.classList.add('has-selection-tray');
-      form.insertBefore(tray, input);
-      return tray;
+      input.parentNode.insertBefore(editor, input);
+      editor.appendChild(tray);
+      editor.appendChild(input);
+      form.classList.add('composer-v3');
+      return editor;
     }
 
     function syncOptionButtons() {
-      replies.querySelectorAll('button[data-v2-option]').forEach((button) => {
-        button.classList.toggle('selected', selected.has(button.dataset.v2Option));
-        button.setAttribute('aria-pressed', selected.has(button.dataset.v2Option) ? 'true' : 'false');
+      replies.querySelectorAll('button[data-v3-option]').forEach((button) => {
+        const active = selected.has(button.dataset.v3Option);
+        button.classList.toggle('selected', active);
+        button.setAttribute('aria-pressed', active ? 'true' : 'false');
       });
     }
 
     function renderTray() {
-      const target = ensureTray();
-      target.innerHTML = '';
+      ensureEditor();
+      tray.innerHTML = '';
       selected.forEach((value) => {
         const chip = document.createElement('span');
         chip.className = 'composer-selection-chip';
@@ -48,50 +54,53 @@
         remove.type = 'button';
         remove.setAttribute('aria-label', `取消选择 ${value}`);
         remove.textContent = '×';
-        remove.addEventListener('click', () => {
+        remove.addEventListener('pointerdown', (event) => event.preventDefault());
+        remove.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
           selected.delete(value);
           renderTray();
           syncOptionButtons();
-          input.focus();
         });
         chip.append(label, remove);
-        target.appendChild(chip);
+        tray.appendChild(chip);
       });
+      editor.classList.toggle('has-chips', selected.size > 0);
     }
 
     function upgradeMultiChoices() {
       const confirm = replies.querySelector('.multi-confirm');
       if (!confirm) {
         selected.clear();
+        ensureEditor();
         renderTray();
-        replies.classList.remove('quick-replies-v2');
+        replies.classList.remove('quick-replies-v3');
         return;
       }
 
-      replies.classList.add('quick-replies-v2');
+      ensureEditor();
+      replies.classList.add('quick-replies-v3');
       replies.querySelectorAll('.custom-multi-input').forEach((node) => node.remove());
       replies.querySelectorAll('button').forEach((original) => {
         const text = original.textContent.trim();
         if (!text || original.classList.contains('multi-confirm')) return;
-        if (original.dataset.v2Ready === '1') return;
+        if (original.dataset.v3Ready === '1') return;
 
         const button = original.cloneNode(true);
-        button.dataset.v2Ready = '1';
-        button.dataset.v2Option = text;
+        button.dataset.v3Ready = '1';
+        button.dataset.v3Option = text;
         button.classList.remove('selected');
         button.setAttribute('aria-pressed', 'false');
+        button.addEventListener('pointerdown', (event) => event.preventDefault());
         button.addEventListener('click', (event) => {
           event.preventDefault();
           event.stopPropagation();
-          if (isOtherLabel(text)) {
-            input.focus();
-            return;
-          }
+          // “其他”不再主动拉起键盘；用户只有点输入框本身才进入文字输入。
+          if (isOtherLabel(text)) return;
           if (selected.has(text)) selected.delete(text);
           else selected.add(text);
           renderTray();
           syncOptionButtons();
-          input.focus();
         });
         original.replaceWith(button);
       });
@@ -99,6 +108,7 @@
     }
 
     new MutationObserver(upgradeMultiChoices).observe(replies, { childList:true, subtree:true });
+    ensureEditor();
     upgradeMultiChoices();
 
     form.addEventListener('submit', () => {
@@ -114,14 +124,17 @@
     }, true);
   });
 
-  // 所有聊天区的自动跟随：正常对话始终跟到最新；用户主动上翻历史时不强拉回。
+  // 全工作台统一自动跟随：新问题/新回复出现后，保证最新内容进入可视区。
   document.querySelectorAll('.chat-panel').forEach((panel) => {
     const messages = panel.querySelector('.messages');
+    const replies = panel.querySelector('.quick-replies');
     const form = panel.querySelector('.composer');
     if (!messages) return;
 
     let userReadingHistory = false;
-    let programmaticScroll = false;
+    let userScrollIntent = false;
+    let scrollTimer = null;
+
     const latest = document.createElement('button');
     latest.type = 'button';
     latest.className = 'chat-latest-button';
@@ -129,44 +142,72 @@
     panel.appendChild(latest);
 
     function distanceFromBottom() {
-      return messages.scrollHeight - messages.scrollTop - messages.clientHeight;
+      return Math.max(0, messages.scrollHeight - messages.scrollTop - messages.clientHeight);
+    }
+
+    function setReadingHistory(value) {
+      userReadingHistory = value;
+      panel.classList.toggle('show-latest-button', value);
     }
 
     function scrollToLatest(behavior = 'smooth') {
-      programmaticScroll = true;
-      messages.scrollTo({ top:messages.scrollHeight, behavior });
-      userReadingHistory = false;
-      panel.classList.remove('show-latest-button');
-      setTimeout(() => { programmaticScroll = false; }, behavior === 'smooth' ? 350 : 0);
+      if (!messages.isConnected) return;
+      setReadingHistory(false);
+      messages.scrollTo({ top:messages.scrollHeight + 200, behavior });
+    }
+
+    function scheduleFollow() {
+      if (userReadingHistory) {
+        panel.classList.add('show-latest-button');
+        return;
+      }
+      clearTimeout(scrollTimer);
+      requestAnimationFrame(() => scrollToLatest('smooth'));
+      scrollTimer = setTimeout(() => scrollToLatest('smooth'), 80);
+      setTimeout(() => {
+        if (!userReadingHistory) scrollToLatest('auto');
+      }, 220);
     }
 
     latest.addEventListener('click', () => scrollToLatest('smooth'));
 
+    ['wheel','touchstart','pointerdown'].forEach((eventName) => {
+      messages.addEventListener(eventName, () => { userScrollIntent = true; }, { passive:true });
+    });
     messages.addEventListener('scroll', () => {
-      if (programmaticScroll) return;
-      const away = distanceFromBottom() > 140;
-      userReadingHistory = away;
-      panel.classList.toggle('show-latest-button', away);
+      if (!userScrollIntent) return;
+      setReadingHistory(distanceFromBottom() > 100);
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(() => { userScrollIntent = false; }, 120);
     }, { passive:true });
 
-    new MutationObserver((mutations) => {
-      const hasNewContent = mutations.some((mutation) => mutation.addedNodes && mutation.addedNodes.length);
-      if (!hasNewContent) return;
-      requestAnimationFrame(() => {
-        if (userReadingHistory) {
-          panel.classList.add('show-latest-button');
-        } else {
-          scrollToLatest('smooth');
-        }
+    const contentObserver = new MutationObserver((mutations) => {
+      const changed = mutations.some((mutation) => mutation.addedNodes?.length || mutation.removedNodes?.length || mutation.type === 'characterData');
+      if (changed) scheduleFollow();
+    });
+    contentObserver.observe(messages, { childList:true, subtree:true, characterData:true });
+    if (replies) contentObserver.observe(replies, { childList:true, subtree:true, characterData:true });
+
+    if (window.ResizeObserver) {
+      const resizeObserver = new ResizeObserver(() => {
+        if (!userReadingHistory) scheduleFollow();
       });
-    }).observe(messages, { childList:true, subtree:true });
+      resizeObserver.observe(messages);
+      if (replies) resizeObserver.observe(replies);
+      if (form) resizeObserver.observe(form);
+    }
 
     if (form) {
       form.addEventListener('submit', () => {
-        userReadingHistory = false;
-        panel.classList.remove('show-latest-button');
-        setTimeout(() => scrollToLatest('smooth'), 20);
+        userScrollIntent = false;
+        setReadingHistory(false);
+        scheduleFollow();
       }, true);
     }
+
+    // 首次进入或切换到已有内容的功能时，也把当前位置校正到最新。
+    setTimeout(() => {
+      if (!panel.classList.contains('hidden')) scrollToLatest('auto');
+    }, 60);
   });
 })();
