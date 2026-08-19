@@ -60,7 +60,6 @@
           event.preventDefault();
           event.stopPropagation();
           const option = [...replies.querySelectorAll('button[data-v3-option]')].find((button) => button.dataset.v3Option === value);
-          // 让原业务层自己完成取消，公共组件只负责视觉同步。
           if (option) option.click();
           else {
             selected.delete(value);
@@ -97,8 +96,6 @@
         button.setAttribute('aria-pressed', selected.has(text) ? 'true' : 'false');
         button.addEventListener('pointerdown', (event) => event.preventDefault());
         button.addEventListener('click', () => {
-          // 不阻止原业务点击处理：业务层仍负责真正的多选状态。
-          // 公共层只镜像选择结果，避免维护第二套业务状态。
           if (isOtherLabel(text)) return;
           if (selected.has(text)) selected.delete(text);
           else selected.add(text);
@@ -115,8 +112,6 @@
 
     form.addEventListener('submit', () => {
       if (!selected.size) return;
-      // 快捷标签已经通过原按钮点击同步进业务层；输入框只保留用户自由文字，
-      // 避免把标签再次作为一整段文本重复加入 multiSelection。
       const freeText = input.value.trim();
       input.value = freeText;
       setTimeout(() => {
@@ -175,7 +170,13 @@
       }, 220);
     }
 
-    latest.addEventListener('click', () => scrollToLatest('smooth'));
+    // 用户明确点击“回到最新”时优先确定性，而不是依赖不同浏览器的平滑滚动时长。
+    latest.addEventListener('click', () => {
+      userScrollIntent = false;
+      scrollToLatest('auto');
+      requestAnimationFrame(() => scrollToLatest('auto'));
+      setTimeout(() => scrollToLatest('auto'), 80);
+    });
 
     ['wheel','touchstart','pointerdown'].forEach((eventName) => {
       messages.addEventListener(eventName, () => { userScrollIntent = true; }, { passive:true });
@@ -211,14 +212,12 @@
       }, true);
     }
 
-    // 首次进入或切换到已有内容的功能时，也把当前位置校正到最新。
     setTimeout(() => {
       if (!panel.classList.contains('hidden')) scrollToLatest('auto');
     }, 60);
   });
 
-  // 移动端键盘 / visualViewport：让工作区高度跟随真正可见区域，
-  // 避免键盘弹起后发送按钮或最新消息被压到视口之外。
+  // 移动端键盘 / visualViewport：让工作区高度跟随真正可见区域。
   const viewport = window.visualViewport;
   function syncVisualViewport() {
     const height = Math.round(viewport?.height || window.innerHeight);
@@ -238,11 +237,17 @@
   viewport?.addEventListener('resize', syncVisualViewport, { passive:true });
   viewport?.addEventListener('scroll', syncVisualViewport, { passive:true });
 
-  // 公共错误态：记住最近一次提交内容；出现“失败：”时自动提供“重试”。
-  // 重试仍走原表单 submit，不复制任何业务逻辑。
+  // 公共错误态：记住最近一次原始提交，并把“重试”绑定回产生错误的原业务操作。
+  // 不能简单再次提交表单：脚本/排版在已有 source 后会进入“继续对话/意图识别”分支。
   const retryConfigs = [
-    { form:'script-form', input:'script-input', messages:'script-messages' },
-    { form:'xhs-form', input:'xhs-input', messages:'xhs-messages' },
+    {
+      form:'script-form', input:'script-input', messages:'script-messages',
+      retryOperation:(value) => typeof runScriptRewrite === 'function' ? runScriptRewrite(value) : null,
+    },
+    {
+      form:'xhs-form', input:'xhs-input', messages:'xhs-messages',
+      retryOperation:(value) => typeof runXhsFormat === 'function' ? runXhsFormat(value) : null,
+    },
   ];
 
   retryConfigs.forEach((cfg) => {
@@ -269,10 +274,15 @@
         retry.className = 'secondary-button feedback-retry';
         retry.textContent = '重试';
         retry.addEventListener('click', () => {
-          input.value = lastSubmitted;
-          input.focus({ preventScroll:true });
-          if (typeof form.requestSubmit === 'function') form.requestSubmit();
-          else form.dispatchEvent(new Event('submit', { bubbles:true, cancelable:true }));
+          if (retry.disabled) return;
+          retry.disabled = true;
+          retry.textContent = '正在重试…';
+          const operation = cfg.retryOperation(lastSubmitted);
+          if (operation && typeof operation.finally === 'function') {
+            operation.finally(() => actions.remove());
+          } else {
+            actions.remove();
+          }
         });
         actions.appendChild(retry);
         message.appendChild(actions);
