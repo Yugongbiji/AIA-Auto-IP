@@ -8,6 +8,64 @@
   <style>
     .workspace:has(#ip-chat-panel.hidden) { grid-template-columns:minmax(0,1fr); }
     .workspace:has(#ip-chat-panel.hidden) .profile-panel { display:none; }
+
+    @media (max-width:680px) {
+      /* Mobile workspace behaves like an app viewport: toolbar on top, composer always at bottom. */
+      .workspace {
+        display:flex;
+        flex-direction:column;
+        height:100vh;
+        height:100dvh;
+        min-height:0;
+        overflow:hidden;
+      }
+      .workspace-toolbar { flex:0 0 auto; }
+      .chat-panel,
+      .tool-placeholder {
+        order:2;
+        flex:1 1 auto;
+        min-height:0;
+        overflow:hidden;
+      }
+      .chat-panel { display:flex; flex-direction:column; }
+      .chat-panel .panel-header { flex:0 0 auto; }
+      .chat-panel .messages {
+        flex:1 1 auto;
+        min-height:0!important;
+        overflow:auto;
+      }
+      .chat-panel .quick-replies { flex:0 0 auto; }
+      .chat-panel .composer {
+        position:static;
+        flex:0 0 auto;
+        margin-top:auto;
+        padding-bottom:max(12px,env(safe-area-inset-bottom));
+      }
+
+      /* On the IP tool, context belongs above the conversation instead of below the input box. */
+      .profile-panel {
+        order:1;
+        flex:0 0 auto;
+        max-height:24dvh;
+        overflow:auto;
+        padding:12px 16px;
+        border-top:0;
+        border-bottom:1px solid var(--line);
+        border-left:0;
+        background:#fff;
+      }
+      .profile-title { margin-bottom:8px; }
+      .profile-title .eyebrow { margin-bottom:1px; font-size:10px; }
+      .profile-title h2 { font-size:15px; }
+      .profile-card { gap:6px; }
+      .profile-group { padding-top:7px; }
+      .profile-label { font-size:11px; }
+      .profile-value { font-size:13px; }
+      .profile-panel .full-width { margin-top:10px; }
+
+      /* Other tools do not reserve any space for IP context. */
+      .workspace:has(#ip-chat-panel.hidden) .profile-panel { display:none; }
+    }
   </style>
 </head>
 <body>
