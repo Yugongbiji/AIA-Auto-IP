@@ -63,7 +63,10 @@ test.describe('异步与空状态', () => {
     await expect(retry).toBeVisible();
     await retry.click();
 
-    await expect(page.locator('#xhs-messages')).toContainText('重试成功后的排版结果');
+    // 验证用户可感知的真实完成态和第二次业务请求，而不是绑定某个 mock 字段如何渲染。
+    await expect(page.locator('#xhs-messages')).toContainText('小红书排版完成');
+    await expect(page.locator('#xhs-save-state')).toHaveText('本次会话');
+    await expect(retry).toBeHidden();
     expect(attempts).toBe(2);
   });
 });
