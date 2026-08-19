@@ -1,5 +1,5 @@
-// IP 人设首次进入体验：功能欢迎卡 -> 已有资料确认 -> 第一个缺失问题。
-// 此文件在 app.js 之后加载，只覆盖首次进入相关交互，不改变其他工具逻辑。
+// 首次进入体验：功能欢迎卡 -> 已有资料确认 -> 第一个缺失问题。
+// 此文件在 app.js 之后加载，只覆盖首次进入相关交互，不改变其他工具核心逻辑。
 
 function addIpWelcomeCard() {
   const card = document.createElement('div');
@@ -64,7 +64,6 @@ answer = async function onboardingAwareAnswer(value) {
     const question = questions[state.currentQuestion];
     if (!question) return;
     addMessage(content, 'user');
-    // 明确跳过也视为已回答，避免下次进入时重复追问。
     state.profile[question.key] = content;
     state.currentQuestion += 1;
     setChips(null);
@@ -100,4 +99,100 @@ startWorkspace = function onboardingStartWorkspace(profile, matched, history = [
   renderProfile(); refreshProposalButton(); presentQuestion();
   const defaultTool = !state.requestedTool && state.proposals.length && planningState.plans.length ? 'script' : (state.requestedTool || 'ip');
   selectTool(defaultTool);
+};
+
+function addPlanningWelcomeCard() {
+  const card = document.createElement('section');
+  card.className = 'message assistant creative-welcome-card planning-welcome-card';
+  card.innerHTML = `
+    <p class="creative-welcome-eyebrow">🗂️ 内容规划 · 让账号越发越清楚</p>
+    <h3>把“今天发什么”，变成一套能长期积累的内容主线</h3>
+    <p class="creative-welcome-intro">我会结合你已经确认的 IP、人群和真实积累，帮你从“保险 + N”里收束出最适合长期经营的“保险 + 1”。</p>
+    <div class="creative-welcome-list">
+      <div><span>🎯</span><div><strong>先把主线定清</strong><p>明确保险内容最该讲什么，不再东一块西一块。</p></div></div>
+      <div><span>🧭</span><div><strong>筛出唯一支线</strong><p>从你的经历和受众里，只保留最值得长期做的一条。</p></div></div>
+      <div><span>💡</span><div><strong>直接落到选题</strong><p>最后形成内容方向、合集思路和可持续的选题框架。</p></div></div>
+    </div>
+    <p class="creative-welcome-hint">接下来只需要回答 3 个关键问题，我会把你的内容方向一步步收束出来。</p>`;
+  planningMessages().appendChild(card);
+  planningMessages().scrollTop = planningMessages().scrollHeight;
+  return card;
+}
+
+function planningKnownSummary() {
+  const proposal = state.proposals[0]?.proposal || {};
+  const candidates = [
+    ['IP 定位', proposal.headline],
+    ['服务人群', state.profile.customerGroups],
+    ['你的优势', state.profile.strengths],
+    ['自媒体目的', state.profile.purpose],
+  ].filter(([, value]) => value && value !== '跳过' && value !== '不希望填写');
+  return candidates.slice(0, 4);
+}
+
+function addPlanningContextSummary() {
+  const known = planningKnownSummary();
+  if (!known.length) return null;
+  const node = document.createElement('div');
+  node.className = 'message assistant ip-known-summary planning-known-summary';
+  const title = document.createElement('strong');
+  title.textContent = '你前面已经确认的信息，我会直接带进内容规划。';
+  node.appendChild(title);
+  const tags = document.createElement('div');
+  tags.className = 'ip-known-tags';
+  known.forEach(([label, value]) => {
+    const tag = document.createElement('span');
+    tag.textContent = `${label}：${value}`;
+    tags.appendChild(tag);
+  });
+  node.appendChild(tags);
+  const note = document.createElement('p');
+  note.textContent = '这些不用重新回答，下面只补决定内容方向的关键信息。';
+  node.appendChild(note);
+  planningMessages().appendChild(node);
+  planningMessages().scrollTop = planningMessages().scrollHeight;
+  return node;
+}
+
+function restorePlanningContextFromHistory() {
+  if (planningState.plans.length || !planningState.messages.length) return;
+  const userAnswers = planningState.messages.filter((item) => item.role === 'user').map((item) => String(item.content || '').trim()).filter(Boolean);
+  userAnswers.slice(0, planningQuestions.length).forEach((value, index) => {
+    if (!planningState.context[planningQuestions[index].key]) planningState.context[planningQuestions[index].key] = value;
+  });
+  planningState.currentQuestion = 0;
+}
+
+activatePlanning = function onboardingActivatePlanning() {
+  if (planningState.started) return;
+  planningState.started = true;
+  $('planning-save-state').textContent = state.matched ? '内容规划将保存到历史档案' : '本次会话';
+
+  if (planningState.messages.length) {
+    planningState.messages.forEach((item) => restoreContentPlanHistoryItem(item));
+    restorePlanningContextFromHistory();
+    planningState.done = planningState.plans.length > 0;
+  }
+
+  if (planningState.plans.length) {
+    planningState.context = {
+      primaryGoal: planningState.plans[0].plan.primaryGoal || '',
+      insuranceFocus: planningState.plans[0].plan.insuranceLine?.title || '',
+    };
+    $('planning-subtitle').textContent = '内容方向已确定；有需要再微调，日常创作请进入智能脚本改写。';
+    if (!planningState.messages.length) addPlanningMessage('你已经有一版内容规划了。直接告诉我想调整什么，例如“第二主线更偏育儿”或“合集增加增员内容”，我会生成新版本。', 'assistant', false);
+    refreshContentPlanButton();
+    return;
+  }
+
+  const firstPlanningVisit = planningState.messages.length === 0;
+  if (firstPlanningVisit) {
+    addPlanningWelcomeCard();
+    addPlanningContextSummary();
+    if (!planningKnownSummary().length) addPlanningMessage('我会先问你 3 个关键问题，再根据你的回答把主线、支线和选题框架收束出来。', 'assistant', false);
+  } else {
+    addPlanningMessage('继续上次的内容规划，我们从还没完成的地方接着来。', 'assistant', false);
+  }
+
+  presentPlanningQuestion();
 };
