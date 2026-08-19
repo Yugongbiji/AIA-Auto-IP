@@ -1,9 +1,9 @@
 name: Preview Environment Diagnostic
 
 on:
-  push:
+  pull_request:
     branches:
-      - agent/frontend-engineering-v1
+      - main
     paths:
       - .github/workflows/preview-diagnostic.yml
 
