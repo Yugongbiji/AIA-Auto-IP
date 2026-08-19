@@ -170,7 +170,6 @@
       }, 220);
     }
 
-    // 用户明确点击“回到最新”时优先确定性，而不是依赖不同浏览器的平滑滚动时长。
     latest.addEventListener('click', () => {
       userScrollIntent = false;
       scrollToLatest('auto');
@@ -238,7 +237,8 @@
   viewport?.addEventListener('scroll', syncVisualViewport, { passive:true });
 
   // 公共错误态：记住最近一次原始提交，并把“重试”绑定回产生错误的原业务操作。
-  // 不能简单再次提交表单：脚本/排版在已有 source 后会进入“继续对话/意图识别”分支。
+  // 已点击过重试的历史错误卡片会被标记为 handled，避免 MutationObserver 再次补回按钮。
+  // 如果这次重试仍失败，业务层会产生一张新的错误卡片；新卡片仍可正常再次重试。
   const retryConfigs = [
     {
       form:'script-form', input:'script-input', messages:'script-messages',
@@ -264,7 +264,7 @@
 
     function upgradeErrors() {
       messages.querySelectorAll('.message').forEach((message) => {
-        if (!/失败[:：]/.test(message.textContent || '') || message.querySelector('.feedback-retry')) return;
+        if (!/失败[:：]/.test(message.textContent || '') || message.dataset.retryHandled === '1' || message.querySelector('.feedback-retry')) return;
         message.classList.add('feedback-error');
         if (!lastSubmitted) return;
         const actions = document.createElement('div');
@@ -275,6 +275,7 @@
         retry.textContent = '重试';
         retry.addEventListener('click', () => {
           if (retry.disabled) return;
+          message.dataset.retryHandled = '1';
           retry.disabled = true;
           retry.textContent = '正在重试…';
           const operation = cfg.retryOperation(lastSubmitted);
