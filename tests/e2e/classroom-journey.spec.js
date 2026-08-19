@@ -101,7 +101,12 @@ test.describe('真实课堂连续使用回归', () => {
     // 完整资料应自动生成 IP 方案，而不是重复追问基础资料。
     await expect(page.locator('#messages')).not.toContainText('请补充你主要服务的城市');
     await expect(page.locator('#messages')).toContainText('你的专属 IP 方案', { timeout: 5000 });
-    await expect(page.locator('#view-proposal')).toBeVisible();
+    const ipCardCta = page.locator('#messages').getByRole('button', { name: '查看 IP 方案' });
+    await expect(ipCardCta).toBeVisible();
+    await ipCardCta.click();
+    await expect(page.locator('#proposal-screen')).toBeVisible();
+    await expect(page.locator('#proposal-content')).toContainText('懂家庭规划的成都靠谱搭子');
+    await page.locator('#proposal-close').click();
 
     // 内容规划承接当前 IP。
     await page.locator('#tool-tabs').getByRole('button', { name: /内容规划/ }).click();
@@ -121,17 +126,18 @@ test.describe('真实课堂连续使用回归', () => {
     await page.locator('#script-input').fill('这是课堂里准备改写的一段原稿，核心观点是家庭保障要先看真实需求。');
     await page.locator('#script-form').getByRole('button', { name: '开始改写' }).click();
     await expect(page.locator('#script-messages')).toContainText('脚本改写完成');
-    await expect(page.locator('#script-messages')).toContainText('第一版课堂改写稿');
+    await expect(page.locator('#script-messages .creative-textarea').first()).toHaveValue('第一版课堂改写稿');
 
     // 切换到小红书排版后继续使用，前一工具结果不应消失。
     await page.locator('#tool-tabs').getByRole('button', { name: /小红书排版/ }).click();
     await page.locator('#xhs-input').fill('课堂原文第一段。课堂原文第二段。');
     await page.locator('#xhs-form').getByRole('button', { name: '开始排版' }).click();
     await expect(page.locator('#xhs-messages')).toContainText('小红书排版完成');
+    await expect(page.locator('#xhs-messages .creative-textarea').first()).toHaveValue('课堂原文第一段\n\n课堂原文第二段');
     await expect(page.locator('#xhs-messages')).toContainText('经过初步检测暂无风险词汇');
 
     await page.locator('#tool-tabs').getByRole('button', { name: /脚本改写/ }).click();
-    await expect(page.locator('#script-messages')).toContainText('第一版课堂改写稿');
+    await expect(page.locator('#script-messages .creative-textarea').first()).toHaveValue('第一版课堂改写稿');
   });
 
   test('刷新后能恢复课堂历史，并在多个工具间正常切换', async ({ page }) => {
@@ -143,14 +149,18 @@ test.describe('真实课堂连续使用回归', () => {
     await expect(page.locator('#planning-messages')).toContainText('你的专属内容规划方案');
 
     await page.locator('#tool-tabs').getByRole('button', { name: /脚本改写/ }).click();
-    await expect(page.locator('#script-messages')).toContainText('历史改写稿');
+    await expect(page.locator('#script-messages .creative-textarea').first()).toHaveValue('历史改写稿');
     await page.locator('#tool-tabs').getByRole('button', { name: /小红书排版/ }).click();
-    await expect(page.locator('#xhs-messages')).toContainText('历史排版结果');
+    await expect(page.locator('#xhs-messages .creative-textarea').first()).toHaveValue('历史排版结果');
 
     // 本地 session 已建立，刷新时应自动重新匹配，不退回身份页。
     await page.reload();
     await expect(page.locator('#workspace')).toBeVisible({ timeout: 5000 });
     await expect(page.locator('#identity-screen')).toBeHidden();
     await expect(page.locator('#identity-state')).toContainText('课堂测试用户');
+
+    // 有完整 IP + 内容规划历史时，刷新后应直接回到脚本工具继续工作。
+    await expect(page.locator('#script-panel')).toBeVisible();
+    await expect(page.locator('#script-messages .creative-textarea').first()).toHaveValue('历史改写稿');
   });
 });
