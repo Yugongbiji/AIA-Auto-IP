@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AIA Auto IP</title>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    .workspace:has(#ip-chat-panel.hidden) { grid-template-columns:minmax(0,1fr); }
+    .workspace:has(#ip-chat-panel.hidden) .profile-panel { display:none; }
+  </style>
 </head>
 <body>
   <main class="app-shell">
