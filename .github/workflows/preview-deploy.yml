@@ -1,0 +1,218 @@
+# Preview is intentionally isolated from production: separate checkout, service, port and SQLite data.
+name: Deploy Preview
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: aia-auto-ip-preview
+  cancel-in-progress: true
+
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright QA
+        run: npm run test:e2e
+
+  deploy-preview:
+    needs: qa
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Deploy isolated Preview to ECS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.ECS_HOST }}
+          username: ${{ secrets.ECS_USER }}
+          key: ${{ secrets.ECS_SSH_KEY }}
+          script: |
+            set -euo pipefail
+
+            PREVIEW_DIR=/opt/AIA-Auto-IP-preview
+            PROD_DIR=/opt/AIA-Auto-IP
+            PREVIEW_BRANCH=agent/frontend-engineering-v1
+            PREVIEW_SERVICE=/etc/systemd/system/aia-auto-ip-preview.service
+
+            echo '=== 1. Guard production before Preview changes ==='
+            systemctl is-active --quiet aia-auto-ip
+            curl -fsS --retry 3 http://127.0.0.1:8000/ >/dev/null
+
+            echo '=== 2. Prepare isolated Preview checkout ==='
+            if [ ! -d "$PREVIEW_DIR/.git" ]; then
+              ORIGIN_URL=$(git -C "$PROD_DIR" remote get-url origin)
+              git clone "$ORIGIN_URL" "$PREVIEW_DIR"
+            fi
+            git -C "$PREVIEW_DIR" fetch origin "$PREVIEW_BRANCH"
+            git -C "$PREVIEW_DIR" checkout -B "$PREVIEW_BRANCH" "origin/$PREVIEW_BRANCH"
+            git -C "$PREVIEW_DIR" reset --hard "origin/$PREVIEW_BRANCH"
+
+            echo '=== 3. Prepare Preview Python environment ==='
+            if [ ! -x "$PREVIEW_DIR/.venv/bin/python" ]; then
+              python3 -m venv "$PREVIEW_DIR/.venv"
+            fi
+            "$PREVIEW_DIR/.venv/bin/pip" install -r "$PREVIEW_DIR/requirements.txt"
+
+            # Reuse only DeepSeek credentials. Preview MUST NOT inherit production RDS settings.
+            : > "$PREVIEW_DIR/.env"
+            for SRC in "$PROD_DIR/.env" "$PROD_DIR/.env.rds"; do
+              if [ -f "$SRC" ]; then
+                grep -E '^(DEEPSEEK_API_KEY|DEEPSEEK_MODEL)=' "$SRC" >> "$PREVIEW_DIR/.env" || true
+              fi
+            done
+            printf '\nDB_ENGINE=sqlite\n' >> "$PREVIEW_DIR/.env"
+            rm -f "$PREVIEW_DIR/.env.rds"
+            if ! grep -q '^DEEPSEEK_API_KEY=' "$PREVIEW_DIR/.env"; then
+              echo 'Preview setup stopped: DeepSeek key was not found in the existing server env.' >&2
+              exit 1
+            fi
+
+            echo '=== 4. Initialize isolated Preview data when needed ==='
+            if [ ! -f "$PREVIEW_DIR/data/persona.sqlite3" ]; then
+              cd "$PREVIEW_DIR"
+              "$PREVIEW_DIR/.venv/bin/python" - <<'PY'
+            from pathlib import Path
+            import server
+            server.load_local_env()
+            server.initialize_database()
+            count = server.import_signup_sheet(Path('data/何不团队报名表20260807.xlsx'))
+            print(f'Preview signup import complete: {count}')
+            PY
+            fi
+
+            echo '=== 5. Install/start independent Preview service on 127.0.0.1:8001 ==='
+            cat > "$PREVIEW_SERVICE" <<'UNIT'
+            [Unit]
+            Description=AIA Auto IP Preview
+            After=network.target
+
+            [Service]
+            Type=simple
+            WorkingDirectory=/opt/AIA-Auto-IP-preview
+            ExecStart=/opt/AIA-Auto-IP-preview/.venv/bin/python /opt/AIA-Auto-IP-preview/server.py --port 8001
+            Restart=on-failure
+            RestartSec=2
+
+            [Install]
+            WantedBy=multi-user.target
+            UNIT
+            systemctl daemon-reload
+            systemctl enable aia-auto-ip-preview >/dev/null
+            systemctl restart aia-auto-ip-preview
+            sleep 2
+            systemctl is-active --quiet aia-auto-ip-preview
+            curl -fsS --retry 5 --retry-delay 1 http://127.0.0.1:8001/ >/dev/null
+
+            echo '=== 6. Insert /preview safely into the active production nginx location ==='
+            PROD_NGINX=$(grep -Rsl 'proxy_pass http://127.0.0.1:8000' /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null | head -1 || true)
+            if [ -z "$PROD_NGINX" ]; then
+              echo 'Could not locate the existing AIA nginx server config; stopping before any nginx change.' >&2
+              exit 1
+            fi
+            PROD_NGINX=$(readlink -f "$PROD_NGINX")
+            NGINX_BACKUP="${PROD_NGINX}.preview-backup"
+            cp "$PROD_NGINX" "$NGINX_BACKUP"
+
+            rollback_nginx() {
+              echo 'Restoring production nginx config.' >&2
+              cp "$NGINX_BACKUP" "$PROD_NGINX"
+              nginx -t
+              systemctl reload nginx
+            }
+
+            python3 - "$PROD_NGINX" <<'PY'
+            from pathlib import Path
+            import re, sys
+            path = Path(sys.argv[1])
+            text = path.read_text()
+            begin = '    # AIA_PREVIEW_BEGIN\n'
+            end = '    # AIA_PREVIEW_END\n'
+            block = '''    # AIA_PREVIEW_BEGIN
+                location = /preview {
+                    return 302 /preview/;
+                }
+
+                location /preview/ {
+                    proxy_pass http://127.0.0.1:8001/;
+                    proxy_http_version 1.1;
+                    proxy_set_header Host $host;
+                    proxy_set_header X-Real-IP $remote_addr;
+                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                    proxy_set_header X-Forwarded-Proto $scheme;
+                    proxy_set_header Accept-Encoding "";
+                    sub_filter_once off;
+                    sub_filter_types text/javascript application/javascript;
+                    sub_filter "fetch('/api/" "fetch('/preview/api/";
+                    add_header X-AIA-Environment preview always;
+                }
+                # AIA_PREVIEW_END
+            '''
+            if begin in text and end in text:
+                pattern = re.compile(re.escape(begin) + r'.*?' + re.escape(end), re.S)
+                text = pattern.sub(block, text, count=1)
+            else:
+                proxy_pos = text.find('proxy_pass http://127.0.0.1:8000')
+                if proxy_pos < 0:
+                    raise SystemExit('Production proxy_pass 8000 was not found in target nginx file')
+                candidates = list(re.finditer(r'(?m)^\s*location\s+/\s*\{', text[:proxy_pos]))
+                if not candidates:
+                    raise SystemExit('Could not find the location / block that owns production proxy_pass')
+                marker = candidates[-1]
+                text = text[:marker.start()] + block + text[marker.start():]
+            path.write_text(text)
+            PY
+
+            if ! nginx -t; then
+              rollback_nginx
+              exit 1
+            fi
+            systemctl reload nginx
+            sleep 2
+
+            echo '=== 7. Verify Preview AND production after routing change ==='
+            if ! curl --fail --silent --show-error --retry 8 --retry-delay 1 --retry-all-errors http://127.0.0.1/preview/ >/dev/null; then
+              rollback_nginx
+              exit 1
+            fi
+
+            TMP_JS=$(mktemp)
+            if ! curl --fail --silent --show-error --retry 5 --retry-delay 1 --retry-all-errors http://127.0.0.1/preview/app.js -o "$TMP_JS"; then
+              rm -f "$TMP_JS"
+              rollback_nginx
+              exit 1
+            fi
+            if ! grep -q "fetch('/preview/api/" "$TMP_JS"; then
+              echo 'Preview JS did not receive isolated API rewrite.' >&2
+              rm -f "$TMP_JS"
+              rollback_nginx
+              exit 1
+            fi
+            rm -f "$TMP_JS"
+
+            if ! curl --fail --silent --show-error --retry 5 --retry-delay 1 --retry-all-errors http://127.0.0.1/ >/dev/null; then
+              rollback_nginx
+              exit 1
+            fi
+            if ! systemctl is-active --quiet aia-auto-ip || ! curl -fsS --retry 3 http://127.0.0.1:8000/ >/dev/null; then
+              rollback_nginx
+              exit 1
+            fi
+
+            echo "Preview healthy at /preview/; commit: $(git -C "$PREVIEW_DIR" rev-parse --short HEAD)"

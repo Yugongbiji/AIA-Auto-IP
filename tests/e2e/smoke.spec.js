@@ -1,0 +1,42 @@
+const { test, expect } = require('@playwright/test');
+const AxeBuilder = require('@axe-core/playwright').default;
+
+async function expectNoHorizontalOverflow(page) {
+  const metrics = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    scroll: document.documentElement.scrollWidth,
+    bodyScroll: document.body.scrollWidth
+  }));
+  expect(metrics.scroll).toBeLessThanOrEqual(metrics.viewport + 1);
+  expect(metrics.bodyScroll).toBeLessThanOrEqual(metrics.viewport + 1);
+}
+
+test.describe('AIA Auto IP 基础前端验收', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+  });
+
+  test('首屏可打开且四个功能入口完整', async ({ page }) => {
+    await expect(page).toHaveTitle(/AIA Auto IP/);
+    await expect(page.getByRole('button', { name: /IP 人设/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /内容规划/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /脚本改写/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /小红书排版/ })).toBeVisible();
+  });
+
+  test('当前视口不出现非预期横向溢出', async ({ page }) => {
+    await expectNoHorizontalOverflow(page);
+  });
+
+  test('身份输入与主按钮在移动端可达', async ({ page }) => {
+    await expect(page.getByLabel('姓名')).toBeVisible();
+    await expect(page.getByLabel('营销员编号')).toBeVisible();
+    await expect(page.getByRole('button', { name: '匹配我的资料' })).toBeVisible();
+  });
+
+  test('不存在 serious / critical 级自动可访问性问题', async ({ page }) => {
+    const results = await new AxeBuilder({ page }).analyze();
+    const severe = results.violations.filter((item) => ['serious', 'critical'].includes(item.impact));
+    expect(severe, severe.map((v) => `${v.id}: ${v.help}`).join('\n')).toEqual([]);
+  });
+});

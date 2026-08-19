@@ -1,12 +1,17 @@
 name: Deploy to ECS
 
 on:
-  push:
+  workflow_run:
+    workflows:
+      - Frontend QA
+    types:
+      - completed
     branches:
       - main
 
 jobs:
   deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -19,8 +24,21 @@ jobs:
           script: |
             set -e
             cd /opt/AIA-Auto-IP
+            PREVIOUS_COMMIT=$(git rev-parse HEAD)
             git fetch origin main
             git reset --hard origin/main
             /opt/AIA-Auto-IP/.venv/bin/pip install -r requirements.txt
             systemctl restart aia-auto-ip
-            systemctl is-active --quiet aia-auto-ip
+
+            # 服务必须启动成功，并通过本机 HTTP 健康检查；否则自动回滚上一版本。
+            if ! systemctl is-active --quiet aia-auto-ip || ! curl -fsS --retry 5 --retry-delay 2 http://127.0.0.1:8000/ >/dev/null; then
+              echo "Deployment health check failed. Rolling back to ${PREVIOUS_COMMIT}."
+              git reset --hard "${PREVIOUS_COMMIT}"
+              /opt/AIA-Auto-IP/.venv/bin/pip install -r requirements.txt
+              systemctl restart aia-auto-ip
+              systemctl is-active --quiet aia-auto-ip
+              curl -fsS --retry 5 --retry-delay 2 http://127.0.0.1:8000/ >/dev/null
+              exit 1
+            fi
+
+            echo "Deployment healthy: $(git rev-parse --short HEAD)"
