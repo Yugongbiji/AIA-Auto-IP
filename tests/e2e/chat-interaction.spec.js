@@ -12,7 +12,9 @@ async function reachFirstMultiQuestion(page) {
   await expect(page.locator('#messages')).toContainText('请补充你主要服务的城市');
   await page.locator('#quick-replies').getByRole('button', { name: '成都' }).click();
   await expect(page.locator('#messages')).toContainText('你最希望服务哪些人群');
-  await expect(page.locator('#quick-replies')).toHaveClass(/quick-replies-v2/);
+  const firstChoice = page.locator('#quick-replies').getByRole('button', { name: '企业主' });
+  await expect(firstChoice).toBeVisible();
+  await expect(firstChoice).toHaveAttribute('aria-pressed', 'false');
 }
 
 test.describe('AIA Auto IP 聊天交互契约', () => {
@@ -37,10 +39,10 @@ test.describe('AIA Auto IP 聊天交互契约', () => {
     await page.locator('#quick-replies').getByRole('button', { name: '宝爸宝妈' }).click();
 
     const composer = page.locator('#chat-form');
-    await expect(composer.locator('.composer-input-shell')).toBeVisible();
-    await expect(composer.locator('.composer-input-shell .composer-selection-chip')).toHaveCount(2);
-    await expect(composer.locator('.composer-input-shell')).toContainText('企业主');
-    await expect(composer.locator('.composer-input-shell')).toContainText('宝爸宝妈');
+    await expect(composer.locator('.composer-editor')).toBeVisible();
+    await expect(composer.locator('.composer-editor .composer-selection-chip')).toHaveCount(2);
+    await expect(composer.locator('.composer-editor')).toContainText('企业主');
+    await expect(composer.locator('.composer-editor')).toContainText('宝爸宝妈');
   });
 
   test('上方取消和输入框内删除必须双向同步', async ({ page }) => {
