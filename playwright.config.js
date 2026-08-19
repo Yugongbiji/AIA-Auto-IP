@@ -14,8 +14,8 @@ module.exports = defineConfig({
     video: 'retain-on-failure'
   },
   projects: [
-    { name: 'mobile-360', use: { ...devices['iPhone 12 Mini'], viewport: { width: 360, height: 780 } } },
-    { name: 'mobile-390', use: { ...devices['iPhone 13'], viewport: { width: 390, height: 844 } } },
+    { name: 'mobile-360', use: { ...devices['Pixel 5'], viewport: { width: 360, height: 780 } } },
+    { name: 'mobile-390', use: { ...devices['Pixel 5'], viewport: { width: 390, height: 844 } } },
     { name: 'desktop-chromium', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } }
   ],
   webServer: {
