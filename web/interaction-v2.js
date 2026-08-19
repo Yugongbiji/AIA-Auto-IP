@@ -1,5 +1,6 @@
-// 通用交互 V3：快捷选项只负责填充答案；统一由底部“发送”提交。
+// 通用交互 V4：快捷选项只负责填充答案；统一由底部“发送”提交。
 // 选项点击不得主动聚焦输入框；已选标签真正嵌入同一个输入容器；所有聊天功能统一自动跟随。
+// 同时统一移动端 visualViewport、错误重试与长会话滚动边界。
 (function () {
   const configs = [
     { replies:'quick-replies', form:'chat-form', input:'chat-input', messages:'messages', panel:'ip-chat-panel' },
@@ -143,6 +144,7 @@
     latest.type = 'button';
     latest.className = 'chat-latest-button';
     latest.textContent = '回到最新 ↓';
+    latest.setAttribute('aria-label', '回到最新消息');
     panel.appendChild(latest);
 
     function distanceFromBottom() {
@@ -182,7 +184,7 @@
       if (!userScrollIntent) return;
       setReadingHistory(distanceFromBottom() > 100);
       clearTimeout(scrollTimer);
-      scrollTimer = setTimeout(() => { userScrollIntent = false; }, 120);
+      scrollTimer = setTimeout(() => { userScrollIntent = false; }, 160);
     }, { passive:true });
 
     const contentObserver = new MutationObserver((mutations) => {
@@ -213,5 +215,71 @@
     setTimeout(() => {
       if (!panel.classList.contains('hidden')) scrollToLatest('auto');
     }, 60);
+  });
+
+  // 移动端键盘 / visualViewport：让工作区高度跟随真正可见区域，
+  // 避免键盘弹起后发送按钮或最新消息被压到视口之外。
+  const viewport = window.visualViewport;
+  function syncVisualViewport() {
+    const height = Math.round(viewport?.height || window.innerHeight);
+    const offsetTop = Math.round(viewport?.offsetTop || 0);
+    const keyboardInset = Math.max(0, Math.round(window.innerHeight - height - offsetTop));
+    document.documentElement.style.setProperty('--aia-viewport-height', `${height}px`);
+    document.documentElement.style.setProperty('--aia-keyboard-inset', `${keyboardInset}px`);
+    document.body.classList.toggle('keyboard-open', keyboardInset > 120);
+
+    const active = document.activeElement;
+    if (document.body.classList.contains('keyboard-open') && active && active.closest?.('.composer')) {
+      requestAnimationFrame(() => active.closest('.composer')?.scrollIntoView({ block:'end', behavior:'auto' }));
+    }
+  }
+  syncVisualViewport();
+  window.addEventListener('resize', syncVisualViewport, { passive:true });
+  viewport?.addEventListener('resize', syncVisualViewport, { passive:true });
+  viewport?.addEventListener('scroll', syncVisualViewport, { passive:true });
+
+  // 公共错误态：记住最近一次提交内容；出现“失败：”时自动提供“重试”。
+  // 重试仍走原表单 submit，不复制任何业务逻辑。
+  const retryConfigs = [
+    { form:'script-form', input:'script-input', messages:'script-messages' },
+    { form:'xhs-form', input:'xhs-input', messages:'xhs-messages' },
+  ];
+
+  retryConfigs.forEach((cfg) => {
+    const form = document.getElementById(cfg.form);
+    const input = document.getElementById(cfg.input);
+    const messages = document.getElementById(cfg.messages);
+    if (!form || !input || !messages) return;
+
+    let lastSubmitted = '';
+    form.addEventListener('submit', () => {
+      const value = input.value.trim();
+      if (value) lastSubmitted = value;
+    }, true);
+
+    function upgradeErrors() {
+      messages.querySelectorAll('.message').forEach((message) => {
+        if (!/失败[:：]/.test(message.textContent || '') || message.querySelector('.feedback-retry')) return;
+        message.classList.add('feedback-error');
+        if (!lastSubmitted) return;
+        const actions = document.createElement('div');
+        actions.className = 'feedback-actions';
+        const retry = document.createElement('button');
+        retry.type = 'button';
+        retry.className = 'secondary-button feedback-retry';
+        retry.textContent = '重试';
+        retry.addEventListener('click', () => {
+          input.value = lastSubmitted;
+          input.focus({ preventScroll:true });
+          if (typeof form.requestSubmit === 'function') form.requestSubmit();
+          else form.dispatchEvent(new Event('submit', { bubbles:true, cancelable:true }));
+        });
+        actions.appendChild(retry);
+        message.appendChild(actions);
+      });
+    }
+
+    new MutationObserver(upgradeErrors).observe(messages, { childList:true, subtree:true, characterData:true });
+    upgradeErrors();
   });
 })();
