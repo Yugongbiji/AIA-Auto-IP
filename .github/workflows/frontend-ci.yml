@@ -2,23 +2,10 @@ name: Frontend QA
 
 on:
   pull_request:
-    paths:
-      - 'web/**'
-      - 'tests/**'
-      - 'package.json'
-      - 'playwright.config.js'
-      - '.github/workflows/frontend-ci.yml'
-      - 'docs/**'
   push:
     branches:
+      - main
       - agent/frontend-engineering-v1
-    paths:
-      - 'web/**'
-      - 'tests/**'
-      - 'package.json'
-      - 'playwright.config.js'
-      - '.github/workflows/frontend-ci.yml'
-      - 'docs/**'
 
 jobs:
   playwright:
@@ -32,7 +19,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Install dependencies
         run: npm install
