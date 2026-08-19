@@ -1,5 +1,5 @@
-/* 通用交互 V2：快捷选项 + 底部输入统一发送；新消息自动跟随。 */
-.quick-replies.quick-replies-v2 {
+/* 通用交互 V3：快捷选项横向滑动；已选标签嵌入同一输入框；新消息自动跟随。 */
+.quick-replies.quick-replies-v3 {
   flex-wrap:nowrap;
   gap:8px;
   padding:8px 16px 10px;
@@ -9,8 +9,8 @@
   -webkit-overflow-scrolling:touch;
   scroll-snap-type:x proximity;
 }
-.quick-replies.quick-replies-v2::-webkit-scrollbar { display:none; }
-.quick-replies.quick-replies-v2 > button {
+.quick-replies.quick-replies-v3::-webkit-scrollbar { display:none; }
+.quick-replies.quick-replies-v3 > button {
   flex:0 0 auto;
   min-height:36px;
   max-width:78vw;
@@ -20,58 +20,84 @@
   white-space:nowrap;
   scroll-snap-align:start;
 }
-.quick-replies.quick-replies-v2 > button.selected {
+.quick-replies.quick-replies-v3 > button.selected {
   color:#A10F39;
   border-color:#E5708F;
   background:#FFF5F7;
   box-shadow:inset 0 0 0 1px #F6CFDA;
 }
-.quick-replies.quick-replies-v2 .multi-confirm,
-.quick-replies.quick-replies-v2 .custom-multi-input,
-.quick-replies.quick-replies-v2 button:empty { display:none!important; }
+.quick-replies.quick-replies-v3 .multi-confirm,
+.quick-replies.quick-replies-v3 .custom-multi-input,
+.quick-replies.quick-replies-v3 button:empty { display:none!important; }
 
-.composer.has-selection-tray {
+.composer.composer-v3 {
+  align-items:flex-end;
+  flex-wrap:nowrap;
+}
+.composer-editor {
+  display:flex;
+  flex:1 1 auto;
+  min-width:0;
+  min-height:44px;
+  max-height:112px;
   align-items:center;
   flex-wrap:wrap;
+  gap:6px;
+  padding:6px 10px;
+  overflow-y:auto;
+  border:1px solid #DCD7D9;
+  border-radius:10px;
+  background:#fff;
+  transition:border-color .15s ease, box-shadow .15s ease;
+}
+.composer-editor:focus-within {
+  border-color:var(--brand);
+  box-shadow:0 0 0 3px #D311451A;
+}
+.composer-editor > input {
+  flex:1 1 120px;
+  min-width:90px;
+  width:auto;
+  min-height:30px;
+  padding:4px 2px;
+  border:0!important;
+  outline:0;
+  box-shadow:none!important;
+  background:transparent;
 }
 .composer-selection-tray {
-  display:flex;
-  flex:1 1 100%;
-  gap:6px;
-  min-width:0;
-  padding:0 0 2px;
-  overflow-x:auto;
-  scrollbar-width:none;
-  -webkit-overflow-scrolling:touch;
+  display:contents;
 }
-.composer-selection-tray:empty { display:none; }
-.composer-selection-tray::-webkit-scrollbar { display:none; }
 .composer-selection-chip {
   display:inline-flex;
-  flex:0 0 auto;
+  flex:0 1 auto;
+  max-width:min(72%,260px);
   align-items:center;
-  gap:5px;
-  max-width:70vw;
-  padding:4px 8px;
+  gap:4px;
+  min-height:28px;
+  padding:3px 7px 3px 9px;
   color:#A10F39;
   font-size:12px;
-  line-height:1.35;
+  line-height:1.3;
   border:1px solid #EDA0B5;
   border-radius:999px;
   background:#FFF5F7;
 }
-.composer-selection-chip span {
+.composer-selection-chip > span {
+  min-width:0;
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
 }
 .composer-selection-chip button {
-  flex:0 0 auto;
-  width:18px;
-  height:18px;
+  display:grid;
+  flex:0 0 20px;
+  width:20px;
+  height:20px;
+  place-items:center;
   padding:0;
-  color:#8A6571;
-  line-height:16px;
+  color:#7A7278;
+  line-height:1;
   border:0;
   border-radius:50%;
   background:transparent;
@@ -110,11 +136,40 @@
 .profile-panel.profile-float-expanded .profile-conversation-hint { display:block; }
 
 @media (max-width:720px) {
-  .quick-replies.quick-replies-v2 { padding:7px 12px 9px; }
-  .quick-replies.quick-replies-v2 > button { min-height:38px; max-width:82vw; }
-  .composer.has-selection-tray { gap:8px; padding-top:10px; }
-  .composer-selection-tray { padding-bottom:1px; }
-  .composer-selection-chip { max-width:76vw; font-size:12px; }
-  .profile-conversation-hint { margin:0 12px 10px; font-size:10.5px; line-height:1.5; }
-  .chat-latest-button { right:12px; bottom:76px; }
+  .quick-replies.quick-replies-v3 {
+    gap:7px;
+    padding:7px 12px 9px;
+  }
+  .quick-replies.quick-replies-v3 > button {
+    min-height:38px;
+    max-width:82vw;
+  }
+  .composer.composer-v3 {
+    gap:8px;
+    padding:12px;
+  }
+  .composer-editor {
+    min-height:46px;
+    max-height:108px;
+    gap:5px;
+    padding:6px 9px;
+  }
+  .composer-selection-chip {
+    max-width:74vw;
+    min-height:29px;
+    font-size:12px;
+  }
+  .composer.composer-v3 > .primary {
+    flex:0 0 auto;
+    min-height:44px;
+  }
+  .profile-conversation-hint {
+    margin:0 12px 10px;
+    font-size:10.5px;
+    line-height:1.5;
+  }
+  .chat-latest-button {
+    right:12px;
+    bottom:78px;
+  }
 }
