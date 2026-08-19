@@ -33,9 +33,23 @@ test.describe('异步与空状态', () => {
     await expect(page.locator('#script-save-state')).toHaveText('本次会话');
   });
 
-  test('接口失败时显示可理解的 error state，不残留 loading', async ({ page }) => {
+  test('接口失败时显示公共 error state，并提供可执行重试', async ({ page }) => {
+    let attempts = 0;
     await page.route('**/api/xhs/format', async (route) => {
-      await route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: '服务暂时不可用' }) });
+      attempts += 1;
+      if (attempts === 1) {
+        await route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: '服务暂时不可用' }) });
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          formatted: '重试成功后的排版结果',
+          risks: [],
+          model: 'mock-model'
+        })
+      });
     });
 
     await enterGuestTool(page, '小红书排版');
@@ -45,5 +59,11 @@ test.describe('异步与空状态', () => {
 
     await expect(page.locator('#xhs-messages')).toContainText('排版失败：服务暂时不可用');
     await expect(page.locator('#xhs-save-state')).toHaveText('本次会话');
+    const retry = page.locator('#xhs-messages').getByRole('button', { name: '重试' });
+    await expect(retry).toBeVisible();
+    await retry.click();
+
+    await expect(page.locator('#xhs-messages')).toContainText('重试成功后的排版结果');
+    expect(attempts).toBe(2);
   });
 });
