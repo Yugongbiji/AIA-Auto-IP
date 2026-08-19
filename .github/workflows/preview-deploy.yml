@@ -50,8 +50,6 @@ jobs:
             PROD_DIR=/opt/AIA-Auto-IP
             PREVIEW_BRANCH=agent/frontend-engineering-v1
             PREVIEW_SERVICE=/etc/systemd/system/aia-auto-ip-preview.service
-            NGINX_FILE=/etc/nginx/conf.d/aia-auto-ip-preview.conf
-            PREVIEW_HOST='${{ secrets.ECS_HOST }}'
 
             echo '=== 1. Guard production before Preview changes ==='
             systemctl is-active --quiet aia-auto-ip
@@ -72,6 +70,7 @@ jobs:
             fi
             "$PREVIEW_DIR/.venv/bin/pip" install -r "$PREVIEW_DIR/requirements.txt"
 
+            # Reuse only DeepSeek credentials. Preview MUST NOT inherit production RDS settings.
             : > "$PREVIEW_DIR/.env"
             for SRC in "$PROD_DIR/.env" "$PROD_DIR/.env.rds"; do
               if [ -f "$SRC" ]; then
@@ -88,7 +87,14 @@ jobs:
             echo '=== 4. Initialize isolated Preview data when needed ==='
             if [ ! -f "$PREVIEW_DIR/data/persona.sqlite3" ]; then
               cd "$PREVIEW_DIR"
-              "$PREVIEW_DIR/.venv/bin/python" server.py --import-xlsx 'data/何不团队报名表20260807.xlsx'
+              "$PREVIEW_DIR/.venv/bin/python" - <<'PY'
+            from pathlib import Path
+            import server
+            server.load_local_env()
+            server.initialize_database()
+            count = server.import_signup_sheet(Path('data/何不团队报名表20260807.xlsx'))
+            print(f'Preview signup import complete: {count}')
+            PY
             fi
 
             echo '=== 5. Install/start independent Preview service on 127.0.0.1:8001 ==='
@@ -114,15 +120,24 @@ jobs:
             systemctl is-active --quiet aia-auto-ip-preview
             curl -fsS --retry 5 --retry-delay 1 http://127.0.0.1:8001/ >/dev/null
 
-            echo '=== 6. Add same-IP /preview route without opening a new public port ==='
-            NGINX_BACKUP="${NGINX_FILE}.previous"
-            if [ -f "$NGINX_FILE" ]; then cp "$NGINX_FILE" "$NGINX_BACKUP"; else rm -f "$NGINX_BACKUP"; fi
+            echo '=== 6. Insert /preview safely into the existing production nginx server ==='
+            PROD_NGINX=$(grep -Rsl 'proxy_pass http://127.0.0.1:8000' /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null | head -1 || true)
+            if [ -z "$PROD_NGINX" ]; then
+              echo 'Could not locate the existing AIA nginx server config; stopping before any nginx change.' >&2
+              exit 1
+            fi
+            PROD_NGINX=$(readlink -f "$PROD_NGINX")
+            NGINX_BACKUP="${PROD_NGINX}.preview-backup"
+            cp "$PROD_NGINX" "$NGINX_BACKUP"
 
-            cat > "$NGINX_FILE" <<EOF
-            server {
-                listen 80;
-                server_name ${PREVIEW_HOST};
-
+            python3 - "$PROD_NGINX" <<'PY'
+            from pathlib import Path
+            import re, sys
+            path = Path(sys.argv[1])
+            text = path.read_text()
+            begin = '    # AIA_PREVIEW_BEGIN\n'
+            end = '    # AIA_PREVIEW_END\n'
+            block = '''    # AIA_PREVIEW_BEGIN
                 location = /preview {
                     return 302 /preview/;
                 }
@@ -130,53 +145,48 @@ jobs:
                 location /preview/ {
                     proxy_pass http://127.0.0.1:8001/;
                     proxy_http_version 1.1;
-                    proxy_set_header Host \$host;
-                    proxy_set_header X-Real-IP \$remote_addr;
-                    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-                    proxy_set_header X-Forwarded-Proto \$scheme;
+                    proxy_set_header Host $host;
+                    proxy_set_header X-Real-IP $remote_addr;
+                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                    proxy_set_header X-Forwarded-Proto $scheme;
+                    proxy_set_header Accept-Encoding "";
+                    sub_filter_once off;
+                    sub_filter_types text/javascript application/javascript;
+                    sub_filter "fetch('/api/" "fetch('/preview/api/";
                     add_header X-AIA-Environment preview always;
                 }
-
-                location /api/ {
-                    set \$aia_backend http://127.0.0.1:8000;
-                    if (\$http_referer ~* "^https?://[^/]+/preview/") {
-                        set \$aia_backend http://127.0.0.1:8001;
-                    }
-                    proxy_pass \$aia_backend;
-                    proxy_http_version 1.1;
-                    proxy_set_header Host \$host;
-                    proxy_set_header X-Real-IP \$remote_addr;
-                    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-                    proxy_set_header X-Forwarded-Proto \$scheme;
-                }
-
-                location / {
-                    proxy_pass http://127.0.0.1:8000;
-                    proxy_http_version 1.1;
-                    proxy_set_header Host \$host;
-                    proxy_set_header X-Real-IP \$remote_addr;
-                    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-                    proxy_set_header X-Forwarded-Proto \$scheme;
-                }
-            }
-            EOF
+                # AIA_PREVIEW_END
+            '''
+            if begin in text and end in text:
+                pattern = re.compile(re.escape(begin) + r'.*?' + re.escape(end), re.S)
+                text = pattern.sub(block, text, count=1)
+            else:
+                marker = re.search(r'(?m)^\s*location\s+/\s*\{', text)
+                if not marker:
+                    raise SystemExit('Existing nginx server has no location / block')
+                text = text[:marker.start()] + block + text[marker.start():]
+            path.write_text(text)
+            PY
 
             if ! nginx -t; then
-              echo 'Nginx Preview config invalid; restoring previous config.' >&2
-              if [ -f "$NGINX_BACKUP" ]; then mv "$NGINX_BACKUP" "$NGINX_FILE"; else rm -f "$NGINX_FILE"; fi
+              echo 'Nginx Preview insertion invalid; restoring production config.' >&2
+              cp "$NGINX_BACKUP" "$PROD_NGINX"
               nginx -t
               exit 1
             fi
             systemctl reload nginx
 
             echo '=== 7. Verify Preview AND production after routing change ==='
-            if ! curl -fsS --retry 5 --retry-delay 1 -H "Host: $PREVIEW_HOST" http://127.0.0.1/preview/ >/dev/null; then
-              echo 'Preview route failed; rolling back only the Preview nginx config.' >&2
-              if [ -f "$NGINX_BACKUP" ]; then mv "$NGINX_BACKUP" "$NGINX_FILE"; else rm -f "$NGINX_FILE"; fi
+            if ! curl -fsS --retry 5 --retry-delay 1 http://127.0.0.1/preview/ >/dev/null; then
+              echo 'Preview route failed; restoring production nginx config.' >&2
+              cp "$NGINX_BACKUP" "$PROD_NGINX"
               nginx -t && systemctl reload nginx
               exit 1
             fi
-            curl -fsS --retry 5 --retry-delay 1 -H "Host: $PREVIEW_HOST" http://127.0.0.1/ >/dev/null
+            # Confirm Preview JS is rewritten to its isolated API path.
+            curl -fsS http://127.0.0.1/preview/app.js | grep -q "fetch('/preview/api/"
+            # Confirm production root/service remains healthy and untouched.
+            curl -fsS --retry 5 --retry-delay 1 http://127.0.0.1/ >/dev/null
             systemctl is-active --quiet aia-auto-ip
             curl -fsS --retry 3 http://127.0.0.1:8000/ >/dev/null
 
