@@ -1,6 +1,8 @@
 // 脚本推荐 V1：直接复用 IP 方案里的内容方向，不另造一套标签体系。
 (function () {
   const recommendationState = { loaded: false, loading: false, batch: '', groups: [], detail: null, direction: '' };
+  // “换一批”属于后续排序能力；V1 先不展示一个会返回相同结果的伪操作。
+  document.getElementById('script-recommendation-refresh')?.remove();
 
   function latestProposal() { return state.proposals?.[0]?.proposal || {}; }
 
