@@ -89,13 +89,15 @@ jobs:
               exit 1
             fi
 
-            echo '=== 4. Initialize and refresh isolated Preview signup data ==='
+            echo '=== 4. Initialize Preview databases and refresh signup data ==='
             cd "$PREVIEW_DIR"
             "$PREVIEW_DIR/.venv/bin/python" - <<'PY'
             from pathlib import Path
             import server
+            import script_library_store
             server.load_local_env()
             server.initialize_database()
+            script_library_store.initialize_script_library(server.database, server.database_engine)
             # Safe to run on every Preview deploy: import_signup_sheet upserts by agent_id,
             # so corrected/new field mappings refresh signup data without deleting test history.
             count = server.import_signup_sheet(Path('data/何不团队报名表20260807.xlsx'))
@@ -111,7 +113,7 @@ jobs:
             [Service]
             Type=simple
             WorkingDirectory=/opt/AIA-Auto-IP-preview
-            ExecStart=/opt/AIA-Auto-IP-preview/.venv/bin/python /opt/AIA-Auto-IP-preview/server.py --port 8001
+            ExecStart=/opt/AIA-Auto-IP-preview/.venv/bin/python /opt/AIA-Auto-IP-preview/script_server.py --port 8001
             Restart=on-failure
             RestartSec=2
 
@@ -124,6 +126,10 @@ jobs:
             sleep 2
             systemctl is-active --quiet aia-auto-ip-preview
             curl -fsS --retry 5 --retry-delay 1 http://127.0.0.1:8001/ >/dev/null
+            curl -fsS --retry 5 --retry-delay 1 \
+              -H 'Content-Type: application/json' \
+              -d '{"contentDirections":[]}' \
+              http://127.0.0.1:8001/api/scripts/recommend | grep -q '"ok": true'
 
             echo '=== 6. Insert /preview safely into the active production nginx location ==='
             PROD_NGINX=$(grep -Rsl 'proxy_pass http://127.0.0.1:8000' /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null | head -1 || true)
