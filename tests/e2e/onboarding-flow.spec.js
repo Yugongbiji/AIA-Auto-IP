@@ -19,7 +19,7 @@ test.describe('AIA Auto IP 首次进入流程', () => {
     await mockLookup(page, {
       matched: true,
       profile: {
-        name: '测试用户', agentId: 'A1001', city: '成都',
+        name: '测试用户', agentId: 'A1001', purpose: '拓客', city: '成都',
         customerGroups: ['宝爸宝妈'], insuranceYears: '8', honors: ['MDRT']
       },
       history: [], proposals: [], planningHistory: [], contentPlans: [], creativeHistory: []
@@ -31,7 +31,7 @@ test.describe('AIA Auto IP 首次进入流程', () => {
     await expect(page.locator('#messages')).toContainText('你的目标客户主要处在哪些年龄段');
   });
 
-  test('登录页已经提供姓名和编号但未匹配时，从城市继续，不重复询问身份', async ({ page }) => {
+  test('登录页已经提供姓名和编号但未匹配时，先问做自媒体目的，再继续城市', async ({ page }) => {
     await mockLookup(page, {
       matched: false,
       profile: {}, history: [], proposals: [], planningHistory: [], contentPlans: [], creativeHistory: []
@@ -40,6 +40,8 @@ test.describe('AIA Auto IP 首次进入流程', () => {
 
     await expect(page.locator('#messages')).toContainText(/把“你是谁”|人设定位|长期经营/);
     await expect(page.locator('#messages')).not.toContainText('先告诉我你的姓名');
+    await expect(page.locator('#messages')).toContainText('你做自媒体主要想实现什么');
+    await page.locator('#quick-replies').getByRole('button', { name: '拓客', exact: true }).click();
     await expect(page.locator('#messages')).toContainText('请补充你主要服务的城市');
   });
 
@@ -61,7 +63,7 @@ test.describe('AIA Auto IP 首次进入流程', () => {
     await mockLookup(page, {
       matched: true,
       profile: {
-        name: '完整用户', agentId: 'FULL001', city: '成都', customerGroups: ['企业主'],
+        name: '完整用户', agentId: 'FULL001', purpose: '拓客', city: '成都', customerGroups: ['企业主'],
         customerAges: ['35–45 岁'], insuranceYears: '9', strengths: ['专业靠谱'], honors: ['MDRT'],
         education: '本科', schoolTier: '985', overseas: '没有', contentTone: '专业理性', department: '成都一部'
       },
