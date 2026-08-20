@@ -48,8 +48,13 @@ jobs:
 
             PREVIEW_DIR=/opt/AIA-Auto-IP-preview
             PROD_DIR=/opt/AIA-Auto-IP
-            PREVIEW_BRANCH=agent/frontend-engineering-v1
+            PREVIEW_BRANCH="${{ github.head_ref }}"
             PREVIEW_SERVICE=/etc/systemd/system/aia-auto-ip-preview.service
+
+            if [ -z "$PREVIEW_BRANCH" ]; then
+              echo 'Preview branch is empty; this workflow must run from a pull request.' >&2
+              exit 1
+            fi
 
             echo '=== 1. Guard production before Preview changes ==='
             systemctl is-active --quiet aia-auto-ip
@@ -215,4 +220,4 @@ jobs:
               exit 1
             fi
 
-            echo "Preview healthy at /preview/; commit: $(git -C "$PREVIEW_DIR" rev-parse --short HEAD)"
+            echo "Preview healthy at /preview/; branch: ${PREVIEW_BRANCH}; commit: $(git -C "$PREVIEW_DIR" rev-parse --short HEAD)"
