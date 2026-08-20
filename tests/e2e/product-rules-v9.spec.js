@@ -13,7 +13,7 @@ test.describe('产品规则 V9 回归', () => {
       }, true, [], [], [], [], []);
     });
     const lastAssistant = page.locator('#messages .message.assistant').last();
-    await expect(lastAssistant).toContainText('做自媒体最主要想达到什么目的');
+    await expect(lastAssistant).toContainText('你做自媒体主要想实现什么');
     await expect(page.locator('#chat-input')).toHaveAttribute('placeholder', /做自媒体目的/);
   });
 
