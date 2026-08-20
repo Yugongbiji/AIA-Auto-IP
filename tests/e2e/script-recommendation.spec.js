@@ -53,10 +53,11 @@ test.describe('脚本推荐 V1', () => {
     expect(requestedDirections).toContain('养老规划');
 
     await page.getByRole('button', { name: '养老政策最近有什么变化' }).click();
-    await expect(page.locator('#script-detail-screen')).toBeVisible();
+    const detail = page.locator('#script-detail-screen');
+    await expect(detail).toBeVisible();
     await expect(page.locator('#script-detail-body')).toContainText('这是完整脚本正文。');
-    await expect(page.getByRole('button', { name: '脚本改写' })).toBeVisible();
-    await expect(page.getByRole('button', { name: '小红书排版' })).toBeVisible();
+    await expect(detail.getByRole('button', { name: '脚本改写' })).toBeVisible();
+    await expect(detail.getByRole('button', { name: '小红书排版' })).toBeVisible();
 
     await page.locator('#script-detail-rewrite').click();
     await expect(page.locator('#script-panel')).toBeVisible();
