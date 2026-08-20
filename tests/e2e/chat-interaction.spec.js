@@ -57,11 +57,36 @@ test.describe('AIA Auto IP 聊天交互契约', () => {
     await expect(page.locator('#chat-form .composer-selection-chip').filter({ hasText: '企业主' })).toHaveCount(0);
   });
 
+  test('发送多选答案必须进入对话并触发下一题', async ({ page }) => {
+    await reachFirstMultiQuestion(page);
+    await page.locator('#quick-replies').getByRole('button', { name: '企业主' }).click();
+    await page.locator('#quick-replies').getByRole('button', { name: '宝爸宝妈' }).click();
+    await page.locator('#chat-form').getByRole('button', { name: '发送' }).click();
+
+    const userMessages = page.locator('#messages .message.user');
+    await expect(userMessages.last()).toContainText('企业主');
+    await expect(userMessages.last()).toContainText('宝爸宝妈');
+    await expect(page.locator('#chat-form .composer-selection-chip')).toHaveCount(0);
+    await expect(page.locator('#messages')).toContainText('你的目标客户主要处在哪些年龄段');
+  });
+
+  test('多选标签与自由输入必须一次发送到同一条对话消息', async ({ page }) => {
+    await reachFirstMultiQuestion(page);
+    await page.locator('#quick-replies').getByRole('button', { name: '企业主' }).click();
+    await page.locator('#chat-input').fill('医生群体');
+    await page.locator('#chat-form').getByRole('button', { name: '发送' }).click();
+
+    const lastUser = page.locator('#messages .message.user').last();
+    await expect(lastUser).toContainText('企业主');
+    await expect(lastUser).toContainText('医生群体');
+    await expect(page.locator('#messages')).toContainText('你的目标客户主要处在哪些年龄段');
+  });
+
   test('发送多选答案后下一题应自动进入可视区域', async ({ page }) => {
     await reachFirstMultiQuestion(page);
     await page.locator('#quick-replies').getByRole('button', { name: '企业主' }).click();
     await page.locator('#quick-replies').getByRole('button', { name: '宝爸宝妈' }).click();
-    await page.getByRole('button', { name: '发送' }).click();
+    await page.locator('#chat-form').getByRole('button', { name: '发送' }).click();
 
     await expect(page.locator('#messages')).toContainText('你的目标客户主要处在哪些年龄段');
     await page.waitForTimeout(700);
