@@ -1,15 +1,28 @@
 const { test, expect } = require('@playwright/test');
 
 async function enterGuestIp(page) {
+  await page.route('**/api/lookup**', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ matched: false, profile: {}, history: [], proposals: [], planningHistory: [], contentPlans: [], creativeHistory: [] }) });
+  });
   await page.goto('/');
   await page.getByRole('button', { name: '我不在名单中，直接开始' }).click();
   await expect(page.locator('#workspace')).toBeVisible();
   await expect(page.locator('#ip-chat-panel')).toBeVisible();
 }
 
-async function reachFirstMultiQuestion(page) {
+async function reachCityQuestion(page) {
   await enterGuestIp(page);
+  await expect(page.locator('#messages')).toContainText('先告诉我你的姓名');
+  await page.locator('#chat-input').fill('测试访客');
+  await page.locator('#chat-form').getByRole('button', { name: '发送' }).click();
+  await expect(page.locator('#messages')).toContainText('9 位营销员编号');
+  await page.locator('#chat-input').fill('123456789');
+  await page.locator('#chat-form').getByRole('button', { name: '发送' }).click();
   await expect(page.locator('#messages')).toContainText('请补充你主要服务的城市');
+}
+
+async function reachFirstMultiQuestion(page) {
+  await reachCityQuestion(page);
   await page.locator('#quick-replies').getByRole('button', { name: '成都' }).click();
   await expect(page.locator('#messages')).toContainText('你最希望服务哪些人群');
   const firstChoice = page.locator('#quick-replies').getByRole('button', { name: '企业主' });
@@ -18,10 +31,19 @@ async function reachFirstMultiQuestion(page) {
 }
 
 test.describe('AIA Auto IP 聊天交互契约', () => {
-  test('首次进入 IP 后必须直接出现第一问', async ({ page }) => {
+  test('直接进入 IP 时按姓名、9位营销员编号、城市顺序收集', async ({ page }) => {
     await enterGuestIp(page);
+    await expect(page.locator('#messages')).toContainText('先告诉我你的姓名');
+    await page.locator('#chat-input').fill('测试访客');
+    await page.locator('#chat-form').getByRole('button', { name: '发送' }).click();
+    await expect(page.locator('#messages')).toContainText('9 位营销员编号');
+    await expect(page.locator('#messages')).toContainText('匹配已有资料库');
+    await page.locator('#chat-input').fill('12345');
+    await page.locator('#chat-form').getByRole('button', { name: '发送' }).click();
+    await expect(page.locator('#messages')).toContainText('应为 9 位数字');
+    await page.locator('#chat-input').fill('123456789');
+    await page.locator('#chat-form').getByRole('button', { name: '发送' }).click();
     await expect(page.locator('#messages')).toContainText('请补充你主要服务的城市');
-    await expect(page.locator('#quick-replies').getByRole('button', { name: '成都' })).toBeVisible();
   });
 
   test('点击多选标签不主动聚焦输入框', async ({ page }) => {
@@ -37,7 +59,6 @@ test.describe('AIA Auto IP 聊天交互契约', () => {
     await reachFirstMultiQuestion(page);
     await page.locator('#quick-replies').getByRole('button', { name: '企业主' }).click();
     await page.locator('#quick-replies').getByRole('button', { name: '宝爸宝妈' }).click();
-
     const composer = page.locator('#chat-form');
     await expect(composer.locator('.composer-editor')).toBeVisible();
     await expect(composer.locator('.composer-editor .composer-selection-chip')).toHaveCount(2);
@@ -50,7 +71,6 @@ test.describe('AIA Auto IP 聊天交互契约', () => {
     const option = page.locator('#quick-replies').getByRole('button', { name: '企业主' });
     await option.click();
     await expect(option).toHaveAttribute('aria-pressed', 'true');
-
     const chip = page.locator('#chat-form .composer-selection-chip').filter({ hasText: '企业主' });
     await chip.getByRole('button', { name: /取消选择 企业主/ }).click();
     await expect(option).toHaveAttribute('aria-pressed', 'false');
@@ -62,7 +82,6 @@ test.describe('AIA Auto IP 聊天交互契约', () => {
     await page.locator('#quick-replies').getByRole('button', { name: '企业主' }).click();
     await page.locator('#quick-replies').getByRole('button', { name: '宝爸宝妈' }).click();
     await page.locator('#chat-form').getByRole('button', { name: '发送' }).click();
-
     const userMessages = page.locator('#messages .message.user');
     await expect(userMessages.last()).toContainText('企业主');
     await expect(userMessages.last()).toContainText('宝爸宝妈');
@@ -75,7 +94,6 @@ test.describe('AIA Auto IP 聊天交互契约', () => {
     await page.locator('#quick-replies').getByRole('button', { name: '企业主' }).click();
     await page.locator('#chat-input').fill('医生群体');
     await page.locator('#chat-form').getByRole('button', { name: '发送' }).click();
-
     const lastUser = page.locator('#messages .message.user').last();
     await expect(lastUser).toContainText('企业主');
     await expect(lastUser).toContainText('医生群体');
@@ -87,10 +105,8 @@ test.describe('AIA Auto IP 聊天交互契约', () => {
     await page.locator('#quick-replies').getByRole('button', { name: '企业主' }).click();
     await page.locator('#quick-replies').getByRole('button', { name: '宝爸宝妈' }).click();
     await page.locator('#chat-form').getByRole('button', { name: '发送' }).click();
-
     await expect(page.locator('#messages')).toContainText('你的目标客户主要处在哪些年龄段');
     await page.waitForTimeout(700);
-
     const visible = await page.evaluate(() => {
       const box = document.querySelector('#messages');
       if (!box) return false;
