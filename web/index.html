@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="interaction-v2.css">
   <link rel="stylesheet" href="ip-compliance-v10.css">
   <link rel="stylesheet" href="ip-content-strategy-v12.css">
+  <link rel="stylesheet" href="script-recommendation-v1.css">
   <style>
     .workspace:has(#ip-chat-panel.hidden) { grid-template-columns:minmax(0,1fr); }
     .workspace:has(#ip-chat-panel.hidden) .profile-panel { display:none; }
@@ -39,6 +40,7 @@
         <div class="toolbar-brand"><strong>AIA Auto IP</strong><span>红人计划</span></div>
         <nav id="tool-tabs" class="tool-tabs" aria-label="创作工具">
           <button class="tool-tab active" data-tool="ip" type="button"><span>✨</span>IP 人设</button>
+          <button class="tool-tab" data-tool="recommendation" type="button"><span>🎯</span>脚本推荐</button>
           <button class="tool-tab" data-tool="script" type="button"><span>✍️</span>脚本改写</button>
           <button class="tool-tab" data-tool="xhs" type="button"><span>📱</span>小红书排版</button>
         </nav>
@@ -71,6 +73,14 @@
           <input id="planning-input" autocomplete="off" placeholder="输入你的回答…">
           <button class="primary" type="submit">发送</button>
         </form>
+      </section>
+
+      <section id="script-recommendation-panel" class="chat-panel script-recommendation-panel hidden">
+        <header class="script-recommendation-head">
+          <div><p class="eyebrow">为你挑选</p><h2>脚本推荐</h2><p class="panel-subtitle">根据你的人设和“你的内容主线”，从脚本库里挑出更适合你发的内容。</p></div>
+          <button id="script-recommendation-refresh" class="secondary-button script-recommendation-refresh" type="button">换一批</button>
+        </header>
+        <div id="script-recommendation-body" class="script-recommendation-body" aria-live="polite"></div>
       </section>
 
       <section id="script-panel" class="chat-panel creative-panel hidden">
@@ -123,6 +133,22 @@
       </header>
       <main id="content-plan-content" class="proposal-content"></main>
     </section>
+
+    <section id="script-detail-screen" class="script-detail-screen hidden" aria-label="脚本详情">
+      <div class="script-detail-shell">
+        <header class="script-detail-header"><button id="script-detail-close" class="secondary-button" type="button">返回推荐</button><span class="status-pill">脚本详情</span></header>
+        <main class="script-detail-content">
+          <p class="eyebrow">脚本库</p>
+          <h1 id="script-detail-title">脚本详情</h1>
+          <p id="script-detail-meta" class="script-detail-meta"></p>
+          <div id="script-detail-body" class="script-detail-body"></div>
+        </main>
+        <footer class="script-detail-actions">
+          <button id="script-detail-rewrite" class="secondary-button" type="button">脚本改写</button>
+          <button id="script-detail-xhs" class="primary" type="button">小红书排版</button>
+        </footer>
+      </div>
+    </section>
   </main>
   <script src="app.js"></script>
   <script src="onboarding.js"></script>
@@ -134,6 +160,7 @@
   <script src="product-rules-v10.js"></script>
   <script src="product-rules-v11.js"></script>
   <script src="product-rules-v12.js"></script>
+  <script src="script-recommendation-v1.js"></script>
   <script src="profile-float.js"></script>
   <script src="interaction-v2.js"></script>
   <script src="composer-submit-v2.js"></script>

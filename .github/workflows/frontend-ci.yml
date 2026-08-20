@@ -22,7 +22,10 @@ jobs:
           python-version: '3.12'
 
       - name: Run backend unit tests
-        run: python -m unittest tests/test_script_recommendation.py
+        run: |
+          python -m unittest tests/test_script_recommendation.py
+          python -m unittest tests/backend/test_script_library_store.py
+          python -m unittest tests/backend/test_script_api.py
 
       - name: Setup Node
         uses: actions/setup-node@v4

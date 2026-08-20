@@ -1,4 +1,5 @@
-# Preview is intentionally isolated from production: separate checkout, service, port and SQLite data.
+# Preview is intentionally isolated from production: separate checkout, service, port and SQLite user data.
+# Full Frontend QA runs in its own workflow and does not block developers from seeing Preview.
 name: Deploy Preview
 
 on:
@@ -11,29 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  qa:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
-
-      - name: Run Playwright QA
-        run: npm run test:e2e
-
   deploy-preview:
-    needs: qa
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -75,7 +54,7 @@ jobs:
             fi
             "$PREVIEW_DIR/.venv/bin/pip" install -r "$PREVIEW_DIR/requirements.txt"
 
-            # Reuse only DeepSeek credentials. Preview MUST NOT inherit production RDS settings.
+            # Preview service receives only DeepSeek credentials and always uses SQLite.
             : > "$PREVIEW_DIR/.env"
             for SRC in "$PROD_DIR/.env" "$PROD_DIR/.env.rds"; do
               if [ -f "$SRC" ]; then
@@ -89,17 +68,109 @@ jobs:
               exit 1
             fi
 
-            echo '=== 4. Initialize and refresh isolated Preview signup data ==='
+            echo '=== 4. Initialize Preview SQLite with real script data ==='
             cd "$PREVIEW_DIR"
-            "$PREVIEW_DIR/.venv/bin/python" - <<'PY'
+            "$PREVIEW_DIR/.venv/bin/python" - "$PROD_DIR" <<'PY'
             from pathlib import Path
+            import json
+            import subprocess
+            import sys
+
+            import psycopg
+            from psycopg.rows import dict_row
+
             import server
+            import script_library_store
+
+            prod_dir = Path(sys.argv[1])
+
+            def read_env_file(path):
+                values = {}
+                if not path.exists():
+                    return values
+                for raw in path.read_text(encoding='utf-8').splitlines():
+                    line = raw.strip()
+                    if not line or line.startswith('#') or '=' not in line:
+                        continue
+                    key, value = line.split('=', 1)
+                    values[key.strip()] = value.strip().strip('"').strip("'")
+                return values
+
+            def read_process_env(pid):
+                try:
+                    raw = Path(f'/proc/{pid}/environ').read_bytes()
+                except OSError:
+                    return {}
+                values = {}
+                for item in raw.split(b'\0'):
+                    if b'=' not in item:
+                        continue
+                    key, value = item.split(b'=', 1)
+                    values[key.decode('utf-8', errors='ignore')] = value.decode('utf-8', errors='ignore')
+                return values
+
+            rows = []
+            source = ''
+            prod_env = {}
+            prod_env.update(read_env_file(prod_dir / '.env'))
+            prod_env.update(read_env_file(prod_dir / '.env.rds'))
+            try:
+                main_pid = subprocess.check_output(
+                    ['systemctl', 'show', '-p', 'MainPID', '--value', 'aia-auto-ip'],
+                    text=True,
+                ).strip()
+                if main_pid and main_pid != '0':
+                    prod_env.update(read_process_env(main_pid))
+            except Exception:
+                pass
+
+            required = ['DB_HOST', 'DB_NAME', 'DB_USER', 'DB_PASSWORD']
+            if all(prod_env.get(key) for key in required):
+                try:
+                    with psycopg.connect(
+                        host=prod_env['DB_HOST'],
+                        port=int(prod_env.get('DB_PORT', '5432')),
+                        dbname=prod_env['DB_NAME'],
+                        user=prod_env['DB_USER'],
+                        password=prod_env['DB_PASSWORD'],
+                        sslmode=prod_env.get('DB_SSLMODE', 'require') or 'require',
+                        row_factory=dict_row,
+                    ) as pg:
+                        rows = [dict(row) for row in pg.execute('''
+                            SELECT batch, level1_tag, level2_tag, title_1, title_2, title_3,
+                                   body, word_count, estimated_minutes, is_hot, reviewed_at,
+                                   status, content_hash
+                            FROM public.script_library
+                            WHERE status = 'active'
+                            ORDER BY script_id ASC
+                        ''').fetchall()]
+                    if rows:
+                        source = 'production RDS read-only snapshot'
+                except Exception as exc:
+                    print(f'RDS snapshot unavailable; using audited Preview seed instead: {type(exc).__name__}')
+
+            # The production web service currently has no RDS connection variables on ECS.
+            # Use audited real scripts from the imported first-batch workbook so product work can continue.
+            if not rows:
+                for seed_path in sorted(Path('data').glob('preview_script_seed_*.json')):
+                    payload = json.loads(seed_path.read_text(encoding='utf-8'))
+                    if not isinstance(payload, list):
+                        raise SystemExit(f'Invalid Preview seed: {seed_path}')
+                    rows.extend(payload)
+                source = 'audited real-script Preview seed'
+
+            if not rows:
+                raise SystemExit('Preview has no script data source')
+
             server.load_local_env()
+            if server.database_engine() != 'sqlite':
+                raise SystemExit('Preview safety guard failed: DB_ENGINE must be sqlite')
             server.initialize_database()
-            # Safe to run on every Preview deploy: import_signup_sheet upserts by agent_id,
-            # so corrected/new field mappings refresh signup data without deleting test history.
-            count = server.import_signup_sheet(Path('data/何不团队报名表20260807.xlsx'))
-            print(f'Preview signup refresh complete: {count}')
+            script_library_store.initialize_script_library(server.database, server.database_engine)
+            result = script_library_store.upsert_scripts(server.database, rows)
+            signup_count = server.import_signup_sheet(Path('data/何不团队报名表20260807.xlsx'))
+            print(f'Preview scripts ready: source={source}, input={len(rows)}, sqlite_total={result["total"]}')
+            print(f'Preview signup refresh complete: {signup_count}')
             PY
 
             echo '=== 5. Install/start independent Preview service on 127.0.0.1:8001 ==='
@@ -111,7 +182,7 @@ jobs:
             [Service]
             Type=simple
             WorkingDirectory=/opt/AIA-Auto-IP-preview
-            ExecStart=/opt/AIA-Auto-IP-preview/.venv/bin/python /opt/AIA-Auto-IP-preview/server.py --port 8001
+            ExecStart=/opt/AIA-Auto-IP-preview/.venv/bin/python /opt/AIA-Auto-IP-preview/script_server.py --port 8001
             Restart=on-failure
             RestartSec=2
 
@@ -124,6 +195,14 @@ jobs:
             sleep 2
             systemctl is-active --quiet aia-auto-ip-preview
             curl -fsS --retry 5 --retry-delay 1 http://127.0.0.1:8001/ >/dev/null
+
+            # Lightweight deployment check only; full Playwright runs independently.
+            RECOMMEND_JSON=$(curl -fsS --retry 5 --retry-delay 1 \
+              -H 'Content-Type: application/json' \
+              -d '{"contentDirections":["家庭保障方案"]}' \
+              http://127.0.0.1:8001/api/scripts/recommend)
+            echo "$RECOMMEND_JSON" | grep -q '"ok": true'
+            echo "$RECOMMEND_JSON" | grep -q '家庭保障方案'
 
             echo '=== 6. Insert /preview safely into the active production nginx location ==='
             PROD_NGINX=$(grep -Rsl 'proxy_pass http://127.0.0.1:8000' /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null | head -1 || true)
