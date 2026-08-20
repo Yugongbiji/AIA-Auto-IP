@@ -1,58 +1,102 @@
-# AIA-Auto-IP · 智能人设定位工具
+# AIA-Auto-IP · 友邦 AI 内容工作台
 
-友邦人寿（AIA）营销员 IP 人设智能定位工具 —— 方法论、指令 Prompt、合规规则与素材的集中仓库。
+面向友邦营销员培训与日常使用的 AI 网页工具。当前主要功能包括：
 
-> 目标：根据营销员的基本信息 + 客户反馈，自动生成三平台（视频号 / 小红书 / 抖音）统一的昵称与两版合规简介，并给出一句话 IP 概括。
+1. IP 人设
+2. 内容规划
+3. 脚本改写
+4. 小红书排版
+
+项目同时沉淀方法论、Prompt、合规规则、业务规则、Web 实现、自动测试和部署流程。
+
+## 当前技术形态
+
+- 前端：`web/` 下原生 HTML / CSS / JavaScript
+- 后端：Python `server.py`
+- AI：DeepSeek API
+- 数据库：正式环境使用阿里云 RDS；Preview 使用独立 SQLite 测试数据库
+- 自动测试：Playwright + axe-core
+- 部署：GitHub Actions → Preview / ECS
+
+> 当前项目采用渐进式工程化，不为了局部需求强制重构到大型前端框架。通用工程能力优先复用成熟方案，AIA Auto IP 独有业务流程才重点自定义。
 
 ## 目录结构
 
-```
+```text
 AIA-Auto-IP/
-├── README.md                       # 本文件
-├── prompts/                        # 指令
-│   └── ip-persona-prompt.md        # 完整指令 Prompt（v3，可直接复制给豆包/DeepSeek）
-├── rules/                          # 规则（人工可读）
-│   ├── compliance-rules.md         # 账号装修合规规则（来自 Excel）
-│   └── field-schema.md             # 字段来源与采集规范（A/B/C 三类）
-├── src/                            # 可执行代码
-│   ├── prompt-engine.js            # Prompt 组装引擎（buildPersonaPrompt）
-│   ├── compliance.js               # 合规检测模块（checkNickname/checkBio/checkUniqueId）
-│   └── fields-schema.js            # 字段来源 schema（FIELD_SCHEMA / fieldsBySource）
-├── assets/                         # 素材（原始资料）
-│   ├── IP人设智能工具202608.pdf     # 思路与方法论文档
-│   └── 账号装修合规文档.xlsx         # 合规原始规则表
-└── docs/
-    └── methodology.md              # 五步法 + 六命名策略 + 三段式简介公式
+├── README.md
+├── prompts/                         # AI 指令与 Prompt
+├── rules/                           # 业务规则、字段与 onboarding 规则
+├── src/                             # 可复用业务模块
+├── web/                             # 当前网页前端
+├── data/                            # 数据与本地/测试数据
+├── assets/                          # 原始资料与素材
+├── tests/                           # Playwright 等自动测试
+├── docs/                            # 产品、设计、工程与部署规则
+├── .github/workflows/               # QA、Preview、正式部署工作流
+├── server.py                        # Python 服务入口
+├── package.json                     # 前端 QA 工具依赖
+└── requirements.txt                 # Python 依赖
 ```
 
-## 核心设计
+## 工程开发必读
 
-1. **人设优势判断轮**：先评估六维度（身份/性格/地域/专业/学历/成就），只给「值得突出」的维度生成昵称。
-2. **学历不暴露短板**：仅名校/硕士+/留学/博士才突出学历维度，普通背景跳过。
-3. **昵称纯中文为主**：避免英文/拼音，便于记忆与拼写。
-4. **全面合规**：整合《账号装修合规文档》全部规则 + 修改次数提醒（视频号昵称年 5 次 / 小红书简介 7 天 3 次）。
-5. **字段来源分层**：问卷(57人) / 后台Excel(年龄·城市) / 建议收集(学历·学校背景·留学·从业时间·荣誉·擅长)，缺失不臆造。
+开始新增页面、功能、后台能力或通用组件前，必须优先读取：
 
-## 使用方式
+1. `docs/工程效率与复用原则.md` —— 决定“该不该自己开发”，强制 Build vs Reuse；
+2. `docs/新功能开发检查表.md` —— 开发前、测试、Preview、正式发布的检查项；
+3. `docs/前端工程化与自动验收规范.md` —— 成熟组件复用、移动端、自动测试、CI/Preview 规则；
+4. `docs/公共组件契约.md` —— ChatWorkspace、Composer、QuickChoices 等公共组件行为；
+5. `docs/通用交互规则.md` —— 快捷选项、键盘、焦点、自动滚动等统一交互；
+6. `docs/界面设计规范.md` —— AIA 品牌视觉和 UI 层级。
 
-### 方式一：直接当指令用
-复制 `prompts/ip-persona-prompt.md`，把 `【姓名】` 等占位符替换为真实信息，发给豆包 / DeepSeek。
+核心原则：
 
-### 方式二：接入网页工具（规划中）
-`src/` 下三个 JS 模块可直接被前端调用：
-```js
-import { buildPersonaPrompt } from './src/prompt-engine.js';
-import { checkBio, checkNickname, checkUniqueId } from './src/compliance.js';
-import { FIELD_SCHEMA, fieldsBySource } from './src/fields-schema.js';
+**业务创新自己做；基础能力优先成熟方案。配置优于硬编码，复用优于复制，自动化优于人工重复操作，标准流程优于临时脚本，可追溯优于“现在能跑就行”。**
 
-const prompt = buildPersonaPrompt(userData, feedbackTags);
-// 调用 DeepSeek / 豆包 API → 拿到结果 → 用 compliance 模块标红
-```
+Codex / 开发者不得把普通 UI、基础交互、响应式、可访问性、自动测试等问题长期交给产品负责人逐项发现。
 
-## 数据来源说明
-- 问卷字段：已收回 57 人，后台持续补充
-- 后台 Excel：姓名/年龄/城市可批量获取
-- 建议收集：学历、最高学校背景、留学背景、保险从业时间、荣誉、擅长领域（决定人设深度）
+## 核心业务设计
+
+### IP 人设
+
+- 根据已有营销员资料自动跳过已知字段，只追问缺失信息；
+- 资料完整后直接生成，不为了互动硬问；
+- 基于身份、性格、地域、专业、学历、成就等维度判断值得突出的优势；
+- 昵称、简介与定位结果遵循合规规则；
+- 支持通过自然语言继续补充和修改资料。
+
+### 内容规划
+
+- 自动带入已有 IP 信息；
+- 围绕既定内容规划方法论生成账号方向；
+- 已有历史时恢复历史，不重复完整新手流程。
+
+### 脚本改写 / 小红书排版
+
+具体内容逻辑与输出规则以 `docs/脚本改写与小红书排版规则.md` 等对应文档为准。
+
+## 开发与发布流程
+
+默认流程：
+
+`需求 → 开发分支 → 修改代码 → 自动测试 → Frontend QA → QA 通过 → Preview → 产品验收 → 明确允许上线 → 合并 main → main QA → 正式 ECS → 健康检查`
+
+硬性规则：
+
+- QA 全绿不等于允许正式上线；
+- 未经明确授权，不自行合并 main；
+- 普通需求不直接在正式 ECS 上试错；
+- Preview 与正式数据保持隔离；
+- 正式部署保留健康检查和失败回滚。
+
+## 数据与合规
+
+- 资料字段与来源规则：`rules/field-schema.md`
+- 账号与内容合规：`rules/compliance-rules.md`
+- IP 首次进入规则：`rules/ip-onboarding-rules.md`
+- 内容规划首次进入规则：`rules/content-planning-onboarding-rules.md`
 
 ---
-*本仓库内容仅供内部方法论沉淀与工具开发，合规要求以公司最新发文为准。*
+
+本仓库用于 AIA Auto IP 的产品、规则、代码、测试和工程流程沉淀。合规要求以公司最新正式规则为准。
