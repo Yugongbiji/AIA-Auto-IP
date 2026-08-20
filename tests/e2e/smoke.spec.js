@@ -16,13 +16,15 @@ test.describe('AIA Auto IP 基础前端验收', () => {
     await expect(page.getByRole('img', { name: '红人计划' })).toHaveCount(0);
   });
 
-  test('工作台只保留三个用户可见功能入口', async ({ page }) => {
+  test('工作台保留四个正式用户入口且不再展示独立内容规划', async ({ page }) => {
     await page.getByRole('button', { name: /直接开始/ }).click();
-    await expect(page.locator('#tool-tabs').getByRole('button', { name: /IP 人设/ })).toBeVisible();
-    await expect(page.locator('#tool-tabs').getByRole('button', { name: /脚本改写/ })).toBeVisible();
-    await expect(page.locator('#tool-tabs').getByRole('button', { name: /小红书排版/ })).toBeVisible();
-    await expect(page.locator('#tool-tabs').getByRole('button', { name: /内容规划/ })).toHaveCount(0);
-    await expect(page.locator('#tool-tabs .tool-tab')).toHaveCount(3);
+    const tabs = page.locator('#tool-tabs');
+    await expect(tabs.getByRole('button', { name: /IP 人设/ })).toBeVisible();
+    await expect(tabs.getByRole('button', { name: /脚本推荐/ })).toBeVisible();
+    await expect(tabs.getByRole('button', { name: /脚本改写/ })).toBeVisible();
+    await expect(tabs.getByRole('button', { name: /小红书排版/ })).toBeVisible();
+    await expect(tabs.getByRole('button', { name: /内容规划/ })).toHaveCount(0);
+    await expect(page.locator('#tool-tabs .tool-tab')).toHaveCount(4);
   });
 
   test('当前视口不出现非预期横向溢出', async ({ page }) => { await expectNoHorizontalOverflow(page); });
