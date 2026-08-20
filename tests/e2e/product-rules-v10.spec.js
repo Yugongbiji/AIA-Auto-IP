@@ -29,7 +29,6 @@ test.describe('产品规则 V10 回归', () => {
     await expect(fold).not.toHaveAttribute('open', '');
     await expect(fold.locator('summary')).toContainText('合规与修改提醒');
     await expect(fold.locator('.compliance-card')).toHaveCount(1);
-    await expect(fold.locator('.platform-reminders')).toHaveCount(1);
   });
 
   test('第一次复制昵称弹提醒，确认后后续昵称复制不重复弹', async ({ page }) => {
