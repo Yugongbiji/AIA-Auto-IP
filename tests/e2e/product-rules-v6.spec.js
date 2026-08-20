@@ -50,8 +50,9 @@ test.describe('产品规则 V6 回归', () => {
     });
     const content = page.locator('#proposal-content');
     await expect(content).toContainText('方案 C · 服务能力');
-    await expect(content.locator('textarea')).toContainText('芳姐｜养老规划｜保障规划');
-    await expect(content).not.toContainText('专业靠谱｜');
+    const bioValues = await content.locator('textarea').evaluateAll((nodes) => nodes.map((node) => node.value));
+    expect(bioValues.some((value) => value.includes('芳姐｜养老规划｜保障规划'))).toBeTruthy();
+    expect(bioValues.some((value) => value.includes('专业靠谱｜'))).toBeFalsy();
   });
 
   test('内容规划结果不展示不建议混入方向', async ({ page }) => {
