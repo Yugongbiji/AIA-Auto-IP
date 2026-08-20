@@ -89,18 +89,18 @@ jobs:
               exit 1
             fi
 
-            echo '=== 4. Initialize isolated Preview data when needed ==='
-            if [ ! -f "$PREVIEW_DIR/data/persona.sqlite3" ]; then
-              cd "$PREVIEW_DIR"
-              "$PREVIEW_DIR/.venv/bin/python" - <<'PY'
+            echo '=== 4. Initialize and refresh isolated Preview signup data ==='
+            cd "$PREVIEW_DIR"
+            "$PREVIEW_DIR/.venv/bin/python" - <<'PY'
             from pathlib import Path
             import server
             server.load_local_env()
             server.initialize_database()
+            # Safe to run on every Preview deploy: import_signup_sheet upserts by agent_id,
+            # so corrected/new field mappings refresh signup data without deleting test history.
             count = server.import_signup_sheet(Path('data/何不团队报名表20260807.xlsx'))
-            print(f'Preview signup import complete: {count}')
+            print(f'Preview signup refresh complete: {count}')
             PY
-            fi
 
             echo '=== 5. Install/start independent Preview service on 127.0.0.1:8001 ==='
             cat > "$PREVIEW_SERVICE" <<'UNIT'
