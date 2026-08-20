@@ -69,8 +69,7 @@ test.describe('真实课堂连续使用回归', () => {
     await page.locator('#xhs-input').fill('课堂原文第一段。课堂原文第二段。');
     await page.locator('#xhs-form').getByRole('button', { name: '开始排版' }).click();
     const formatted = page.locator('#xhs-messages .creative-textarea').first();
-    await expect(formatted).toContainText('课堂原文第一段');
-    await expect(formatted).toContainText('课堂原文第二段');
+    await expect(formatted).toHaveValue(/课堂原文第一段[\s\S]*课堂原文第二段/);
   });
 
   test('旧内容规划历史不恢复独立入口，刷新后脚本历史仍可使用', async ({ page }) => {
