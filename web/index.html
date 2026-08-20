@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="profile-float.css">
   <link rel="stylesheet" href="interaction-v2.css">
   <link rel="stylesheet" href="ip-compliance-v10.css">
+  <link rel="stylesheet" href="ip-content-strategy-v12.css">
   <style>
     .workspace:has(#ip-chat-panel.hidden) { grid-template-columns:minmax(0,1fr); }
     .workspace:has(#ip-chat-panel.hidden) .profile-panel { display:none; }
@@ -38,7 +39,6 @@
         <div class="toolbar-brand"><strong>AIA Auto IP</strong><span>红人计划</span></div>
         <nav id="tool-tabs" class="tool-tabs" aria-label="创作工具">
           <button class="tool-tab active" data-tool="ip" type="button"><span>✨</span>IP 人设</button>
-          <button class="tool-tab" data-tool="planning" type="button"><span>🗂️</span>内容规划</button>
           <button class="tool-tab" data-tool="script" type="button"><span>✍️</span>脚本改写</button>
           <button class="tool-tab" data-tool="xhs" type="button"><span>📱</span>小红书排版</button>
         </nav>
@@ -59,6 +59,7 @@
         </form>
       </section>
 
+      <!-- 旧内容规划 DOM 暂时保留用于历史兼容，V12 不再向用户开放入口。 -->
       <section id="planning-panel" class="chat-panel planning-panel hidden">
         <header class="panel-header">
           <div class="panel-heading"><h2>账号内容规划</h2><p id="planning-subtitle" class="panel-subtitle">结合你的 IP，确定稳定、聚焦的内容方向。</p></div>
@@ -114,6 +115,7 @@
       <main id="proposal-content" class="proposal-content"></main>
     </section>
 
+    <!-- 旧内容规划结果页同样只做历史兼容，不再通过导航进入。 -->
     <section id="content-plan-screen" class="proposal-screen content-plan-screen hidden" aria-label="内容规划方案预览">
       <header class="proposal-header">
         <div><p class="eyebrow">账号内容规划</p><h2>内容规划方案</h2></div>
@@ -131,6 +133,7 @@
   <script src="product-rules-v9.js"></script>
   <script src="product-rules-v10.js"></script>
   <script src="product-rules-v11.js"></script>
+  <script src="product-rules-v12.js"></script>
   <script src="profile-float.js"></script>
   <script src="interaction-v2.js"></script>
   <script src="composer-submit-v2.js"></script>
