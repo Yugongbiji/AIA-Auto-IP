@@ -61,8 +61,8 @@
     });
   }
 
-  async function loadRecommendations(force = false) {
-    if (recommendationState.loading || (recommendationState.loaded && !force)) return;
+  async function loadRecommendations() {
+    if (recommendationState.loading || recommendationState.loaded) return;
     const directions = currentDirections();
     recommendationState.loading = true; renderRecommendations();
     try {
@@ -122,19 +122,21 @@
   if (typeof selectTool === 'function') {
     const baseSelectTool = selectTool;
     selectTool = function selectToolWithRecommendation(tool) {
-      if (tool !== 'recommendation') return baseSelectTool(tool);
+      if (tool !== 'recommendation') {
+        document.getElementById('script-recommendation-panel')?.classList.add('hidden');
+        return baseSelectTool(tool);
+      }
       state.activeTool = tool;
       document.querySelectorAll('[data-tool]').forEach((button) => button.classList.toggle('active', button.dataset.tool === tool));
       ['ip-chat-panel', 'planning-panel', 'script-panel', 'xhs-panel', 'tool-placeholder'].forEach((id) => document.getElementById(id)?.classList.add('hidden'));
       document.getElementById('script-recommendation-panel')?.classList.remove('hidden');
       document.getElementById('generate-button')?.classList.add('hidden');
       document.getElementById('view-proposal')?.classList.add('hidden');
-      loadRecommendations(false);
+      loadRecommendations();
     };
   }
 
   document.querySelector('[data-tool="recommendation"]')?.addEventListener('click', () => selectTool('recommendation'));
-  document.getElementById('script-recommendation-refresh')?.addEventListener('click', () => loadRecommendations(true));
   document.getElementById('script-detail-close')?.addEventListener('click', closeDetail);
   document.getElementById('script-detail-rewrite')?.addEventListener('click', () => handoff('script'));
   document.getElementById('script-detail-xhs')?.addEventListener('click', () => handoff('xhs'));
