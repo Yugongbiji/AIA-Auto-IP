@@ -30,6 +30,16 @@ test.describe('产品规则 V7 回归', () => {
     expect(cleaned).toBe('第一个标题\n正文内容');
   });
 
+  test('正文里的普通 1/2/3 编号列表不会被当成候选标题删掉', async ({ page }) => {
+    const cleaned = await page.evaluate(() => window.cleanScriptLibrarySource(`真正的标题\n开头：先说结论。\n正文1：下面有三个步骤。\n1. 第一步先确认需求\n2. 第二步再比较方案\n3. 第三步最后决定\n结尾：就这么简单。`));
+    expect(cleaned).toContain('1. 第一步先确认需求');
+    expect(cleaned).toContain('2. 第二步再比较方案');
+    expect(cleaned).toContain('3. 第三步最后决定');
+    expect(cleaned).not.toContain('开头：');
+    expect(cleaned).not.toContain('正文1：');
+    expect(cleaned).not.toContain('结尾：');
+  });
+
   test('小红书发送到 API 前已经清理脚本库结构标记', async ({ page }) => {
     let body;
     await page.route('**/api/xhs/format', async (route) => {
