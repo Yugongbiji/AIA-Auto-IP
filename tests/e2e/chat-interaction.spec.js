@@ -18,6 +18,8 @@ async function reachCityQuestion(page) {
   await expect(page.locator('#messages')).toContainText('9 位营销员编号');
   await page.locator('#chat-input').fill('123456789');
   await page.locator('#chat-form').getByRole('button', { name: '发送' }).click();
+  await expect(page.locator('#messages')).toContainText('你做自媒体主要想实现什么');
+  await page.locator('#quick-replies').getByRole('button', { name: '拓客', exact: true }).click();
   await expect(page.locator('#messages')).toContainText('请补充你主要服务的城市');
 }
 
@@ -31,7 +33,7 @@ async function reachFirstMultiQuestion(page) {
 }
 
 test.describe('AIA Auto IP 聊天交互契约', () => {
-  test('直接进入 IP 时按姓名、9位营销员编号、城市顺序收集', async ({ page }) => {
+  test('直接进入 IP 时按姓名、9位营销员编号、做自媒体目的、城市顺序收集', async ({ page }) => {
     await enterGuestIp(page);
     await expect(page.locator('#messages')).toContainText('先告诉我你的姓名');
     await page.locator('#chat-input').fill('测试访客');
@@ -43,6 +45,8 @@ test.describe('AIA Auto IP 聊天交互契约', () => {
     await expect(page.locator('#messages')).toContainText('应为 9 位数字');
     await page.locator('#chat-input').fill('123456789');
     await page.locator('#chat-form').getByRole('button', { name: '发送' }).click();
+    await expect(page.locator('#messages')).toContainText('你做自媒体主要想实现什么');
+    await page.locator('#quick-replies').getByRole('button', { name: '拓客', exact: true }).click();
     await expect(page.locator('#messages')).toContainText('请补充你主要服务的城市');
   });
 
