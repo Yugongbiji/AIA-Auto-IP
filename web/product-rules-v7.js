@@ -27,13 +27,12 @@
   });
 
   // 2) 脚本库来源清理。
-  // 目标：只删除“结构标签”，不改正文；标题候选只保留第一个，并去掉 1/2/3 序号。
+  // 目标：只删除“结构标签”，不改正文；文章开头连续出现的 1/2/3 候选标题只保留第一个。
   function cleanScriptLibrarySource(raw) {
     const source = String(raw || '').replace(/\r\n?/g, '\n').trim();
     if (!source) return source;
     const lines = source.split('\n');
     const output = [];
-    let titleKept = false;
 
     const titlePatterns = [
       /^\s*(?:标题\s*)?([1-3一二三])\s*[、.．:：)）-]\s*(.+?)\s*$/u,
@@ -41,22 +40,31 @@
     ];
     const sectionPattern = /^\s*(开头|正文(?:\s*[1-9一二三四五六七八九十])?|结尾|脚本正文|文案正文)\s*[：:]?\s*(.*)$/u;
 
-    for (const originalLine of lines) {
-      const line = originalLine.trimEnd();
-      let titleMatch = null;
+    // 只把文章开头连续的 1/2/3 当成“候选标题块”，避免误删正文中的正常编号列表。
+    let cursor = 0;
+    while (cursor < lines.length && !lines[cursor].trim()) cursor += 1;
+    const titleBlock = [];
+    let expected = 1;
+    while (cursor < lines.length && expected <= 3) {
+      const line = lines[cursor];
+      let match = null;
       for (const pattern of titlePatterns) {
-        const match = line.match(pattern);
-        if (match) { titleMatch = match; break; }
+        const candidate = line.match(pattern);
+        if (candidate) { match = candidate; break; }
       }
-      if (titleMatch) {
-        if (!titleKept) {
-          const titleText = String(titleMatch[2] || '').trim();
-          if (titleText) output.push(titleText);
-          titleKept = true;
-        }
-        continue;
-      }
+      if (!match) break;
+      const token = String(match[1] || '');
+      const normalizedNumber = ({ '一': 1, '二': 2, '三': 3 })[token] || Number(token);
+      if (normalizedNumber !== expected) break;
+      titleBlock.push(String(match[2] || '').trim());
+      cursor += 1;
+      expected += 1;
+    }
+    if (titleBlock.length >= 2 && titleBlock[0]) output.push(titleBlock[0]);
+    else cursor = 0;
 
+    for (; cursor < lines.length; cursor += 1) {
+      const line = lines[cursor].trimEnd();
       const section = line.match(sectionPattern);
       if (section) {
         const remainder = String(section[2] || '').trim();
@@ -78,14 +86,6 @@
       const cleaned = cleanScriptLibrarySource(source);
       creativeState.xhs.source = cleaned;
       return baseRunXhsFormatV7(cleaned, revision);
-    };
-  }
-
-  // 4) 新内容识别也按清理后的正文判断，但用户原始输入仍原样显示在对话中。
-  if (typeof handleXhsConversation === 'function') {
-    const baseHandleXhsConversationV7 = handleXhsConversation;
-    handleXhsConversation = function handleXhsConversationV7(content) {
-      return baseHandleXhsConversationV7(content);
     };
   }
 })();
