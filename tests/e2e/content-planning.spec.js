@@ -9,10 +9,13 @@ async function enterGuestPlanning(page) {
 }
 
 test.describe('内容规划完整流程', () => {
-  test('首次进入直接出现第一题，并完成 1 + N → 1 + 1 收集流程', async ({ page }) => {
+  test('首次进入主目标只允许拓客或增员，并完成 1 + N → 1 + 1 收集流程', async ({ page }) => {
     await enterGuestPlanning(page);
 
     await expect(page.locator('#planning-messages')).toContainText('这个账号接下来最想解决什么');
+    await expect(page.locator('#planning-quick-replies').getByRole('button', { name: '拓客为主' })).toBeVisible();
+    await expect(page.locator('#planning-quick-replies').getByRole('button', { name: '增员为主' })).toBeVisible();
+    await expect(page.locator('#planning-quick-replies').getByRole('button', { name: '两者兼顾' })).toHaveCount(0);
     await page.locator('#planning-quick-replies').getByRole('button', { name: '拓客为主' }).click();
 
     await expect(page.locator('#planning-messages')).toContainText('保险这条主线');

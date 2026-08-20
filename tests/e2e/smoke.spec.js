@@ -16,12 +16,19 @@ test.describe('AIA Auto IP 基础前端验收', () => {
     await page.goto('/');
   });
 
-  test('首屏可打开且四个功能入口完整', async ({ page }) => {
+  test('登录首屏保持聚焦，不展示四功能选择卡或红人计划大图', async ({ page }) => {
     await expect(page).toHaveTitle(/AIA Auto IP/);
-    await expect(page.getByRole('button', { name: /IP 人设/ })).toBeVisible();
-    await expect(page.getByRole('button', { name: /内容规划/ })).toBeVisible();
-    await expect(page.getByRole('button', { name: /脚本改写/ })).toBeVisible();
-    await expect(page.getByRole('button', { name: /小红书排版/ })).toBeVisible();
+    await expect(page.locator('.identity-tools')).toHaveCount(0);
+    await expect(page.getByText('四项创作能力')).toHaveCount(0);
+    await expect(page.getByRole('img', { name: '红人计划' })).toHaveCount(0);
+  });
+
+  test('工作台仍保留四个功能入口', async ({ page }) => {
+    await page.getByRole('button', { name: /直接开始/ }).click();
+    await expect(page.locator('#tool-tabs').getByRole('button', { name: /IP 人设/ })).toBeVisible();
+    await expect(page.locator('#tool-tabs').getByRole('button', { name: /内容规划/ })).toBeVisible();
+    await expect(page.locator('#tool-tabs').getByRole('button', { name: /脚本改写/ })).toBeVisible();
+    await expect(page.locator('#tool-tabs').getByRole('button', { name: /小红书排版/ })).toBeVisible();
   });
 
   test('当前视口不出现非预期横向溢出', async ({ page }) => {

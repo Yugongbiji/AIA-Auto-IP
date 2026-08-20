@@ -49,9 +49,14 @@
   }
 
   renderProfile = function renderReadOnlyFloatingProfile() {
-    const keys = ['name', 'agentId', 'selfIntro', 'purpose', ...questions.map((q) => q.key), 'generationNotes'];
-    const known = keys.filter((key) => state.profile[key]);
-    $('completion').textContent = `${Math.round((known.length / keys.length) * 100)}%`;
+    // 用户可见资料卡只展示真正需要确认/维护的字段。
+    // selfIntro 与 generationNotes 仅保留历史兼容或内部参考，不得展示。
+    const keys = [...new Set(['name', 'agentId', ...questions.map((q) => q.key)])];
+    const handled = keys.filter((key) => {
+      const value = state.profile[key];
+      return Boolean(value) || value === '跳过' || value === '不希望填写';
+    });
+    $('completion').textContent = `${Math.round((handled.length / Math.max(keys.length, 1)) * 100)}%`;
     const card = $('profile-card');
     card.innerHTML = '';
 
