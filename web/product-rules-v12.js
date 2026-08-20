@@ -36,6 +36,14 @@
     return JSON.stringify(values, null, 0);
   }
 
+  function realProfileEvidence(profile) {
+    const values = [
+      profile?.selfIntro, profile?.strengths, profile?.services, profile?.serviceAreas, profile?.serviceCapabilities,
+      profile?.expertise, profile?.specialties, profile?.honors,
+    ];
+    return JSON.stringify(values, null, 0);
+  }
+
   function goalFromPurpose(value) {
     const purpose = String(value || '');
     if ((purpose.includes('拓客') && purpose.includes('增员')) || /都要|两者/.test(purpose)) return 'both';
@@ -65,9 +73,9 @@
     return unique([...result, '行业发展', '个人成长', '从业经验', '团队日常']).slice(0, 4);
   }
 
-  function generalDirection(profile, proposal) {
-    // 泛内容只从本人真实资料/方案中的明确非保险积累提取；没有证据就不猜。
-    let evidence = textEvidence(profile, proposal)
+  function generalDirection(profile) {
+    // 泛内容只能从本人真实资料中的明确兴趣、经历或积累提取；AI 生成的方案文案/标签不能作为证据。
+    let evidence = realProfileEvidence(profile)
       .replace(/教育金/g, '')
       .replace(/养老保险|医疗险|重疾险|意外险/g, '')
       .replace(/保险|保障|保单|理赔|投保|保费|年金|寿险/g, '');
@@ -104,7 +112,7 @@
       lines.push(line('拓客内容主线', acquisitionDirections(evidence), ['建立信任', '吸引准客', '推动咨询'], 'acquisition'));
       lines.push(line('增员内容主线', recruitmentDirections(evidence), ['展示职业', '吸引同频', '团队信任'], 'recruitment'));
     }
-    const general = generalDirection(profile, proposal);
+    const general = generalDirection(profile);
     lines.push(general
       ? line(`泛内容支线 · ${general}`, [general], ['扩大受众', '增加活人感', '打开流量'], 'general')
       : { title: '泛内容支线 · 暂未确定', kind: 'general', directions: [], collections: [], actionTags: ['扩大受众', '增加活人感', '打开流量'], empty: true });
