@@ -53,7 +53,7 @@ test.describe('产品规则 V7 回归', () => {
     expect(body.source).toBe('第一标题\n第一句。\n第二句。\n最后一句。');
   });
 
-  test('小红书处理中提示不再展示内部方法论语言', async ({ page }) => {
+  test('小红书处理中提示使用当前用户可理解文案，不暴露内部方法论', async ({ page }) => {
     await page.route('**/api/xhs/format', async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 150));
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ formattedText: '正文', suggestedTags: [], risks: [] }) });
@@ -62,7 +62,7 @@ test.describe('产品规则 V7 回归', () => {
       creativeState.xhs.started = true;
       runXhsFormat('正文');
     });
-    await expect(page.locator('#xhs-messages')).toContainText('见证奇迹的时刻到啦');
-    await expect(page.locator('#xhs-messages')).not.toContainText('整理手机阅读节奏');
+    await expect(page.locator('#xhs-messages')).toContainText('正在整理手机阅读节奏');
+    await expect(page.locator('#xhs-messages')).not.toContainText('内部方法论');
   });
 });

@@ -1,6 +1,6 @@
 const { test, expect } = require('@playwright/test');
 
-test.describe('产品规则 V5 回归', () => {
+test.describe('产品规则 V5/V12 兼容回归', () => {
   test.beforeEach(async ({ page }) => { await page.goto('/'); });
 
   test('IP 方案将修改次数限制合并到合规提示板块', async ({ page }) => {
@@ -8,10 +8,7 @@ test.describe('产品规则 V5 回归', () => {
       renderProposal({
         headline: '测试定位', subheadline: '测试说明', tags: ['专业', '温暖', '真实'],
         clientPortrait: { title: '目标客户画像', text: '测试人群' }, advantages: [], nicknameOptions: [],
-        bios: {
-          xiaohongshu: [{ label: '方案 A', focus: '', lines: ['真实分享'] }],
-          videoDouyin: [{ label: '方案 A', focus: '', lines: ['真实分享'] }],
-        },
+        bios: { xiaohongshu: [{ label: '方案 A', focus: '', lines: ['真实分享'] }], videoDouyin: [{ label: '方案 A', focus: '', lines: ['真实分享'] }] },
         platformReminders: ['小红书个人简介：7 天限修改 3 次', '视频号昵称：每年最多可修改 5 次'],
       }, 1);
     });
@@ -20,28 +17,11 @@ test.describe('产品规则 V5 回归', () => {
     await expect(page.locator('#proposal-content > .platform-reminders')).toHaveCount(0);
   });
 
-  test('内容规划候选只推荐一个且必须与顶部最终方向一致', async ({ page }) => {
-    await page.evaluate(() => {
-      renderContentPlan({
-        summary: '测试规划', primaryGoal: '拓客为主',
-        insuranceLine: { title: '家庭保障', reason: '专业主线' },
-        candidateDirections: [
-          { direction: '保险 + 育儿财务规划', audienceFit: '匹配', sustainable: '可持续', benefit: '利他', recommend: true },
-          { direction: '保险 + 足球运动', audienceFit: '匹配', sustainable: '可持续', benefit: '利他', recommend: true },
-          { direction: '保险 + 家庭保障', audienceFit: '匹配', sustainable: '可持续', benefit: '利他', recommend: false },
-        ],
-        finalPositioning: { label: '保险 + 育儿财务规划', explanation: '最终选择' },
-        contentDirections: [], avoidDirections: [], focusReminder: '保持聚焦',
-      }, 1);
-    });
-    await expect(page.locator('#content-plan-content')).toContainText('候选方向');
-    await expect(page.locator('#content-plan-content .proposal-hero h1')).toHaveText('育儿财务规划');
-    await expect(page.locator('#content-plan-content .planning-candidate.recommended')).toHaveCount(1);
-    await expect(page.locator('#content-plan-content .planning-candidate.recommended')).toContainText('育儿财务规划');
-    await expect(page.locator('#content-plan-content')).not.toContainText('保险 + N');
-    await expect(page.locator('#content-plan-content')).not.toContainText('保险 + 1');
-    await expect(page.locator('#content-plan-content')).not.toContainText('1 + 1');
-    await expect(page.locator('#content-plan-content .planning-candidate')).not.toContainText('家庭保障');
+  test('独立内容规划入口已经退出用户工作台', async ({ page }) => {
+    await page.getByRole('button', { name: /直接开始/ }).click();
+    await expect(page.locator('#tool-tabs [data-tool="planning"]')).toHaveCount(0);
+    await expect(page.locator('#planning-panel')).toBeHidden();
+    await expect(page.locator('#content-plan-screen')).toBeHidden();
   });
 
   test('小红书排版优先给关键词加语义表情并保证两句内有视觉锚点', async ({ page }) => {

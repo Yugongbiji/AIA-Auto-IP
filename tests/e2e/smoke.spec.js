@@ -2,38 +2,30 @@ const { test, expect } = require('@playwright/test');
 const AxeBuilder = require('@axe-core/playwright').default;
 
 async function expectNoHorizontalOverflow(page) {
-  const metrics = await page.evaluate(() => ({
-    viewport: document.documentElement.clientWidth,
-    scroll: document.documentElement.scrollWidth,
-    bodyScroll: document.body.scrollWidth
-  }));
+  const metrics = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth, bodyScroll: document.body.scrollWidth }));
   expect(metrics.scroll).toBeLessThanOrEqual(metrics.viewport + 1);
   expect(metrics.bodyScroll).toBeLessThanOrEqual(metrics.viewport + 1);
 }
 
 test.describe('AIA Auto IP 基础前端验收', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-  });
+  test.beforeEach(async ({ page }) => { await page.goto('/'); });
 
-  test('登录首屏保持聚焦，不展示四功能选择卡或红人计划大图', async ({ page }) => {
+  test('登录首屏保持聚焦，不展示功能选择卡或红人计划大图', async ({ page }) => {
     await expect(page).toHaveTitle(/AIA Auto IP/);
     await expect(page.locator('.identity-tools')).toHaveCount(0);
-    await expect(page.getByText('四项创作能力')).toHaveCount(0);
     await expect(page.getByRole('img', { name: '红人计划' })).toHaveCount(0);
   });
 
-  test('工作台仍保留四个功能入口', async ({ page }) => {
+  test('工作台只保留三个用户可见功能入口', async ({ page }) => {
     await page.getByRole('button', { name: /直接开始/ }).click();
     await expect(page.locator('#tool-tabs').getByRole('button', { name: /IP 人设/ })).toBeVisible();
-    await expect(page.locator('#tool-tabs').getByRole('button', { name: /内容规划/ })).toBeVisible();
     await expect(page.locator('#tool-tabs').getByRole('button', { name: /脚本改写/ })).toBeVisible();
     await expect(page.locator('#tool-tabs').getByRole('button', { name: /小红书排版/ })).toBeVisible();
+    await expect(page.locator('#tool-tabs').getByRole('button', { name: /内容规划/ })).toHaveCount(0);
+    await expect(page.locator('#tool-tabs .tool-tab')).toHaveCount(3);
   });
 
-  test('当前视口不出现非预期横向溢出', async ({ page }) => {
-    await expectNoHorizontalOverflow(page);
-  });
+  test('当前视口不出现非预期横向溢出', async ({ page }) => { await expectNoHorizontalOverflow(page); });
 
   test('身份输入与主按钮在移动端可达', async ({ page }) => {
     await expect(page.getByLabel('姓名')).toBeVisible();
