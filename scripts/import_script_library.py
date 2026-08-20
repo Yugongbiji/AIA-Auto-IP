@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """AIA Auto IP 脚本库 Excel 导入器 V1。
 
-默认只做 dry-run；显式传 --write 才写数据库。
-兼容 PostgreSQL（DATABASE_URL）与 Preview SQLite。
+默认只做 dry-run；显式写入时统一走应用数据层。
+Preview 可直接写 SQLite；正式 PostgreSQL 必须额外显式确认。
 """
 from __future__ import annotations
 
@@ -10,11 +10,18 @@ import argparse
 import hashlib
 import json
 import re
-import sqlite3
+import sys
 from datetime import date, datetime
 from pathlib import Path
 
 from openpyxl import load_workbook
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+import server
+import script_library_store as store
 
 SPEECH_RATE = 260
 
@@ -33,7 +40,6 @@ def parse_titles(raw):
     text = clean_text(raw)
     if not text:
         return ["", "", ""]
-    # 先识别 1/2/3 编号；编号可能同行，也可能换行。
     pattern = re.compile(r"(?:^|\s|\n)([123])\s*[、\.．:：]\s*")
     matches = list(pattern.finditer(text))
     titles = []
@@ -51,7 +57,6 @@ def parse_titles(raw):
 
 
 def count_spoken_chars(body):
-    # 统计中英文/数字口播字符，不把标点、空白计入口播字数。
     return len(re.findall(r"[\u4e00-\u9fffA-Za-z0-9]", body))
 
 
@@ -97,9 +102,21 @@ def load_rows(path: Path):
             "estimated_minutes": round(wc / SPEECH_RATE, 1),
             "is_hot": clean_tag(vals[index["一级标签"]]) == "热点",
             "reviewed_at": normalize_date(vals[index["过审时间"]]) if "过审时间" in index else None,
+            "status": "active",
             "content_hash": content_hash(body),
         })
     return result
+
+
+def dedupe_rows(rows):
+    unique = []
+    seen = set()
+    for item in rows:
+        if item["content_hash"] in seen:
+            continue
+        seen.add(item["content_hash"])
+        unique.append(item)
+    return unique
 
 
 def audit(rows):
@@ -120,53 +137,37 @@ def audit(rows):
     }
 
 
-def schema_sql(dialect):
-    pk = "BIGSERIAL PRIMARY KEY" if dialect == "postgres" else "INTEGER PRIMARY KEY AUTOINCREMENT"
-    bool_type = "BOOLEAN" if dialect == "postgres" else "INTEGER"
-    return f"""
-CREATE TABLE IF NOT EXISTS script_library (
-  script_id {pk}, batch TEXT, level1_tag TEXT NOT NULL, level2_tag TEXT,
-  title_1 TEXT NOT NULL, title_2 TEXT, title_3 TEXT, body TEXT NOT NULL,
-  word_count INTEGER NOT NULL, estimated_minutes REAL NOT NULL,
-  is_hot {bool_type} NOT NULL DEFAULT 0, reviewed_at TEXT,
-  status TEXT NOT NULL DEFAULT 'active', content_hash TEXT NOT NULL UNIQUE,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-CREATE INDEX IF NOT EXISTS idx_script_library_tags ON script_library(level1_tag, level2_tag);
-CREATE INDEX IF NOT EXISTS idx_script_library_status ON script_library(status);
-"""
-
-
-def write_sqlite(rows, db_path):
-    conn = sqlite3.connect(db_path)
-    conn.executescript(schema_sql("sqlite"))
-    sql = """INSERT OR IGNORE INTO script_library
-(batch,level1_tag,level2_tag,title_1,title_2,title_3,body,word_count,estimated_minutes,is_hot,reviewed_at,content_hash)
-VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"""
-    for r in rows:
-        conn.execute(sql, (r["batch"],r["level1_tag"],r["level2_tag"],r["title_1"],r["title_2"],r["title_3"],r["body"],r["word_count"],r["estimated_minutes"],int(r["is_hot"]),r["reviewed_at"],r["content_hash"]))
-    conn.commit(); conn.close()
+def write_configured_database(rows, *, confirm_production=False):
+    server.load_local_env()
+    engine = server.database_engine()
+    if engine == "postgresql" and not confirm_production:
+        raise SystemExit("安全限制：当前是 PostgreSQL。正式 RDS 写入必须额外传 --confirm-production。")
+    server.initialize_database()
+    store.initialize_script_library(server.database, server.database_engine)
+    return engine, store.upsert_scripts(server.database, dedupe_rows(rows))
 
 
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("excel", type=Path)
-    p.add_argument("--write", action="store_true", help="确认后才写入数据库")
-    p.add_argument("--sqlite", type=Path, help="写入 Preview SQLite；V1 默认优先用于 Preview 验证")
+    p.add_argument("--write", action="store_true", help="将去重后的脚本写入当前配置数据库")
+    p.add_argument("--confirm-production", action="store_true", help="仅在明确允许正式 RDS 写入时使用")
     p.add_argument("--report", type=Path)
     args = p.parse_args()
+
     rows = load_rows(args.excel)
     report = audit(rows)
     print(json.dumps(report, ensure_ascii=False, indent=2))
     if args.report:
         args.report.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
-    if args.write:
-        if not args.sqlite:
-            raise SystemExit("V1 安全限制：--write 必须显式提供 --sqlite；正式 RDS 写入待 Preview 验收后开放。")
-        write_sqlite(rows, args.sqlite)
-        print(f"已写入 Preview SQLite: {args.sqlite}")
-    else:
+
+    if not args.write:
         print("dry-run 完成：未写入任何数据库。")
+        return
+
+    engine, result = write_configured_database(rows, confirm_production=args.confirm_production)
+    print(f"写入完成：engine={engine}, processed={result['processed']}, total={result['total']}")
+
 
 if __name__ == "__main__":
     main()
