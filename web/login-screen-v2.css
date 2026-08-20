@@ -1,0 +1,45 @@
+.identity-screen {
+  gap: 16px;
+}
+
+.identity-logo-lockup {
+  width: min(100%, 360px);
+  text-align: center;
+}
+
+.identity-logo-lockup .hongren-logo {
+  display: block;
+  width: min(72vw, 300px);
+  height: auto;
+  margin: 0 auto 8px;
+  object-fit: contain;
+}
+
+.identity-slogan {
+  margin: 0;
+}
+
+@media (max-width: 600px) {
+  .identity-screen {
+    justify-content: flex-start;
+    gap: 14px;
+    padding: 20px 16px 28px;
+  }
+
+  .identity-screen > .brand {
+    margin-top: 4px;
+  }
+
+  .identity-logo-lockup {
+    width: min(100%, 300px);
+  }
+
+  .identity-logo-lockup .hongren-logo {
+    width: min(68vw, 250px);
+    margin-bottom: 6px;
+  }
+
+  .identity-card {
+    padding: 24px 20px;
+  }
+}
