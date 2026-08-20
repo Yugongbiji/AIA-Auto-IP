@@ -16,11 +16,11 @@ test.describe('AIA Auto IP 基础前端验收', () => {
     await page.goto('/');
   });
 
-  test('登录首屏保持聚焦，不展示四功能选择卡', async ({ page }) => {
+  test('登录首屏保持聚焦，不展示四功能选择卡或红人计划大图', async ({ page }) => {
     await expect(page).toHaveTitle(/AIA Auto IP/);
-    await expect(page.getByRole('img', { name: '红人计划' })).toBeVisible();
     await expect(page.locator('.identity-tools')).toHaveCount(0);
     await expect(page.getByText('四项创作能力')).toHaveCount(0);
+    await expect(page.getByRole('img', { name: '红人计划' })).toHaveCount(0);
   });
 
   test('工作台仍保留四个功能入口', async ({ page }) => {
