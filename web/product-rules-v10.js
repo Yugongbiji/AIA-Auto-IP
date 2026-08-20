@@ -20,7 +20,6 @@
   }
 
   function showFirstCopyReminder(kind, text, button) {
-    reminderSeen[kind] = true;
     const modal = document.createElement('div');
     modal.className = 'copy-reminder-backdrop';
     modal.setAttribute('role', 'dialog');
@@ -30,7 +29,7 @@
     const card = document.createElement('section');
     card.className = 'copy-reminder-modal';
     const title = document.createElement('h3');
-    title.textContent = kind === 'nickname' ? '复制前提醒一下 📌' : '复制前提醒一下 📌';
+    title.textContent = '复制前提醒一下 📌';
     const intro = document.createElement('p');
     intro.textContent = kind === 'nickname'
       ? '昵称可以慢慢选，发布前建议先确认好。部分平台修改次数有限。'
@@ -53,7 +52,11 @@
     confirm.type = 'button';
     confirm.className = 'primary';
     confirm.textContent = '知道了，继续复制';
-    confirm.onclick = () => { writeClipboard(text, button); closeReminder(modal); };
+    confirm.onclick = () => {
+      reminderSeen[kind] = true;
+      writeClipboard(text, button);
+      closeReminder(modal);
+    };
     actions.append(cancel, confirm);
     card.append(title, intro, list, actions);
     modal.appendChild(card);
