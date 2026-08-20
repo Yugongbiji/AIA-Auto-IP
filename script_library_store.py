@@ -59,6 +59,55 @@ def initialize_script_library(database, database_engine):
         )
 
 
+def upsert_scripts(database, scripts) -> dict:
+    """Insert/update normalized scripts by content_hash without creating duplicates."""
+    now = datetime.now(timezone.utc).isoformat()
+    processed = 0
+    with database() as conn:
+        for script in scripts:
+            content_hash = str(script.get("content_hash") or "").strip()
+            title_1 = str(script.get("title_1") or "").strip()
+            body = str(script.get("body") or "").strip()
+            level1 = str(script.get("level1_tag") or "").strip()
+            if not content_hash or not title_1 or not body or not level1:
+                raise ValueError("normalized script is missing required fields")
+            conn.execute(
+                """
+                INSERT INTO script_library(
+                    batch, level1_tag, level2_tag, title_1, title_2, title_3,
+                    body, word_count, estimated_minutes, is_hot, reviewed_at,
+                    status, content_hash, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(content_hash) DO UPDATE SET
+                    batch=excluded.batch,
+                    level1_tag=excluded.level1_tag,
+                    level2_tag=excluded.level2_tag,
+                    title_1=excluded.title_1,
+                    title_2=excluded.title_2,
+                    title_3=excluded.title_3,
+                    body=excluded.body,
+                    word_count=excluded.word_count,
+                    estimated_minutes=excluded.estimated_minutes,
+                    is_hot=excluded.is_hot,
+                    reviewed_at=excluded.reviewed_at,
+                    status=excluded.status,
+                    updated_at=excluded.updated_at
+                """,
+                (
+                    script.get("batch"), level1, script.get("level2_tag"),
+                    title_1, script.get("title_2"), script.get("title_3"), body,
+                    int(script.get("word_count") or 0),
+                    float(script.get("estimated_minutes") or 0),
+                    bool(script.get("is_hot")), script.get("reviewed_at"),
+                    str(script.get("status") or "active"), content_hash,
+                    now, now,
+                ),
+            )
+            processed += 1
+        total = conn.execute("SELECT COUNT(*) AS count FROM script_library").fetchone()["count"]
+    return {"processed": processed, "total": total}
+
+
 def _row_dict(row):
     return dict(row) if row is not None else None
 
