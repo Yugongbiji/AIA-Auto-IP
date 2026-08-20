@@ -28,10 +28,27 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
             /opt/AIA-Auto-IP/.venv/bin/pip install -r requirements.txt
+
+            # Keep the existing service definition, but make the production entrypoint
+            # the Script Recommendation wrapper so /api/scripts/* is available.
+            mkdir -p /etc/systemd/system/aia-auto-ip.service.d
+            cat > /etc/systemd/system/aia-auto-ip.service.d/10-script-server.conf <<'UNIT'
+            [Service]
+            ExecStart=
+            ExecStart=/opt/AIA-Auto-IP/.venv/bin/python /opt/AIA-Auto-IP/script_server.py --port 8000
+            UNIT
+            systemctl daemon-reload
             systemctl restart aia-auto-ip
 
-            # 服务必须启动成功，并通过本机 HTTP 健康检查；否则自动回滚上一版本。
-            if ! systemctl is-active --quiet aia-auto-ip || ! curl -fsS --retry 5 --retry-delay 2 http://127.0.0.1:8000/ >/dev/null; then
+            # Production must serve the site AND the script API. script_server.py fails
+            # fast on startup if the dedicated SCRIPT_DB_* RDS connection cannot read
+            # script_library, so a healthy service also validates the RDS data path.
+            if ! systemctl is-active --quiet aia-auto-ip \
+              || ! curl -fsS --retry 5 --retry-delay 2 http://127.0.0.1:8000/ >/dev/null \
+              || ! curl -fsS --retry 5 --retry-delay 2 \
+                    -H 'Content-Type: application/json' \
+                    -d '{"contentDirections":["家庭保障方案"]}' \
+                    http://127.0.0.1:8000/api/scripts/recommend | grep -q '"ok": true'; then
               echo "Deployment health check failed. Rolling back to ${PREVIOUS_COMMIT}."
               git reset --hard "${PREVIOUS_COMMIT}"
               /opt/AIA-Auto-IP/.venv/bin/pip install -r requirements.txt
