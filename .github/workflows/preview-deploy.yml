@@ -72,7 +72,7 @@ jobs:
             cd "$PREVIEW_DIR"
             "$PREVIEW_DIR/.venv/bin/python" - "$PROD_DIR" <<'PY'
             from pathlib import Path
-            import os
+            import subprocess
             import sys
 
             import psycopg
@@ -83,7 +83,7 @@ jobs:
 
             prod_dir = Path(sys.argv[1])
 
-            def read_env(path):
+            def read_env_file(path):
                 values = {}
                 if not path.exists():
                     return values
@@ -95,13 +95,33 @@ jobs:
                     values[key.strip()] = value.strip().strip('"').strip("'")
                 return values
 
+            def read_process_env(pid):
+                values = {}
+                raw = Path(f'/proc/{pid}/environ').read_bytes()
+                for item in raw.split(b'\0'):
+                    if b'=' not in item:
+                        continue
+                    key, value = item.split(b'=', 1)
+                    values[key.decode('utf-8', errors='ignore')] = value.decode('utf-8', errors='ignore')
+                return values
+
+            # Production may receive RDS settings from systemd rather than repository env files.
+            # Read the running service environment in memory only; never write those credentials into Preview files.
+            main_pid = subprocess.check_output(
+                ['systemctl', 'show', '-p', 'MainPID', '--value', 'aia-auto-ip'],
+                text=True,
+            ).strip()
+            if not main_pid or main_pid == '0':
+                raise SystemExit('Cannot copy script snapshot: production service has no active MainPID')
+
             prod_env = {}
-            prod_env.update(read_env(prod_dir / '.env'))
-            prod_env.update(read_env(prod_dir / '.env.rds'))
+            prod_env.update(read_env_file(prod_dir / '.env'))
+            prod_env.update(read_env_file(prod_dir / '.env.rds'))
+            prod_env.update(read_process_env(main_pid))
             required = ['DB_HOST', 'DB_NAME', 'DB_USER', 'DB_PASSWORD']
             missing = [key for key in required if not prod_env.get(key)]
             if missing:
-                raise SystemExit('Cannot copy script snapshot: production RDS env is missing ' + ', '.join(missing))
+                raise SystemExit('Cannot copy script snapshot: production runtime is missing ' + ', '.join(missing))
 
             # Read-only operation: fetch the script content library from production RDS.
             with psycopg.connect(
@@ -133,7 +153,6 @@ jobs:
             script_library_store.initialize_script_library(server.database, server.database_engine)
             result = script_library_store.upsert_scripts(server.database, [dict(row) for row in rows])
 
-            # Signup refresh remains isolated to Preview SQLite.
             signup_count = server.import_signup_sheet(Path('data/何不团队报名表20260807.xlsx'))
             print(f'Preview script snapshot copied: source={len(rows)}, sqlite_total={result["total"]}')
             print(f'Preview signup refresh complete: {signup_count}')
