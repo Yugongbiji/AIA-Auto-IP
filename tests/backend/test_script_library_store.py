@@ -54,6 +54,21 @@ class ScriptLibraryStoreTests(unittest.TestCase):
         self.assertEqual(detail["title_1"], "养老政策怎么变")
         self.assertEqual(detail["level2_tag"], "政策")
 
+    def test_upsert_is_idempotent_and_updates_metadata(self):
+        script = {
+            "batch": "第一批", "level1_tag": "养老", "level2_tag": "规划",
+            "title_1": "第一次标题", "title_2": None, "title_3": None,
+            "body": "同一篇正文", "word_count": 260, "estimated_minutes": 1.0,
+            "is_hot": False, "reviewed_at": "2026-08-01", "status": "active",
+            "content_hash": "same-hash",
+        }
+        first = store.upsert_scripts(self.database, [script])
+        self.assertEqual(first, {"processed": 1, "total": 1})
+        script["title_1"] = "更新后的标题"
+        second = store.upsert_scripts(self.database, [script])
+        self.assertEqual(second, {"processed": 1, "total": 1})
+        self.assertEqual(store.list_active_scripts(self.database)[0]["title_1"], "更新后的标题")
+
     def test_inactive_script_not_exposed(self):
         script_id = seed_script(self.database)
         with self.database() as conn:
