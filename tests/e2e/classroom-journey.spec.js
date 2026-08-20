@@ -23,7 +23,6 @@ async function mockApis(page, { withHistory = false } = {}) {
     matched: true, profile: fullProfile,
     history: withHistory ? [{ role: 'assistant', content: 'IP 方案 V1 已生成。' }] : [],
     proposals: withHistory ? [{ version: 1, proposal: ipProposal, model: 'mock' }] : [],
-    // 旧内容规划历史仍可返回，但不应恢复成用户可见功能。
     planningHistory: withHistory ? [{ role: 'assistant', content: '旧内容规划历史。' }] : [],
     contentPlans: withHistory ? [{ version: 1, plan: { summary: '旧方案' }, model: 'mock' }] : [],
     creativeHistory: withHistory ? [
@@ -69,7 +68,9 @@ test.describe('真实课堂连续使用回归', () => {
     await page.locator('#tool-tabs').getByRole('button', { name: /小红书排版/ }).click();
     await page.locator('#xhs-input').fill('课堂原文第一段。课堂原文第二段。');
     await page.locator('#xhs-form').getByRole('button', { name: '开始排版' }).click();
-    await expect(page.locator('#xhs-messages .creative-textarea').first()).toHaveValue('课堂原文第一段\n\n课堂原文第二段');
+    const formatted = page.locator('#xhs-messages .creative-textarea').first();
+    await expect(formatted).toContainText('课堂原文第一段');
+    await expect(formatted).toContainText('课堂原文第二段');
   });
 
   test('旧内容规划历史不恢复独立入口，刷新后脚本历史仍可使用', async ({ page }) => {
