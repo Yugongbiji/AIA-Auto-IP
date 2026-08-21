@@ -1,65 +1,96 @@
-// IP 资料悬浮条：只在 IP 人设页显示；默认一行，点击展开；资料只展示，修改统一通过对话完成。
+// IP 人设悬浮入口：白色“我的 IP 资料” + 红色“最新 IP 方案”。
+// 两个入口只在 IP 人设页显示；按钮组可拖动，资料详情点击展开，最新方案存在时才显示。
 (function () {
   const panel = document.querySelector('.profile-panel');
-  const toolbar = document.querySelector('.workspace-toolbar');
-  if (!panel || !toolbar) return;
+  if (!panel) return;
 
-  panel.classList.add('profile-float');
+  panel.classList.add('profile-floating-detail');
   panel.setAttribute('aria-expanded', 'false');
 
+  const actions = document.createElement('div');
+  actions.className = 'ip-floating-actions';
+  actions.setAttribute('aria-label', 'IP 快捷入口');
+
+  const profileButton = document.createElement('button');
+  profileButton.type = 'button';
+  profileButton.className = 'ip-floating-button ip-floating-profile-button';
+  profileButton.innerHTML = '<span aria-hidden="true">✨</span><span>我的 IP 资料</span>';
+  profileButton.setAttribute('aria-expanded', 'false');
+
+  const proposalButton = document.createElement('button');
+  proposalButton.type = 'button';
+  proposalButton.className = 'ip-floating-button ip-floating-proposal-button hidden';
+  proposalButton.innerHTML = '<span aria-hidden="true">★</span><span>最新 IP 方案</span>';
+
+  actions.append(profileButton, proposalButton);
+  document.body.appendChild(actions);
+
   function isIpVisible() {
-    return state.activeTool === 'ip' && !$('ip-chat-panel').classList.contains('hidden');
+    return state.activeTool === 'ip' && !document.getElementById('ip-chat-panel')?.classList.contains('hidden');
   }
 
-  function syncPanelVisibility() {
-    panel.classList.toggle('profile-float-hidden', !isIpVisible());
+  function closeProfileDetail() {
+    panel.classList.remove('profile-floating-detail-open');
+    panel.setAttribute('aria-expanded', 'false');
+    profileButton.setAttribute('aria-expanded', 'false');
   }
 
-  function syncFloatTop() {
-    const rect = toolbar.getBoundingClientRect();
-    document.documentElement.style.setProperty('--profile-float-top', `${Math.ceil(rect.bottom + 6)}px`);
+  function toggleProfileDetail() {
+    const next = !panel.classList.contains('profile-floating-detail-open');
+    panel.classList.toggle('profile-floating-detail-open', next);
+    panel.setAttribute('aria-expanded', next ? 'true' : 'false');
+    profileButton.setAttribute('aria-expanded', next ? 'true' : 'false');
   }
 
-  function setExpanded(expanded) {
-    panel.classList.toggle('profile-float-expanded', expanded);
-    panel.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+  function syncProposalButton() {
+    const latest = state.proposals?.[0];
+    proposalButton.classList.toggle('hidden', !latest);
+    if (latest) proposalButton.querySelector('span:last-child').textContent = `最新 IP 方案 · V${latest.version}`;
   }
 
-  const title = panel.querySelector('.profile-title');
-  title.setAttribute('role', 'button');
-  title.setAttribute('tabindex', '0');
-  title.setAttribute('aria-label', '展开或收起我的 IP 信息');
-  title.addEventListener('click', () => setExpanded(!panel.classList.contains('profile-float-expanded')));
-  title.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      setExpanded(!panel.classList.contains('profile-float-expanded'));
-    }
+  function syncVisibility() {
+    const visible = isIpVisible();
+    actions.classList.toggle('hidden', !visible);
+    if (!visible) closeProfileDetail();
+    syncProposalButton();
+  }
+
+  profileButton.addEventListener('click', (event) => {
+    if (actions.dataset.dragged === '1') return;
+    event.stopPropagation();
+    toggleProfileDetail();
+  });
+
+  proposalButton.addEventListener('click', () => {
+    if (actions.dataset.dragged === '1') return;
+    const latest = state.proposals?.[0];
+    if (latest) renderProposal(latest.proposal, latest.version);
+  });
+
+  document.addEventListener('click', (event) => {
+    if (!panel.classList.contains('profile-floating-detail-open')) return;
+    if (panel.contains(event.target) || actions.contains(event.target)) return;
+    closeProfileDetail();
   });
 
   function ensureConversationHint() {
     let hint = panel.querySelector('.profile-conversation-hint');
-    if (!hint) {
-      hint = document.createElement('p');
-      hint.className = 'profile-conversation-hint';
-      hint.textContent = '💬 如果想修改任何资料，直接在下面的输入框里告诉我哦！';
-      const card = $('profile-card');
-      card.insertAdjacentElement('afterend', hint);
-    }
+    if (hint) return;
+    hint = document.createElement('p');
+    hint.className = 'profile-conversation-hint';
+    hint.textContent = '💬 想修改资料，直接在 IP 对话框里告诉我即可。';
+    document.getElementById('profile-card')?.insertAdjacentElement('afterend', hint);
   }
 
   renderProfile = function renderReadOnlyFloatingProfile() {
-    // 用户可见资料卡只展示真正需要确认/维护的字段。
-    // selfIntro 与 generationNotes 仅保留历史兼容或内部参考，不得展示。
     const keys = [...new Set(['name', 'agentId', ...questions.map((q) => q.key)])];
     const handled = keys.filter((key) => {
       const value = state.profile[key];
       return Boolean(value) || value === '跳过' || value === '不希望填写';
     });
-    $('completion').textContent = `${Math.round((handled.length / Math.max(keys.length, 1)) * 100)}%`;
-    const card = $('profile-card');
+    document.getElementById('completion').textContent = `${Math.round((handled.length / Math.max(keys.length, 1)) * 100)}%`;
+    const card = document.getElementById('profile-card');
     card.innerHTML = '';
-
     keys.forEach((key) => {
       const group = document.createElement('div');
       group.className = 'profile-group';
@@ -72,23 +103,80 @@
       group.append(label, value);
       card.appendChild(group);
     });
-
     ensureConversationHint();
-    $('generate-button').disabled = !state.done;
-    syncPanelVisibility();
-    syncFloatTop();
+    document.getElementById('generate-button').disabled = !state.done;
+    syncVisibility();
   };
+
+  // 拖动的是按钮组，不影响正常页面滚动；拖动后短暂屏蔽 click，防止松手时误打开。
+  let drag = null;
+  actions.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0) return;
+    const rect = actions.getBoundingClientRect();
+    drag = { startX: event.clientX, startY: event.clientY, left: rect.left, top: rect.top, moved: false };
+    actions.setPointerCapture?.(event.pointerId);
+  });
+  actions.addEventListener('pointermove', (event) => {
+    if (!drag) return;
+    const dx = event.clientX - drag.startX;
+    const dy = event.clientY - drag.startY;
+    if (Math.abs(dx) + Math.abs(dy) < 8 && !drag.moved) return;
+    drag.moved = true;
+    event.preventDefault();
+    const maxLeft = Math.max(8, window.innerWidth - actions.offsetWidth - 8);
+    const maxTop = Math.max(8, window.innerHeight - actions.offsetHeight - 8);
+    const left = Math.min(maxLeft, Math.max(8, drag.left + dx));
+    const top = Math.min(maxTop, Math.max(8, drag.top + dy));
+    actions.style.left = `${left}px`;
+    actions.style.top = `${top}px`;
+    actions.style.right = 'auto';
+    actions.style.bottom = 'auto';
+  });
+  function endDrag() {
+    if (!drag) return;
+    if (drag.moved) {
+      actions.dataset.dragged = '1';
+      setTimeout(() => { actions.dataset.dragged = '0'; }, 180);
+      try { localStorage.setItem('aia-ip-floating-position', JSON.stringify({ left: actions.style.left, top: actions.style.top })); } catch (_) {}
+    }
+    drag = null;
+  }
+  actions.addEventListener('pointerup', endDrag);
+  actions.addEventListener('pointercancel', endDrag);
+
+  try {
+    const saved = JSON.parse(localStorage.getItem('aia-ip-floating-position') || 'null');
+    if (saved?.left && saved?.top) {
+      actions.style.left = saved.left;
+      actions.style.top = saved.top;
+      actions.style.right = 'auto';
+      actions.style.bottom = 'auto';
+    }
+  } catch (_) {}
 
   const previousSelectTool = selectTool;
   selectTool = function floatingProfileSelectTool(tool) {
     const result = previousSelectTool(tool);
-    syncPanelVisibility();
-    syncFloatTop();
+    syncVisibility();
     return result;
   };
 
-  window.addEventListener('resize', syncFloatTop);
-  if (window.ResizeObserver) new ResizeObserver(syncFloatTop).observe(toolbar);
-  syncFloatTop();
-  syncPanelVisibility();
+  const previousRefreshProposalButton = refreshProposalButton;
+  refreshProposalButton = function floatingRefreshProposalButton() {
+    const result = previousRefreshProposalButton();
+    syncProposalButton();
+    return result;
+  };
+
+  window.addEventListener('resize', () => {
+    const rect = actions.getBoundingClientRect();
+    if (rect.right > window.innerWidth - 8 || rect.bottom > window.innerHeight - 8) {
+      actions.style.left = '';
+      actions.style.top = '';
+      actions.style.right = '';
+      actions.style.bottom = '';
+    }
+  });
+
+  syncVisibility();
 })();
