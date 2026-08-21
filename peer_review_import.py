@@ -135,7 +135,8 @@ def ensure_peer_review_table(conn):
 
 def merge_into_saved_profile(conn, agent_id: str, summary: dict, now: str):
     row = conn.execute("SELECT profile_json FROM saved_profiles WHERE agent_id = ?", (agent_id,)).fetchone()
-    profile = json.loads(row["profile_json"]) if row and row.get("profile_json") else {}
+    profile_json = row["profile_json"] if row else ""
+    profile = json.loads(profile_json) if profile_json else {}
     profile["peerReviewSummary"] = summary
     profile["peerReviewKeywords"] = summary_text(summary)
     conn.execute(
@@ -162,7 +163,6 @@ def import_peer_reviews(path: Path) -> dict:
             if not exists:
                 skipped_agents.append(agent_id)
                 continue
-            # This workbook is treated as a fresh snapshot for each included agent.
             conn.execute("DELETE FROM peer_reviews WHERE agent_id = ?", (agent_id,))
             for row in rows:
                 conn.execute(
