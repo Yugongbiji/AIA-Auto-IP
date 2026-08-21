@@ -11,7 +11,7 @@ import os
 from http import HTTPStatus
 from http.server import ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 import server as core
 from backend import script_api
@@ -24,21 +24,13 @@ def dedicated_script_database_enabled() -> bool:
 
 
 def script_database():
-    """Use a dedicated PostgreSQL connection for the script library when configured.
-
-    This deliberately keeps the rest of AIA Auto IP on its existing database. Only
-    `/api/scripts/*` reads/writes the script RDS connection, which avoids migrating
-    IP profiles, conversations and other production data as part of Script V1.
-    """
     if not dedicated_script_database_enabled():
         return core.database()
-
     try:
         import psycopg
         from psycopg.rows import dict_row
     except ImportError as error:
         raise RuntimeError("未安装 PostgreSQL 驱动。请运行：pip install -r requirements.txt") from error
-
     conn = psycopg.connect(
         host=os.environ["SCRIPT_DB_HOST"].strip(),
         port=int(os.getenv("SCRIPT_DB_PORT", "5432")),
@@ -69,7 +61,23 @@ class ScriptAppHandler(core.AppHandler):
         return payload
 
     def do_GET(self):
-        path = urlparse(self.path).path
+        parsed = urlparse(self.path)
+        path = parsed.path
+        if path == "/api/scripts/library":
+            query = parse_qs(parsed.query)
+            try:
+                result = script_api.library(
+                    script_database,
+                    tag=(query.get("tag", [""])[0] or ""),
+                    page=int(query.get("page", ["1"])[0] or 1),
+                    page_size=int(query.get("pageSize", ["20"])[0] or 20),
+                )
+            except ValueError:
+                self.send_json({"error": "脚本库请求格式不正确"}, HTTPStatus.BAD_REQUEST)
+                return
+            self.send_json({"ok": True, **result})
+            return
+
         prefix = "/api/scripts/"
         if path.startswith(prefix) and path != prefix:
             raw_id = path[len(prefix):].strip("/")
@@ -112,14 +120,9 @@ def main():
 
     core.load_local_env()
     core.initialize_database()
-
-    # Preview/local SQLite owns its own tables. Production's dedicated script RDS
-    # tables are provisioned separately with least-privilege credentials, so the
-    # web process must not require CREATE TABLE / CREATE INDEX privileges there.
     if not dedicated_script_database_enabled():
         script_store.initialize_script_library(script_database, script_database_engine)
     else:
-        # Fail fast if the dedicated script database cannot be read.
         with script_database() as conn:
             conn.execute("SELECT 1 FROM script_library LIMIT 1").fetchone()
 
