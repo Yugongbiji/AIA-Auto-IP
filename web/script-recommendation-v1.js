@@ -5,6 +5,12 @@
 
   function latestProposal() { return state.proposals?.[0]?.proposal || {}; }
 
+  function scriptApiUrl(path) {
+    const normalized = String(path || '').replace(/^\/+/, '');
+    const preview = window.location.pathname === '/preview' || window.location.pathname.startsWith('/preview/');
+    return `${preview ? '/preview' : ''}/api/scripts/${normalized}`;
+  }
+
   function currentStrategy() {
     if (typeof window.buildIpContentStrategy !== 'function') return { lines: [] };
     return window.buildIpContentStrategy(state.profile || {}, latestProposal()) || { lines: [] };
@@ -41,7 +47,7 @@
 
   async function track(scriptId, eventType, contentDirection) {
     try {
-      await fetch('/api/scripts/activity', {
+      await fetch(scriptApiUrl('activity'), {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           scriptId, eventType, agentId: state.profile?.agentId || '',
@@ -117,7 +123,7 @@
     const directions = currentDirections();
     recommendationState.loading = true; renderRecommendations();
     try {
-      const response = await fetch('/api/scripts/recommend', {
+      const response = await fetch(scriptApiUrl('recommend'), {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contentDirections: directions }),
       });
@@ -137,7 +143,7 @@
 
   async function openDetail(scriptId, contentDirection) {
     try {
-      const response = await fetch(`/api/scripts/${encodeURIComponent(scriptId)}`);
+      const response = await fetch(scriptApiUrl(String(encodeURIComponent(scriptId))));
       if (!response.ok) throw new Error('detail request failed');
       const payload = await response.json();
       recommendationState.detail = payload.script;
