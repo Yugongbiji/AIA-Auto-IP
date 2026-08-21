@@ -13,6 +13,38 @@ def recommend(database, payload: dict) -> dict:
     return build_recommendation_payload(database, directions, limit_per_direction=5)
 
 
+def library(database, *, tag: str = "", page: int = 1, page_size: int = 20) -> dict:
+    page = max(1, int(page or 1))
+    page_size = max(1, min(50, int(page_size or 20)))
+    tag = str(tag or "").strip()
+    scripts = store.list_active_scripts(database)
+    tags = sorted({str(item.get("level2_tag") or "").strip() for item in scripts if str(item.get("level2_tag") or "").strip()})
+    if tag:
+        scripts = [item for item in scripts if str(item.get("level2_tag") or "").strip() == tag]
+    total = len(scripts)
+    start = (page - 1) * page_size
+    items = []
+    for script in scripts[start:start + page_size]:
+        items.append({
+            "script_id": script["script_id"],
+            "title": script.get("title_1") or "",
+            "level1_tag": script.get("level1_tag") or "",
+            "level2_tag": script.get("level2_tag") or "",
+            "word_count": int(script.get("word_count") or 0),
+            "estimated_minutes": float(script.get("estimated_minutes") or 0),
+            "is_hot": bool(script.get("is_hot")),
+        })
+    return {
+        "tags": tags,
+        "tag": tag,
+        "page": page,
+        "page_size": page_size,
+        "total": total,
+        "pages": max(1, (total + page_size - 1) // page_size) if total else 1,
+        "scripts": items,
+    }
+
+
 def detail(database, script_id) -> dict | None:
     try:
         script_id = int(script_id)
