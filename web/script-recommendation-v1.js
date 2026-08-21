@@ -1,15 +1,37 @@
-// 脚本推荐 V1：直接复用 IP 方案里的内容方向，不另造一套标签体系。
+// 脚本推荐 V2：只展示两个板块——保险主线、内容支线；板块内不再二次按内容方向分组。
 (function () {
   const recommendationState = { loaded: false, loading: false, batch: '', groups: [], detail: null, direction: '' };
-  // “换一批”属于后续排序能力；V1 先不展示一个会返回相同结果的伪操作。
   document.getElementById('script-recommendation-refresh')?.remove();
 
   function latestProposal() { return state.proposals?.[0]?.proposal || {}; }
 
+  function currentStrategy() {
+    if (typeof window.buildIpContentStrategy !== 'function') return { lines: [] };
+    return window.buildIpContentStrategy(state.profile || {}, latestProposal()) || { lines: [] };
+  }
+
   function currentDirections() {
-    if (typeof window.buildIpContentStrategy !== 'function') return [];
-    const strategy = window.buildIpContentStrategy(state.profile || {}, latestProposal());
-    return [...new Set((strategy.lines || []).flatMap((line) => line.directions || []).filter(Boolean))];
+    return [...new Set((currentStrategy().lines || []).flatMap((line) => line.directions || []).filter(Boolean))];
+  }
+
+  function sectionDefinitions() {
+    const lines = currentStrategy().lines || [];
+    const insurance = lines.find((line) => line.kind === 'acquisition' || line.kind === 'recruitment');
+    const branch = lines.find((line) => line.kind === 'general');
+    return [
+      {
+        key: 'insurance',
+        title: '保险主线',
+        subtitle: insurance?.kind === 'recruitment' ? '围绕增员主线推荐' : '围绕拓客主线推荐',
+        directions: insurance?.directions || [],
+      },
+      {
+        key: 'branch',
+        title: '内容支线',
+        subtitle: branch?.source ? `来源：${branch.source}` : '来自你的真实职业、身份或爱好',
+        directions: branch?.directions || [],
+      },
+    ];
   }
 
   function metaText(script) {
@@ -29,36 +51,63 @@
     } catch (_) { /* 埋点失败不能阻断用户使用 */ }
   }
 
+  function scriptsForDirections(directions) {
+    const wanted = new Set(directions || []);
+    const result = [];
+    const seen = new Set();
+    recommendationState.groups.forEach((group) => {
+      if (!wanted.has(group.content_direction)) return;
+      (group.scripts || []).forEach((script) => {
+        if (!script?.script_id || seen.has(script.script_id)) return;
+        seen.add(script.script_id);
+        result.push({ ...script, _direction: group.content_direction });
+      });
+    });
+    return result;
+  }
+
+  function renderScriptCard(script, list) {
+    const card = document.createElement('article'); card.className = 'script-recommendation-card';
+    const row = document.createElement('div'); row.className = 'script-card-title-row';
+    if (script.is_hot) {
+      const hot = document.createElement('span'); hot.className = 'script-hot-badge'; hot.textContent = '热点'; row.appendChild(hot);
+    }
+    const title = document.createElement('button'); title.type = 'button'; title.className = 'script-card-title'; title.textContent = script.title || '未命名脚本';
+    title.addEventListener('click', () => openDetail(script.script_id, script._direction)); row.appendChild(title);
+    const meta = document.createElement('p'); meta.className = 'script-card-meta'; meta.textContent = metaText(script);
+    card.append(row, meta); list.appendChild(card);
+    track(script.script_id, 'impression', script._direction);
+  }
+
   function renderRecommendations() {
     const root = document.getElementById('script-recommendation-body');
     if (!root) return;
     root.innerHTML = '';
     if (recommendationState.loading) {
-      root.innerHTML = '<div class="script-recommendation-loading">正在根据你的内容主线挑选脚本…</div>';
+      root.innerHTML = '<div class="script-recommendation-loading">正在根据你的保险主线和内容支线挑选脚本…</div>';
       return;
     }
     if (!recommendationState.groups.length) {
       root.innerHTML = '<div class="script-recommendation-empty">还没有匹配到可推荐的脚本。先完成 IP 方案，或等待脚本库补充对应方向。</div>';
       return;
     }
-    recommendationState.groups.forEach((group) => {
-      const section = document.createElement('section'); section.className = 'script-direction-section';
+
+    sectionDefinitions().forEach((definition) => {
+      const section = document.createElement('section'); section.className = `script-direction-section script-section-${definition.key}`;
       const heading = document.createElement('div'); heading.className = 'script-direction-heading';
-      heading.innerHTML = `<div><h3>${escapeHtml(group.content_direction)}</h3><p class="script-direction-reason">${escapeHtml(group.reason || '')}</p></div>`;
+      heading.innerHTML = `<div><h3>${escapeHtml(definition.title)}</h3><p class="script-direction-reason">${escapeHtml(definition.subtitle)}</p></div>`;
       section.appendChild(heading);
       const list = document.createElement('div'); list.className = 'script-card-list';
-      (group.scripts || []).forEach((script) => {
-        const card = document.createElement('article'); card.className = 'script-recommendation-card';
-        const row = document.createElement('div'); row.className = 'script-card-title-row';
-        if (script.is_hot) {
-          const hot = document.createElement('span'); hot.className = 'script-hot-badge'; hot.textContent = '热点'; row.appendChild(hot);
-        }
-        const title = document.createElement('button'); title.type = 'button'; title.className = 'script-card-title'; title.textContent = script.title || '未命名脚本';
-        title.addEventListener('click', () => openDetail(script.script_id, group.content_direction)); row.appendChild(title);
-        const meta = document.createElement('p'); meta.className = 'script-card-meta'; meta.textContent = metaText(script);
-        card.append(row, meta); list.appendChild(card);
-        track(script.script_id, 'impression', group.content_direction);
-      });
+      const scripts = scriptsForDirections(definition.directions);
+      if (!scripts.length) {
+        const empty = document.createElement('p'); empty.className = 'script-recommendation-empty';
+        empty.textContent = definition.key === 'branch' && !definition.directions.length
+          ? '你的内容支线还没有确定。补充过往职业、生活身份或个人爱好后，我会从这里推荐对应脚本。'
+          : '当前脚本库里还没有匹配到这一板块的脚本。';
+        list.appendChild(empty);
+      } else {
+        scripts.forEach((script) => renderScriptCard(script, list));
+      }
       section.appendChild(list); root.appendChild(section);
     });
   }
@@ -111,8 +160,7 @@
     if (!detail) return;
     const source = [detail.title_1, detail.body].filter(Boolean).join('\n');
     track(detail.script_id, tool === 'script' ? 'rewrite_click' : 'xhs_click', recommendationState.direction);
-    closeDetail();
-    selectTool(tool);
+    closeDetail(); selectTool(tool);
     const input = document.getElementById(tool === 'script' ? 'script-input' : 'xhs-input');
     if (input) { input.value = source; input.dispatchEvent(new Event('input', { bubbles: true })); input.focus(); }
   }
