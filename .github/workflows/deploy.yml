@@ -25,13 +25,9 @@ jobs:
             set -e
             cd /opt/AIA-Auto-IP
             PREVIOUS_COMMIT=$(git rev-parse HEAD)
-            OVERRIDE=/etc/systemd/system/aia-auto-ip.service.d/10-script-server.conf
-            PREFLIGHT_LOG=/tmp/aia-script-preflight.log
 
             rollback() {
-              echo "Production cutover failed. Restoring ${PREVIOUS_COMMIT}."
-              rm -f "$OVERRIDE"
-              systemctl daemon-reload
+              echo "Production frontend deployment failed. Restoring ${PREVIOUS_COMMIT}."
               git reset --hard "$PREVIOUS_COMMIT"
               /opt/AIA-Auto-IP/.venv/bin/pip install -r requirements.txt
               systemctl restart aia-auto-ip
@@ -40,59 +36,28 @@ jobs:
               exit 1
             }
 
+            # First make production serve the same current main frontend that already
+            # passed Preview + Frontend QA. Do not block the whole UI rollout on the
+            # Script Recommendation RDS/API readiness.
             git fetch origin main
             git reset --hard origin/main
             /opt/AIA-Auto-IP/.venv/bin/pip install -r requirements.txt
 
-            # Never switch the production process until the new entrypoint has proved
-            # it can start and serve the real Script Recommendation API on a spare port.
-            test -f /opt/AIA-Auto-IP/script_server.py || rollback
-            rm -f "$PREFLIGHT_LOG"
-            /opt/AIA-Auto-IP/.venv/bin/python /opt/AIA-Auto-IP/script_server.py --port 8002 >"$PREFLIGHT_LOG" 2>&1 &
-            PREFLIGHT_PID=$!
-
-            PREFLIGHT_OK=0
-            for _ in $(seq 1 10); do
-              if ! kill -0 "$PREFLIGHT_PID" 2>/dev/null; then
-                break
-              fi
-              if curl -fsS http://127.0.0.1:8002/ >/dev/null \
-                && curl -fsS \
-                     -H 'Content-Type: application/json' \
-                     -d '{"contentDirections":["养老"]}' \
-                     http://127.0.0.1:8002/api/scripts/recommend | grep -q '"ok": true'; then
-                PREFLIGHT_OK=1
-                break
-              fi
-              sleep 2
-            done
-
-            kill "$PREFLIGHT_PID" 2>/dev/null || true
-            wait "$PREFLIGHT_PID" 2>/dev/null || true
-
-            if [ "$PREFLIGHT_OK" -ne 1 ]; then
-              echo "Preflight failed; production service was not switched."
-              cat "$PREFLIGHT_LOG" || true
-              rollback
-            fi
-
-            # Only after preflight succeeds do we switch the production service.
-            mkdir -p /etc/systemd/system/aia-auto-ip.service.d
-            cat > "$OVERRIDE" <<'UNIT'
-            [Service]
-            ExecStart=
-            ExecStart=/opt/AIA-Auto-IP/.venv/bin/python /opt/AIA-Auto-IP/script_server.py --port 8000
-            UNIT
+            # Keep the existing production service entrypoint for this frontend-first
+            # rollout. Removing the Script wrapper override returns the service to its
+            # stable server.py unit while still serving web/ from current main.
+            OVERRIDE=/etc/systemd/system/aia-auto-ip.service.d/10-script-server.conf
+            rm -f "$OVERRIDE"
             systemctl daemon-reload
             systemctl restart aia-auto-ip
 
+            # The release gate for this step is deliberately the site itself. The
+            # script API will be connected as a separate follow-up after the new UI is
+            # visible in production.
             if ! systemctl is-active --quiet aia-auto-ip \
               || ! curl -fsS --retry 5 --retry-delay 2 http://127.0.0.1:8000/ >/dev/null \
-              || ! curl -fsS --retry 5 --retry-delay 2 \
-                    -H 'Content-Type: application/json' \
-                    -d '{"contentDirections":["养老"]}' \
-                    http://127.0.0.1:8000/api/scripts/recommend | grep -q '"ok": true'; then
+              || ! curl -fsS --retry 5 --retry-delay 2 http://127.0.0.1:8000/ | grep -q '脚本推荐'; then
               rollback
             fi
 
-            echo "Deployment healthy: $(git rev-parse --short HEAD)"
+            echo "Frontend deployment healthy: $(git rev-parse --short HEAD)"
