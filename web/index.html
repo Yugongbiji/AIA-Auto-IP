@@ -13,6 +13,7 @@
   <style>
     .workspace:has(#ip-chat-panel.hidden) { grid-template-columns:minmax(0,1fr); }
     .workspace:has(#ip-chat-panel.hidden) .profile-panel { display:none; }
+    .strategy-source-note { margin:-2px 0 10px; color:#7a7a7a; font-size:13px; }
   </style>
 </head>
 <body>
@@ -77,7 +78,7 @@
 
       <section id="script-recommendation-panel" class="chat-panel script-recommendation-panel hidden">
         <header class="script-recommendation-head">
-          <div><p class="eyebrow">为你挑选</p><h2>脚本推荐</h2><p class="panel-subtitle">根据你的人设和“你的内容主线”，从脚本库里挑出更适合你发的内容。</p></div>
+          <div><p class="eyebrow">为你挑选</p><h2>脚本推荐</h2><p class="panel-subtitle">根据你的人设和“你的内容主线”，优先从保险主线和内容支线中挑选脚本。</p></div>
           <button id="script-recommendation-refresh" class="secondary-button script-recommendation-refresh" type="button">换一批</button>
         </header>
         <div id="script-recommendation-body" class="script-recommendation-body" aria-live="polite"></div>
@@ -161,6 +162,7 @@
   <script src="product-rules-v11.js"></script>
   <script src="product-rules-v12.js"></script>
   <script src="product-rules-v13.js"></script>
+  <script src="product-rules-v14.js"></script>
   <script src="script-recommendation-v1.js"></script>
   <script src="profile-float.js"></script>
   <script src="interaction-v2.js"></script>
