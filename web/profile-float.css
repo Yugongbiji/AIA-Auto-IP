@@ -1,71 +1,99 @@
-/* IP 人设资料：仅在 IP 页出现的一行悬浮资料条；点击后展开查看。 */
+/* IP 人设快捷入口：可移动白色资料按钮 + 友邦红最新方案按钮。 */
 .workspace { grid-template-columns:minmax(0,1fr)!important; }
 
-#ip-chat-panel { padding-top:58px; }
-
-.profile-panel {
+.ip-floating-actions {
   position:fixed;
-  z-index:16;
-  top:var(--profile-float-top,72px);
-  left:50%;
-  width:min(720px,calc(100vw - 32px));
-  max-height:calc(100dvh - var(--profile-float-top,72px) - 16px);
-  padding:0;
-  overflow:hidden;
-  transform:translateX(-50%);
-  border:1px solid #eadde1;
-  border-radius:14px;
-  background:#fffffff7;
-  box-shadow:0 12px 32px #3c07121a;
-  backdrop-filter:blur(12px);
+  z-index:30;
+  right:22px;
+  bottom:26px;
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:9px;
+  touch-action:none;
 }
+.ip-floating-actions.hidden { display:none!important; }
 
-.profile-panel.profile-float-expanded { overflow:auto; }
-.profile-panel.profile-float-hidden { display:none!important; }
+.ip-floating-button {
+  min-height:46px;
+  padding:0 16px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  border-radius:999px;
+  border:1px solid #e8dde1;
+  font-size:13px;
+  font-weight:800;
+  line-height:1;
+  white-space:nowrap;
+  cursor:pointer;
+  box-shadow:0 9px 24px #3c07121f;
+}
+.ip-floating-profile-button {
+  background:#fff;
+  color:#32272b;
+}
+.ip-floating-profile-button:hover { border-color:#d8bcc5; }
+.ip-floating-proposal-button {
+  border-color:#d31145;
+  background:#d31145;
+  color:#fff;
+}
+.ip-floating-button.hidden { display:none!important; }
+.ip-floating-button:focus-visible { outline:3px solid #d3114540; outline-offset:2px; }
 
-.profile-title {
+.profile-panel.profile-floating-detail {
+  display:none;
+  position:fixed;
+  z-index:29;
+  right:22px;
+  bottom:138px;
+  width:min(520px,calc(100vw - 32px));
+  max-height:min(70dvh,680px);
+  padding:0;
+  overflow:auto;
+  border:1px solid #eadde1;
+  border-radius:16px;
+  background:#fff;
+  box-shadow:0 16px 42px #3c07122b;
+}
+.profile-panel.profile-floating-detail.profile-floating-detail-open { display:block; }
+
+.profile-floating-detail .profile-title {
+  position:sticky;
+  z-index:2;
+  top:0;
   display:flex;
   align-items:center;
   gap:10px;
-  min-height:46px;
+  min-height:52px;
   margin:0;
-  padding:9px 14px;
-  cursor:pointer;
-  user-select:none;
+  padding:11px 14px;
+  background:#fff;
+  border-bottom:1px solid #eee8ea;
 }
-.profile-title::before { content:'✨'; flex:0 0 auto; }
-.profile-title::after { content:'⌄'; margin-left:2px; color:#a10f39; font-size:17px; font-weight:800; transition:transform .18s ease; }
-.profile-float-expanded .profile-title::after { transform:rotate(180deg); }
-.profile-title>div { display:flex; flex:1; align-items:center; min-width:0; gap:8px; }
-.profile-title .eyebrow { display:none; }
-.profile-title h2 { margin:0; overflow:hidden; font-size:14px; white-space:nowrap; text-overflow:ellipsis; }
-.profile-title h2::after { content:' · 点击展开/收起'; color:#8b7a80; font-size:12px; font-weight:500; }
-.profile-title>span { flex:0 0 auto; color:var(--brand); font-size:13px; font-weight:800; }
+.profile-floating-detail .profile-title>div { flex:1; min-width:0; }
+.profile-floating-detail .profile-title .eyebrow { margin:0 0 2px; font-size:10px; }
+.profile-floating-detail .profile-title h2 { margin:0; font-size:15px; }
+.profile-floating-detail .profile-title>span { color:var(--brand); font-size:13px; font-weight:800; }
 
-.profile-panel:not(.profile-float-expanded) .profile-card,
-.profile-panel:not(.profile-float-expanded) #generate-button,
-.profile-panel:not(.profile-float-expanded) #view-proposal,
-.profile-panel:not(.profile-float-expanded) .profile-conversation-hint { display:none!important; }
-
-.profile-panel.profile-float-expanded .profile-card {
+.profile-floating-detail .profile-card {
   display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr));
   gap:0 16px;
   padding:4px 14px 8px;
-  border-top:1px solid var(--line);
 }
-.profile-panel.profile-float-expanded #generate-button,
-.profile-panel.profile-float-expanded #view-proposal { width:calc(100% - 28px); margin:0 14px 12px; }
+.profile-floating-detail #generate-button,
+.profile-floating-detail #view-proposal { display:none!important; }
 
 .profile-conversation-hint {
-  margin:0 14px 12px;
-  padding:8px 0 0;
+  margin:0 14px 14px;
+  padding:10px 0 0;
   color:#7A7278;
   font-size:11px;
-  font-weight:400;
   line-height:1.55;
   border-top:1px solid #eee9eb;
-  overflow-wrap:anywhere;
 }
 
 .profile-group {
@@ -97,22 +125,18 @@
 }
 
 @media (max-width:720px) {
-  #ip-chat-panel { padding-top:54px; }
-  .profile-panel { width:calc(100vw - 20px); border-radius:12px; }
-  .profile-title { min-height:42px; padding:8px 11px; }
-  .profile-title h2 { font-size:13px; }
-  .profile-title h2::after { content:' · 点击展开'; font-size:11px; }
-  .profile-float-expanded .profile-title h2::after { content:' · 点击收起'; }
-  .profile-panel.profile-float-expanded .profile-card { grid-template-columns:1fr; padding:2px 11px 8px; }
-  .profile-group:nth-child(2) { border-top:1px solid var(--line); }
-  .profile-panel.profile-float-expanded #generate-button,
-  .profile-panel.profile-float-expanded #view-proposal { width:calc(100% - 22px); margin:0 11px 10px; }
-  .profile-conversation-hint {
-    margin:0 11px 10px;
-    padding-top:7px;
-    font-size:10.5px;
-    line-height:1.5;
+  .ip-floating-actions { right:12px; bottom:18px; gap:7px; }
+  .ip-floating-button { min-height:44px; padding:0 13px; font-size:12px; }
+  .profile-panel.profile-floating-detail {
+    right:10px;
+    bottom:124px;
+    width:calc(100vw - 20px);
+    max-height:68dvh;
+    border-radius:14px;
   }
+  .profile-floating-detail .profile-card { grid-template-columns:1fr; padding:2px 11px 8px; }
+  .profile-group:nth-child(2) { border-top:1px solid var(--line); }
+  .profile-conversation-hint { margin:0 11px 11px; font-size:10.5px; }
 
   .quick-replies:has(.multi-confirm) {
     max-height:min(32dvh,230px);
