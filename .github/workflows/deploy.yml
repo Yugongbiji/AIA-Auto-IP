@@ -1,17 +1,12 @@
 name: Deploy to ECS
 
 on:
-  workflow_run:
-    workflows:
-      - Frontend QA
-    types:
-      - completed
+  push:
     branches:
       - main
 
 jobs:
   deploy:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -36,24 +31,15 @@ jobs:
               exit 1
             }
 
-            # First make production serve the same current main frontend that already
-            # passed Preview + Frontend QA. Do not block the whole UI rollout on the
-            # Script Recommendation RDS/API readiness.
             git fetch origin main
             git reset --hard origin/main
             /opt/AIA-Auto-IP/.venv/bin/pip install -r requirements.txt
 
-            # Keep the existing production service entrypoint for this frontend-first
-            # rollout. Removing the Script wrapper override returns the service to its
-            # stable server.py unit while still serving web/ from current main.
             OVERRIDE=/etc/systemd/system/aia-auto-ip.service.d/10-script-server.conf
             rm -f "$OVERRIDE"
             systemctl daemon-reload
             systemctl restart aia-auto-ip
 
-            # The release gate for this step is deliberately the site itself. The
-            # script API will be connected as a separate follow-up after the new UI is
-            # visible in production.
             if ! systemctl is-active --quiet aia-auto-ip \
               || ! curl -fsS --retry 5 --retry-delay 2 http://127.0.0.1:8000/ >/dev/null \
               || ! curl -fsS --retry 5 --retry-delay 2 http://127.0.0.1:8000/ | grep -q '脚本推荐'; then
