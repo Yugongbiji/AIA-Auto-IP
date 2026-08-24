@@ -1,5 +1,7 @@
-// 产品规则 V22：统一创作工具的 loading 文案与复制成功反馈，避免单功能重复造交互。
+// 产品规则 V22（公共 UI 工具层）：只提供 Toast 与小红书 loading 文案标准化。
+// 创作结果“真实复制成功/失败”的唯一 owner 是 product-rules-v28.js；本文件不得包 Clipboard API 或监听按钮文字推断复制成功。
 (function () {
+  'use strict';
   const XHS_LOADING_TEXT = '正在排版，请稍候…';
 
   function ensureToastHost() {
@@ -28,48 +30,13 @@
     }, 1600);
   }
 
-  // 统一包住 Clipboard API：只有浏览器真实写入成功后才提示“复制成功”。
-  if (navigator.clipboard?.writeText && !navigator.clipboard.writeText.__aiaWrapped) {
-    const nativeWriteText = navigator.clipboard.writeText.bind(navigator.clipboard);
-    const wrapped = async function aiaWriteText(text) {
-      try {
-        const result = await nativeWriteText(text);
-        showToast('复制成功');
-        return result;
-      } catch (error) {
-        showToast('复制失败，请重试', 'error');
-        throw error;
-      }
-    };
-    wrapped.__aiaWrapped = true;
-    try { navigator.clipboard.writeText = wrapped; } catch (_) { /* 某些浏览器禁止重写 */ }
-  }
-
-  // 兼容已有业务：如果旧复制逻辑自行把按钮改成“已复制/复制成功”，再补公共 Toast；不凭点击动作假设复制成功。
-  const copyStateObserver = new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-      const button = mutation.target?.closest?.('button');
-      if (!button) continue;
-      const text = String(button.textContent || '').trim();
-      if (/^(已复制|复制成功)$/.test(text) && button.dataset.aiaToastShown !== text) {
-        button.dataset.aiaToastShown = text;
-        showToast('复制成功');
-        setTimeout(() => { delete button.dataset.aiaToastShown; }, 1500);
-      }
-    }
-  });
-  copyStateObserver.observe(document.body, { childList: true, subtree: true, characterData: true });
-
-  // 小红书等待态只表达“正在排版”，不再重复解释手机阅读节奏、断句等内部处理逻辑。
   function normalizeXhsLoading(root = document.getElementById('xhs-messages')) {
     if (!root) return;
     root.querySelectorAll('.message, [role="status"], p, span, div').forEach((node) => {
       if (node.children.length) return;
-      const text = String(node.textContent || '').trim();
-      if (!text) return;
-      if (/正在整理手机阅读节奏|正在.*手机.*阅读|正在.*断句|正在.*留白|正在.*表情/.test(text)) {
-        node.textContent = XHS_LOADING_TEXT;
-      }
+      const value = String(node.textContent || '').trim();
+      if (!value) return;
+      if (/正在整理手机阅读节奏|正在.*手机.*阅读|正在.*断句|正在.*留白|正在.*表情/.test(value)) node.textContent = XHS_LOADING_TEXT;
     });
   }
 
@@ -95,4 +62,5 @@
 
   window.aiaToast = showToast;
   window.normalizeXhsLoadingV22 = normalizeXhsLoading;
+  window.aiaUiUtilityV22 = Object.freeze({ ownsClipboard:false, ownsBusinessRules:false });
 })();
