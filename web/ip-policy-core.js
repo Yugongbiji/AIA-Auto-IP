@@ -133,11 +133,12 @@
   function safeXhs(v){return text(v)&&!XHS_BANNED.test(text(v));}
   function identityLine(profile){const family=familyIdentity(profile),job=career(profile);if(family&&job)return `${family}，曾从事${job}`;return family || (job?`曾从事${job}`:'');}
   function mainBioLine(profile,platform){const recruitment=inferPrimaryGoal(profile)===PRIMARY_GOALS.RECRUITMENT;if(recruitment)return platform==='xhs'?'分享职业选择、成长与长期主义相关内容':'分享职业选择、转型成长与团队真实经验';return platform==='xhs'?'分享家庭保障、养老准备与长期规划相关内容':'分享保险、家庭保障、养老与长期规划相关内容';}
+  function emojiLine(emoji,value){const v=text(value);return v?`${emoji} ${v}`:'';}
   function bioBody(profile,platform,variant){
     const id=identityLine(profile), ps=proofs(profile), fs=feedback(profile), ss=serviceLabels(profile), main=mainBioLine(profile,platform); let lines=[];
-    if(variant==='memory') lines=[id,main,fs.length?`客户常提到：${fs.join('、')}`:'',ps[0]||''];
-    else if(variant==='service') lines=[id,main,ss.length?ss.join('｜'):'',ps[0]||''];
-    else lines=[id,ps.join('｜'),main,fs.length?`客户常提到：${fs.join('、')}`:''];
+    if(variant==='memory') lines=[emojiLine('👤',id),emojiLine('💬',main),fs.length?emojiLine('✨',`客户常提到：${fs.join('、')}`):'',ps[0]?emojiLine('🏅',ps[0]):''];
+    else if(variant==='service') lines=[emojiLine('👤',id),emojiLine('💬',main),ss.length?emojiLine('🧭',ss.join('｜')):'',ps[0]?emojiLine('🏅',ps[0]):''];
+    else lines=[emojiLine('👤',id),ps.length?emojiLine('🏅',ps.join('｜')):'',emojiLine('💬',main),fs.length?emojiLine('✨',`客户常提到：${fs.join('、')}`):''];
     lines=uniq(lines.map(text).filter(Boolean));
     if(platform==='xhs') lines=lines.filter(safeXhs);
     return lines;
