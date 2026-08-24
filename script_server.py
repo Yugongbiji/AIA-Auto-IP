@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+from collections import Counter
 from http import HTTPStatus
 from http.server import ThreadingHTTPServer
 from pathlib import Path
@@ -46,6 +47,76 @@ def script_database():
 
 def script_database_engine() -> str:
     return "postgresql" if dedicated_script_database_enabled() else core.database_engine()
+
+
+def _clean(value) -> str:
+    return str(value or "").strip()
+
+
+def _split_multi(value) -> list[str]:
+    value = _clean(value).replace("；", ";").replace("、", ";").replace("，", ";").replace(",", ";")
+    return [item.strip() for item in value.split(";") if item.strip() and item.strip() != "其他"]
+
+
+def _count_items(counter: Counter) -> list[dict]:
+    return [{"label": label, "count": count} for label, count in counter.most_common()]
+
+
+def live_peer_review_summary(agent_id: str):
+    """Build the display summary from raw reviews so the UI never depends on an old truncated cache."""
+    try:
+        with core.database() as conn:
+            rows = conn.execute(
+                "SELECT reviewer_nickname, relationship, traits, topics, roles, intro FROM peer_reviews WHERE agent_id = ? ORDER BY id",
+                (agent_id,),
+            ).fetchall()
+    except Exception:
+        return None
+    if not rows:
+        return None
+    nicknames, relationships, traits, topics, roles = Counter(), Counter(), Counter(), Counter(), Counter()
+    quotes = []
+    for row in rows:
+        nickname = _clean(row["reviewer_nickname"])
+        relationship = _clean(row["relationship"])
+        if nickname:
+            nicknames[nickname] += 1
+        if relationship:
+            relationships[relationship] += 1
+        traits.update(_split_multi(row["traits"]))
+        topics.update(_split_multi(row["topics"]))
+        roles.update(_split_multi(row["roles"]))
+        intro = _clean(row["intro"])
+        if intro and intro not in quotes:
+            quotes.append(intro)
+    return {
+        "source": "身边人评价问卷",
+        "reviewCount": len(rows),
+        "topNicknames": _count_items(nicknames),
+        "relationships": _count_items(relationships),
+        "topTraits": _count_items(traits),
+        "topTopics": _count_items(topics),
+        "topRoles": _count_items(roles),
+        "representativeQuotes": quotes,
+    }
+
+
+_base_merged_profile = core.merged_profile
+
+
+def merged_profile_with_live_reviews(agent_id: str):
+    result = _base_merged_profile(agent_id)
+    if not result:
+        return result
+    summary = live_peer_review_summary(agent_id)
+    if summary:
+        result.setdefault("profile", {})["peerReviewSummary"] = summary
+    return result
+
+
+# server.AppHandler resolves merged_profile through server.py globals at request time.
+# Replacing the module global keeps old routes stable while making peer feedback complete and current.
+core.merged_profile = merged_profile_with_live_reviews
 
 
 class ScriptAppHandler(core.AppHandler):
