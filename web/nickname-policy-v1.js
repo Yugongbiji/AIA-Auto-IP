@@ -21,7 +21,8 @@
   function doctorate(p){const s=[p.education,p.schoolTier,p.selfIntro].map(t).join(' ');return /博士|PhD|Ph\.D/i.test(s);}
   function strongTrait(p){
     const items=p.peerReviewSummary?.topTraits||p.peerReviewSummary?.topImpressions||[];
-    const allowed=['靠谱','真诚','细致','有耐心','理性','务实','有温度','阳光'];
+    // 性格即使真实也不等于适合昵称。只保留读起来相对自然、且至少 3 人重复评价的少量词。
+    const allowed=['靠谱','真诚','理性','务实','阳光'];
     for(const item of items){const label=t(item?.label??item),count=Number(item?.count||1);if(count>=3&&allowed.includes(label))return label;}
     return '';
   }
@@ -29,13 +30,12 @@
   function controlledOptions(profile){
     const a=pickAnchor(profile);if(!a)return [];
     const candidates=[];const add=(name,angle,reason)=>{name=safeName(name,a);if(name&&!candidates.some(x=>x.name===name))candidates.push({name,angle,reason});};
-    // 基础人物型永远保留。六种取名思路是“可选模板”，不是六类标签都必须硬塞进昵称。
     add(a,'突出人物','直接强化稳定的人物称呼，最稳妥、最适合长期使用');
-    const job=career(profile);if(job)add(`${job}${a}`,'突出身份',`真实职业本身具有识别度，且组合后仍像正常昵称`);
-    const family=familyIdentity(profile);if(family)add(`${family}${a}`,'突出身份',`真实生活身份与人物称呼组合，形成清晰记忆点`);
+    const job=career(profile);if(job)add(`${job}${a}`,'突出身份','真实职业本身具有识别度，且组合后仍像正常昵称');
+    const family=familyIdentity(profile);if(family)add(`${family}${a}`,'突出身份','真实生活身份与人物称呼组合，形成清晰记忆点');
     if(doctorate(profile))add(`Dr.${a}`,'突出学历','仅博士这类可自然昵称化的强学历身份使用；985、211、QS层级不直接拼昵称');
-    const trait=strongTrait(profile);if(trait)add(`${trait}的${a}`,'突出性格',`仅多人客户反馈反复出现的性格特点才考虑使用`);
-    // 地域、MDRT/COT/TOT、985/211/QS 等即使真实，也默认只作为简介/背书资产，不直接生成“成都XX”“TOTXX”“985XX”。
+    const trait=strongTrait(profile);if(trait)add(`${trait}的${a}`,'突出性格','仅多人客户反馈反复出现、且适合口语昵称的性格特点才考虑使用');
+    // 地域、MDRT/COT/TOT、985/211/QS、“有温度/细致/有耐心”等即使真实，也默认只作为简介或背书资产，不直接拼昵称。
     return candidates.slice(0,5);
   }
   function enforce(proposal,profile){if(!proposal)return proposal;const controlled=controlledOptions(profile||{});if(controlled.length)proposal.nicknameOptions=controlled;else proposal.nicknameOptions=(proposal.nicknameOptions||[]).filter(x=>!BANNED.test(t(x?.name))).slice(0,3);return proposal;}
