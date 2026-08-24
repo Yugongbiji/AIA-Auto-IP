@@ -28,7 +28,7 @@
     }, 1600);
   }
 
-  // 统一包住 Clipboard API：昵称、简介、脚本、小红书等所有复制成功都走同一个反馈组件。
+  // 统一包住 Clipboard API：只有浏览器真实写入成功后才提示“复制成功”。
   if (navigator.clipboard?.writeText && !navigator.clipboard.writeText.__aiaWrapped) {
     const nativeWriteText = navigator.clipboard.writeText.bind(navigator.clipboard);
     const wrapped = async function aiaWriteText(text) {
@@ -42,26 +42,23 @@
       }
     };
     wrapped.__aiaWrapped = true;
-    try { navigator.clipboard.writeText = wrapped; } catch (_) { /* 某些浏览器禁止重写，下面保留按钮兜底 */ }
+    try { navigator.clipboard.writeText = wrapped; } catch (_) { /* 某些浏览器禁止重写 */ }
   }
 
-  // 对成熟的“复制”按钮做通用兜底：如果底层没有走 Clipboard API，也给用户明确成功/失败反馈。
-  document.addEventListener('click', (event) => {
-    const button = event.target.closest?.('button');
-    if (!button || !/复制/.test(button.textContent || '')) return;
-    button.dataset.aiaCopyPending = String(Date.now());
-    const original = button.textContent;
-    setTimeout(() => {
-      if (!button.isConnected) return;
-      // 原业务若已将按钮改成“已复制/复制成功”，不重复 toast；否则给统一轻提示。
-      if (/已复制|复制成功/.test(button.textContent || '')) return;
-      if (button.dataset.aiaCopyPending) showToast('复制成功');
-      if (button.textContent === original) {
-        button.textContent = '已复制';
-        setTimeout(() => { if (button.isConnected && button.textContent === '已复制') button.textContent = original; }, 1200);
+  // 兼容已有业务：如果旧复制逻辑自行把按钮改成“已复制/复制成功”，再补公共 Toast；不凭点击动作假设复制成功。
+  const copyStateObserver = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      const button = mutation.target?.closest?.('button');
+      if (!button) continue;
+      const text = String(button.textContent || '').trim();
+      if (/^(已复制|复制成功)$/.test(text) && button.dataset.aiaToastShown !== text) {
+        button.dataset.aiaToastShown = text;
+        showToast('复制成功');
+        setTimeout(() => { delete button.dataset.aiaToastShown; }, 1500);
       }
-    }, 80);
-  }, true);
+    }
+  });
+  copyStateObserver.observe(document.body, { childList: true, subtree: true, characterData: true });
 
   // 小红书等待态只表达“正在排版”，不再重复解释手机阅读节奏、断句等内部处理逻辑。
   function normalizeXhsLoading(root = document.getElementById('xhs-messages')) {
