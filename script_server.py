@@ -1,7 +1,7 @@
 """AIA Auto IP server entrypoint with Script Recommendation V1 APIs.
 
 This keeps the existing large `server.py` stable: all old routes are delegated to
-`server.AppHandler`; only `/api/scripts/*` is handled here.
+`server.AppHandler`; only the focused extension routes are handled here.
 """
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 import server as core
-from backend import script_api, script_persona_rules
+from backend import profile_semantic, script_api, script_persona_rules
 import script_library_store as script_store
 
 # Make confirmed account tone an explicit, auditable script-rewrite contract.
@@ -118,7 +118,6 @@ def merged_profile_with_live_reviews(agent_id: str):
 
 
 # server.AppHandler resolves merged_profile through server.py globals at request time.
-# Replacing the module global keeps old routes stable while making peer feedback complete and current.
 core.merged_profile = merged_profile_with_live_reviews
 
 
@@ -171,6 +170,17 @@ class ScriptAppHandler(core.AppHandler):
 
     def do_POST(self):
         path = urlparse(self.path).path
+        if path == "/api/profile/analyze":
+            try:
+                payload = self._read_script_payload()
+                profile = payload.get("profile") if isinstance(payload.get("profile"), dict) else {}
+                result = profile_semantic.analyze(profile)
+            except (ValueError, json.JSONDecodeError):
+                self.send_json({"error": "资料分析请求格式不正确"}, HTTPStatus.BAD_REQUEST)
+                return
+            self.send_json({"ok": True, **result})
+            return
+
         if path not in {"/api/scripts/recommend", "/api/scripts/activity"}:
             super().do_POST()
             return
