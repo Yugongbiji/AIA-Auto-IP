@@ -10,7 +10,8 @@ def recommend(database, payload: dict) -> dict:
         raise ValueError("contentDirections must be a list")
     if len(directions) > 12:
         raise ValueError("too many content directions")
-    return build_recommendation_payload(database, directions, limit_per_direction=5)
+    # 前端每个板块默认展示 5 条，但一次预取最多 10 条候选，供“换一批”本地轮换，避免每点一次都重新请求。
+    return build_recommendation_payload(database, directions, limit_per_direction=10)
 
 
 def library(database, *, tag: str = "", page: int = 1, page_size: int = 20) -> dict:
