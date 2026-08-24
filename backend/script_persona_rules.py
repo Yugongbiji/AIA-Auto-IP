@@ -1,5 +1,11 @@
-"""Script rewrite persona contract: make account tone explicit and auditable."""
+"""Script rewrite persona contract: make account tone explicit and add format resilience."""
 from __future__ import annotations
+
+import sys
+import time
+
+
+FORMAT_FAILURE_MARKERS = ("改写格式不完整", "没有返回", "改写稿不完整")
 
 
 def _text(value) -> str:
@@ -41,6 +47,24 @@ def enrich_breakdown(result: dict, tone: str) -> dict:
     return result
 
 
+def _call_with_format_retry(original, prepared, ip_plan, source, revision):
+    try:
+        return original(prepared, ip_plan, source, revision)
+    except RuntimeError as error:
+        message = str(error)
+        if not any(marker in message for marker in FORMAT_FAILURE_MARKERS):
+            raise
+        print(f"[script-rewrite] structured output invalid; retrying once: {message}", file=sys.stderr)
+        time.sleep(0.2)
+        try:
+            return original(prepared, ip_plan, source, revision)
+        except RuntimeError as retry_error:
+            retry_message = str(retry_error)
+            if any(marker in retry_message for marker in FORMAT_FAILURE_MARKERS):
+                raise RuntimeError("模型本次返回格式异常，系统已自动重试一次仍未恢复，请稍后再试。") from retry_error
+            raise
+
+
 def install(core_module) -> None:
     if getattr(core_module.deepseek_script_rewrite, "__aia_persona_contract__", False):
         return
@@ -48,7 +72,7 @@ def install(core_module) -> None:
 
     def wrapped(profile: dict, ip_plan: dict | None, source: str, revision: str = ""):
         prepared, tone = prepare_profile(profile)
-        result = original(prepared, ip_plan, source, revision)
+        result = _call_with_format_retry(original, prepared, ip_plan, source, revision)
         return enrich_breakdown(result, tone)
 
     wrapped.__aia_persona_contract__ = True
