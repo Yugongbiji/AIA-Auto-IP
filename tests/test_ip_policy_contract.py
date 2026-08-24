@@ -12,8 +12,10 @@ V12 = (WEB / 'product-rules-v12.js').read_text(encoding='utf-8')
 V13 = (WEB / 'product-rules-v13.js').read_text(encoding='utf-8')
 V16 = (WEB / 'product-rules-v16.js').read_text(encoding='utf-8')
 V19 = (WEB / 'product-rules-v19.js').read_text(encoding='utf-8')
+V22 = (WEB / 'product-rules-v22.js').read_text(encoding='utf-8')
 V24 = (WEB / 'product-rules-v24.js').read_text(encoding='utf-8')
 V27 = (WEB / 'product-rules-v27.js').read_text(encoding='utf-8')
+V28 = (WEB / 'product-rules-v28.js').read_text(encoding='utf-8')
 V29 = (WEB / 'product-rules-v29.js').read_text(encoding='utf-8')
 
 
@@ -27,7 +29,6 @@ def test_only_canonical_ip_integration_is_loaded():
 
 
 def test_legacy_layers_no_longer_own_core_business_outputs():
-    # These files may remain as UI/data compatibility layers, but must not assign final bios/content/nickname outputs.
     for source in [V5, V6, V10, V12, V13, V16, V19, V24, V27, V29]:
         assert 'proposal.bios=' not in source.replace(' ', '')
         assert 'proposal.contentMainline=' not in source.replace(' ', '')
@@ -38,18 +39,18 @@ def test_legacy_layers_no_longer_own_core_business_outputs():
 
 
 def test_goal_is_binary_and_ambiguous_purpose_requires_clarification():
-    assert "customer_acquisition" in POLICY
-    assert "recruitment" in POLICY
-    assert "if (recruit && !customer" in POLICY
-    assert "if (customer && !recruit" in POLICY
-    assert "delete profile.primaryGoal" in POLICY
+    assert 'customer_acquisition' in POLICY
+    assert 'recruitment' in POLICY
+    assert 'if (recruit && !customer' in POLICY
+    assert 'if (customer && !recruit' in POLICY
+    assert 'delete profile.primaryGoal' in POLICY
     assert '吸引潜在客户' in POLICY
     assert '吸引潜在增员对象' in POLICY
-    assert "questions.splice(oldPurposeIndex, 1)" in POLICY
+    assert 'questions.splice(oldPurposeIndex, 1)' in POLICY
 
 
 def test_skip_and_other_options_are_removed_centrally():
-    assert "const OMIT = /^(其他|其它|不希望填写|跳过" in POLICY
+    assert 'const OMIT = /^(其他|其它|不希望填写|跳过' in POLICY
     assert 'cleanQuestionOptions' in POLICY
     assert "['大专', '本科', '硕士', '博士']" in V13
 
@@ -60,7 +61,7 @@ def test_lifestyle_topics_can_only_be_secondary():
     customer_block = POLICY.split('const CUSTOMER_MAINLINES', 1)[1].split('const RECRUITMENT_MAINLINES', 1)[0]
     for forbidden in ['健康养生', '美食', '读书', '旅行', '智能家居', '骑行', '育儿']:
         assert forbidden not in customer_block
-    assert "return [...RECRUITMENT_MAINLINES]" in POLICY
+    assert 'return [...RECRUITMENT_MAINLINES]' in POLICY
     assert 'rankIpContentBranches' in POLICY
 
 
@@ -72,15 +73,13 @@ def test_headline_does_not_use_person_name_anchor():
 
 def test_bio_has_single_compliance_footer_owner_and_correct_video_order():
     assert 'function complianceFooter(profile,platform)' in POLICY
-    assert "const out=[VIDEO_DISCLAIMER]" in POLICY
+    assert 'const out=[VIDEO_DISCLAIMER]' in POLICY
     footer = POLICY.split('function complianceFooter(profile,platform)', 1)[1].split('function buildBios', 1)[0]
     assert footer.index('VIDEO_DISCLAIMER') < footer.index('营销服务部') < footer.index('执业证编号')
-    # 营销员编号不得自动当执业证编号。
     assert 'agentId' not in footer
     assert 'agent_id' not in footer
     for source in [V5, V6, V10, V12, V13, V16, V19, V24, V27, V29]:
-        compact = source.replace(' ', '')
-        assert 'proposal.bios=' not in compact
+        assert 'proposal.bios=' not in source.replace(' ', '')
 
 
 def test_bio_uses_real_assets_and_not_hobby_tag_wall():
@@ -101,8 +100,8 @@ def test_missing_nickname_is_never_treated_as_keepable():
 
 def test_floating_buttons_are_icons_only_and_no_version_text():
     assert '<svg aria-hidden="true"' in FLOAT
-    assert "profileButton.innerHTML" in FLOAT
-    assert "proposalButton.innerHTML" in FLOAT
+    assert 'profileButton.innerHTML' in FLOAT
+    assert 'proposalButton.innerHTML' in FLOAT
     assert '最新 IP 方案 · V' not in FLOAT
     assert "querySelector('span:last-child')" not in FLOAT
     assert "state.activeTool==='ip'" in FLOAT
@@ -121,3 +120,13 @@ def test_compliance_ui_does_not_generate_bios_and_has_two_columns():
     assert "['可以说',cfg.can" in V10
     assert "['不可以说',cfg.cannot" in V10
     assert '返回检查' not in V10
+
+
+def test_clipboard_success_has_one_owner():
+    # V22 is only Toast/loading utility; V28 performs the real clipboard write and success/failure feedback.
+    assert 'navigator.clipboard.writeText =' not in V22
+    assert 'copyStateObserver' not in V22
+    assert 'ownsClipboard:false' in V22
+    assert 'writeClipboard' in V28
+    assert "button.textContent = '复制成功'" in V28
+    assert "show('复制成功')" in V28
