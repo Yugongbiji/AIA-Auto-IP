@@ -87,6 +87,22 @@
     document.getElementById('profile-card')?.insertAdjacentElement('afterend', hint);
   }
 
+  function appendPeerReview(card) {
+    const summary = String(state.profile?.peerReviewKeywords || '').trim();
+    if (!summary) return;
+    const group = document.createElement('div');
+    group.className = 'profile-group';
+    group.dataset.profilePeerReview = '1';
+    const label = document.createElement('span');
+    label.className = 'profile-label';
+    label.textContent = '身边人评价';
+    const value = document.createElement('div');
+    value.className = 'profile-value';
+    value.textContent = summary;
+    group.append(label, value);
+    card.appendChild(group);
+  }
+
   renderProfile = function renderReadOnlyFloatingProfile() {
     const keys = [...new Set(['name', 'agentId', ...questions.map((q) => q.key)])];
     const handled = keys.filter((key) => {
@@ -108,6 +124,7 @@
       group.append(label, value);
       card.appendChild(group);
     });
+    appendPeerReview(card);
     ensureConversationHint();
     document.getElementById('generate-button').disabled = !state.done;
     syncVisibility();
