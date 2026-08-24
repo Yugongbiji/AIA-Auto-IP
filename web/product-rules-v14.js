@@ -9,8 +9,9 @@
   insertBeforeDepartment({
     key: 'previousCareer',
     label: '过往职业/经历',
-    ask: '你过去做过什么工作，或有哪些比较有代表性的长期经历？这类真实积累可以成为内容支线。',
+    ask: '你过去做过什么工作，或有哪些比较有代表性的长期经历？这类真实积累可以成为内容支线。可多选，也可以自己补充。',
     chips: ['教育/教师', '医疗健康', '法律', '财务/会计', '互联网/科技', '企业经营', '其他', '跳过'],
+    multiple: true,
   });
   insertBeforeDepartment({
     key: 'lifeRoles',
@@ -66,7 +67,6 @@
     const career = firstMatch(profile.previousCareer, CAREER_RULES);
     if (career) return { direction: career, source: '过往职业/经历' };
 
-    // 兼容报名资料里原本就存在的真实信息，不把 AI 方案文案当证据。
     const legacy = [profile.selfIntro, profile.strengths, profile.services, profile.expertise, profile.specialties].filter(Boolean).join('｜');
     const legacyHobby = firstMatch(legacy, HOBBY_RULES);
     if (legacyHobby) return { direction: legacyHobby, source: '已有个人资料' };
@@ -108,54 +108,23 @@
     const general = (strategy?.lines || []).find((line) => line.kind === 'general');
     const card = content.querySelector('.ip-strategy-general');
     if (!general || !card) return;
-
     const heading = card.querySelector('h3');
     if (heading) heading.textContent = general.title || '内容支线';
-
     const blocks = card.querySelectorAll('.strategy-block');
     const directionList = blocks[0]?.querySelector('.strategy-chip-list');
     if (directionList) {
       directionList.innerHTML = '';
-      if (general.directions?.length) {
-        general.directions.forEach((value) => {
-          const chip = document.createElement('span');
-          chip.className = 'strategy-chip';
-          chip.textContent = value;
-          directionList.appendChild(chip);
-        });
-      } else {
-        const chip = document.createElement('span');
-        chip.className = 'strategy-chip strategy-empty-chip';
-        chip.textContent = '暂未确定';
-        directionList.appendChild(chip);
-      }
+      if (general.directions?.length) general.directions.forEach((value) => { const chip = document.createElement('span'); chip.className = 'strategy-chip'; chip.textContent = value; directionList.appendChild(chip); });
+      else { const chip = document.createElement('span'); chip.className = 'strategy-chip strategy-empty-chip'; chip.textContent = '暂未确定'; directionList.appendChild(chip); }
     }
-
     const collectionList = blocks[1]?.querySelector('.strategy-chip-list');
     if (collectionList) {
       collectionList.innerHTML = '';
-      if (general.collections?.length) {
-        general.collections.forEach((value) => {
-          const chip = document.createElement('span');
-          chip.className = 'strategy-collection-chip';
-          chip.textContent = value;
-          collectionList.appendChild(chip);
-        });
-      } else {
-        const hint = document.createElement('p');
-        hint.className = 'strategy-empty-text';
-        hint.textContent = '先补充一项你真正长期在做、也愿意持续分享的经历、身份或爱好，我再帮你定这一条。';
-        collectionList.appendChild(hint);
-      }
+      if (general.collections?.length) general.collections.forEach((value) => { const chip = document.createElement('span'); chip.className = 'strategy-collection-chip'; chip.textContent = value; collectionList.appendChild(chip); });
+      else { const hint = document.createElement('p'); hint.className = 'strategy-empty-text'; hint.textContent = '先补充一项你真正长期在做、也愿意持续分享的经历、身份或爱好，我再帮你定这一条。'; collectionList.appendChild(hint); }
     }
-
     card.querySelector('.strategy-source-note')?.remove();
-    if (general.source) {
-      const note = document.createElement('p');
-      note.className = 'strategy-source-note';
-      note.textContent = `来源：${general.source}`;
-      heading?.insertAdjacentElement('afterend', note);
-    }
+    if (general.source) { const note = document.createElement('p'); note.className = 'strategy-source-note'; note.textContent = `来源：${general.source}`; heading?.insertAdjacentElement('afterend', note); }
   }
 
   function addSourceLabels(content, proposal) {
@@ -167,11 +136,8 @@
       const source = sourceByKind.get(kind);
       card.querySelector('.strategy-source-note')?.remove();
       if (!source) return;
-      const note = document.createElement('p');
-      note.className = 'strategy-source-note';
-      note.textContent = `来源：${source}`;
-      const heading = card.querySelector('h3');
-      heading?.insertAdjacentElement('afterend', note);
+      const note = document.createElement('p'); note.className = 'strategy-source-note'; note.textContent = `来源：${source}`;
+      card.querySelector('h3')?.insertAdjacentElement('afterend', note);
     });
   }
 
