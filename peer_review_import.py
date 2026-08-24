@@ -17,7 +17,9 @@ def clean(value) -> str: return str(value or "").strip()
 def split_multi(value) -> list[str]:
     text = clean(value).replace("；", ";").replace("、", ";").replace("，", ";").replace(",", ";")
     return [item.strip() for item in text.split(";") if item.strip() and item.strip() != "其他"]
-def top_items(counter: Counter, limit: int = 6) -> list[dict]: return [{"label": label, "count": count} for label, count in counter.most_common(limit)]
+def count_items(counter: Counter) -> list[dict]:
+    """Keep every distinct raw answer with its frequency; UI controls visual collapsing."""
+    return [{"label": label, "count": count} for label, count in counter.most_common()]
 
 def aggregate(rows: list[dict]) -> dict:
     nicknames, relationships, traits, topics, roles = Counter(), Counter(), Counter(), Counter(), Counter(); quotes = []
@@ -26,8 +28,8 @@ def aggregate(rows: list[dict]) -> dict:
         if row["relationship"]: relationships[row["relationship"]] += 1
         traits.update(split_multi(row["traits"])); topics.update(split_multi(row["topics"])); roles.update(split_multi(row["roles"]))
         intro = row["intro"]
-        if intro and intro not in quotes and len(quotes) < 5: quotes.append(intro)
-    return {"source":"身边人评价问卷","reviewCount":len(rows),"topNicknames":top_items(nicknames,6),"relationships":top_items(relationships,4),"topTraits":top_items(traits,8),"topTopics":top_items(topics,8),"topRoles":top_items(roles,6),"representativeQuotes":quotes}
+        if intro and intro not in quotes: quotes.append(intro)
+    return {"source":"身边人评价问卷","reviewCount":len(rows),"topNicknames":count_items(nicknames),"relationships":count_items(relationships),"topTraits":count_items(traits),"topTopics":count_items(topics),"topRoles":count_items(roles),"representativeQuotes":quotes}
 
 def summary_text(summary: dict) -> str:
     nicknames = "、".join(f'{item["label"]}×{item["count"]}' for item in summary.get("topNicknames", [])[:4])
