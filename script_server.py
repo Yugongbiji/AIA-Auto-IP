@@ -15,8 +15,11 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 import server as core
-from backend import script_api
+from backend import script_api, script_persona_rules
 import script_library_store as script_store
+
+# Make confirmed account tone an explicit, auditable script-rewrite contract.
+script_persona_rules.install(core)
 
 
 def dedicated_script_database_enabled() -> bool:
