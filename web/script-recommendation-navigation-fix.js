@@ -1,4 +1,5 @@
 // 68 根因修复：app.js 的 selectTool 未处理 recommendation，导致点击脚本推荐后面板未显示、数据也未加载。
+// 80-85：这里只负责导航，不得再动态加载任何已退役 Vxx 业务层。
 (function(){
   if(typeof selectTool!=='function')return;
   const baseSelectTool=selectTool;
@@ -14,17 +15,8 @@
     document.getElementById('script-recommendation-panel')?.classList.remove('hidden');
     document.getElementById('generate-button')?.classList.add('hidden');
     document.getElementById('view-proposal')?.classList.add('hidden');
-    // 每次进入都按当前 IP/数据库状态加载；失败时推荐模块自己显示明确空态，不再整页空白。
+    window.aiaFloatingUi?.syncVisibility?.();
+    // 每次进入都按当前 IP/数据库状态加载；失败时推荐模块自己显示明确状态，不再整页空白。
     window.aiaScriptRecommendation?.load?.(true);
   };
-})();
-
-// 70-74 最终产品收口层必须在所有旧规则之后执行，避免旧渲染器再次覆盖。
-(function(){
-  if(document.querySelector('script[data-aia-v33="1"]'))return;
-  const script=document.createElement('script');
-  script.src='product-integration-v33.js';
-  script.async=false;
-  script.dataset.aiaV33='1';
-  document.body.appendChild(script);
 })();
