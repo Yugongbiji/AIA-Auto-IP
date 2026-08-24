@@ -1,5 +1,5 @@
 // IP 人设悬浮入口：圆形“我的 IP 资料” + 红色“最新 IP 方案”。
-// 两个入口只在 IP 人设页显示；资料入口支持点击展开，按钮组可拖动，最新方案存在时才显示。
+// 只在 IP 对话页显示；资料浮层支持明确关闭，方案/脚本详情等覆盖页自动隐藏。
 (function () {
   const panel = document.querySelector('.profile-panel');
   if (!panel) return;
@@ -27,8 +27,14 @@
   actions.append(profileButton, proposalButton);
   document.body.appendChild(actions);
 
+  function overlayOpen() {
+    return ['proposal-screen', 'content-plan-screen', 'script-detail-screen'].some((id) => !document.getElementById(id)?.classList.contains('hidden'));
+  }
+
   function isIpVisible() {
-    return state.activeTool === 'ip' && !document.getElementById('ip-chat-panel')?.classList.contains('hidden');
+    return state.activeTool === 'ip'
+      && !document.getElementById('ip-chat-panel')?.classList.contains('hidden')
+      && !overlayOpen();
   }
 
   function closeProfileDetail() {
@@ -37,12 +43,32 @@
     profileButton.setAttribute('aria-expanded', 'false');
   }
 
+  function ensureCloseButton() {
+    const title = panel.querySelector('.profile-title');
+    if (!title || title.querySelector('.profile-floating-close')) return;
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'profile-floating-close';
+    close.setAttribute('aria-label', '关闭我的 IP 资料');
+    close.setAttribute('title', '关闭');
+    close.textContent = '×';
+    close.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      closeProfileDetail();
+    });
+    title.appendChild(close);
+  }
+
   function toggleProfileDetail() {
     const next = !panel.classList.contains('profile-floating-detail-open');
     panel.classList.toggle('profile-floating-detail-open', next);
     panel.setAttribute('aria-expanded', next ? 'true' : 'false');
     profileButton.setAttribute('aria-expanded', next ? 'true' : 'false');
-    if (next) panel.scrollTop = 0;
+    if (next) {
+      ensureCloseButton();
+      panel.scrollTop = 0;
+    }
   }
 
   function syncProposalButton() {
@@ -69,7 +95,11 @@
     if (actions.dataset.dragged === '1') return;
     event.preventDefault();
     const latest = state.proposals?.[0];
-    if (latest) renderProposal(latest.proposal, latest.version);
+    if (latest) {
+      closeProfileDetail();
+      renderProposal(latest.proposal, latest.version);
+      queueMicrotask(syncVisibility);
+    }
   });
 
   document.addEventListener('click', (event) => {
@@ -126,11 +156,11 @@
     });
     appendPeerReview(card);
     ensureConversationHint();
+    ensureCloseButton();
     document.getElementById('generate-button').disabled = !state.done;
     syncVisibility();
   };
 
-  // 只有真正发生明显位移才视为拖动；普通点击优先打开资料。
   let drag = null;
   actions.addEventListener('pointerdown', (event) => {
     if (event.button !== 0) return;
@@ -189,8 +219,6 @@
     return result;
   };
 
-  // 修复当前会话已成功生成方案、但前端状态仍被判定为“无 IP”的情况。
-  // 长期历史是否保存仍由原有 matched 逻辑决定；这里只同步本次会话状态。
   const originalFetch = window.fetch.bind(window);
   let latestGeneratedProposal = null;
   window.fetch = async function profileAwareFetch(input, init) {
@@ -228,6 +256,19 @@
   };
   const generateButton = document.getElementById('generate-button');
   if (generateButton) generateButton.onclick = generateProposal;
+
+  const overlayObserver = new MutationObserver(syncVisibility);
+  ['proposal-screen', 'content-plan-screen', 'script-detail-screen'].forEach((id) => {
+    const target = document.getElementById(id);
+    if (target) overlayObserver.observe(target, { attributes: true, attributeFilter: ['class'] });
+  });
+
+  if (!document.getElementById('profile-floating-close-style')) {
+    const style = document.createElement('style');
+    style.id = 'profile-floating-close-style';
+    style.textContent = `.profile-floating-close{width:34px;height:34px;flex:0 0 34px;border:0;border-radius:50%;background:#f5f1f2;color:#5f5559;font-size:24px;line-height:1;cursor:pointer;display:grid;place-items:center}.profile-floating-close:hover{background:#eee7e9}.profile-floating-close:focus-visible{outline:3px solid #d3114540;outline-offset:2px}`;
+    document.head.appendChild(style);
+  }
 
   window.addEventListener('resize', () => {
     const rect = actions.getBoundingClientRect();
