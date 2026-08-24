@@ -30,17 +30,22 @@
     const proposalButton = document.querySelector('.ip-floating-proposal-button');
     const set = (button, top, bottom, aria) => {
       if (!button) return;
-      button.innerHTML = `<span>${top}</span><span>${bottom}</span>`;
-      button.classList.add('aia-two-line-float');
-      button.setAttribute('aria-label', aria);
-      button.setAttribute('title', aria);
+      const desired = `<span>${top}</span><span>${bottom}</span>`;
+      if (button.innerHTML !== desired) button.innerHTML = desired;
+      if (!button.classList.contains('aia-two-line-float')) button.classList.add('aia-two-line-float');
+      if (button.getAttribute('aria-label') !== aria) button.setAttribute('aria-label', aria);
+      if (button.getAttribute('title') !== aria) button.setAttribute('title', aria);
     };
     set(profileButton, '我的', '资料', '我的资料');
-    if (proposalButton && !/V\d+/.test(text(proposalButton.textContent))) set(proposalButton, 'IP', '方案', 'IP方案');
-    else if (proposalButton) {
+    if (proposalButton && !/V\d+/.test(text(proposalButton.textContent))) {
+      set(proposalButton, 'IP', '方案', 'IP方案');
+    } else if (proposalButton) {
       const version = text(proposalButton.textContent).match(/V\d+/)?.[0] || '';
-      proposalButton.innerHTML = `<span>IP</span><span>方案${version ? ` · ${version}` : ''}</span>`;
-      proposalButton.classList.add('aia-two-line-float');
+      const desired = `<span>IP</span><span>方案${version ? ` · ${version}` : ''}</span>`;
+      if (proposalButton.innerHTML !== desired) proposalButton.innerHTML = desired;
+      if (!proposalButton.classList.contains('aia-two-line-float')) proposalButton.classList.add('aia-two-line-float');
+      if (proposalButton.getAttribute('aria-label') !== 'IP方案') proposalButton.setAttribute('aria-label', 'IP方案');
+      if (proposalButton.getAttribute('title') !== 'IP方案') proposalButton.setAttribute('title', 'IP方案');
     }
   }
 
