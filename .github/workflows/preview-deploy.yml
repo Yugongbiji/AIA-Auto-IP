@@ -1,16 +1,11 @@
 # Preview is intentionally isolated from production: separate checkout, service, port and SQLite user data.
-# Full Frontend QA runs in its own workflow and does not block developers from seeing Preview.
 name: Deploy Preview
-
 on:
   pull_request:
-    branches:
-      - main
-
+    branches: [main]
 concurrency:
   group: aia-auto-ip-preview
   cancel-in-progress: true
-
 jobs:
   deploy-preview:
     runs-on: ubuntu-latest
@@ -32,42 +27,24 @@ jobs:
           envs: AIA_RDS_HOST,AIA_RDS_PORT,AIA_RDS_NAME,AIA_RDS_USER,AIA_RDS_PASSWORD,AIA_RDS_SSLMODE
           script: |
             set -euo pipefail
-
             PREVIEW_DIR=/opt/AIA-Auto-IP-preview
             PROD_DIR=/opt/AIA-Auto-IP
             PREVIEW_BRANCH="${{ github.head_ref }}"
             PREVIEW_SERVICE=/etc/systemd/system/aia-auto-ip-preview.service
-
-            if [ -z "$PREVIEW_BRANCH" ]; then
-              echo 'Preview branch is empty; this workflow must run from a pull request.' >&2
-              exit 1
-            fi
-
-            echo '=== 1. Guard production before Preview changes ==='
+            [ -n "$PREVIEW_BRANCH" ]
             systemctl is-active --quiet aia-auto-ip
             curl -fsS --retry 3 http://127.0.0.1:8000/ >/dev/null
-
-            echo '=== 2. Prepare isolated Preview checkout ==='
-            if [ ! -d "$PREVIEW_DIR/.git" ]; then
-              ORIGIN_URL=$(git -C "$PROD_DIR" remote get-url origin)
-              git clone "$ORIGIN_URL" "$PREVIEW_DIR"
-            fi
+            if [ ! -d "$PREVIEW_DIR/.git" ]; then ORIGIN_URL=$(git -C "$PROD_DIR" remote get-url origin); git clone "$ORIGIN_URL" "$PREVIEW_DIR"; fi
             git -C "$PREVIEW_DIR" fetch origin "$PREVIEW_BRANCH"
             git -C "$PREVIEW_DIR" checkout -B "$PREVIEW_BRANCH" "origin/$PREVIEW_BRANCH"
             git -C "$PREVIEW_DIR" reset --hard "origin/$PREVIEW_BRANCH"
-
-            echo '=== 3. Prepare Preview Python environment ==='
             if [ ! -x "$PREVIEW_DIR/.venv/bin/python" ]; then python3 -m venv "$PREVIEW_DIR/.venv"; fi
             "$PREVIEW_DIR/.venv/bin/pip" install -r "$PREVIEW_DIR/requirements.txt"
             : > "$PREVIEW_DIR/.env"
-            for SRC in "$PROD_DIR/.env" "$PROD_DIR/.env.rds"; do
-              if [ -f "$SRC" ]; then grep -E '^(DEEPSEEK_API_KEY|DEEPSEEK_MODEL)=' "$SRC" >> "$PREVIEW_DIR/.env" || true; fi
-            done
+            for SRC in "$PROD_DIR/.env" "$PROD_DIR/.env.rds"; do if [ -f "$SRC" ]; then grep -E '^(DEEPSEEK_API_KEY|DEEPSEEK_MODEL)=' "$SRC" >> "$PREVIEW_DIR/.env" || true; fi; done
             printf '\nDB_ENGINE=sqlite\n' >> "$PREVIEW_DIR/.env"
             rm -f "$PREVIEW_DIR/.env.rds"
             grep -q '^DEEPSEEK_API_KEY=' "$PREVIEW_DIR/.env"
-
-            echo '=== 4. Initialize Preview SQLite with production read-only baseline ==='
             cd "$PREVIEW_DIR"
             "$PREVIEW_DIR/.venv/bin/python" - "$PROD_DIR" <<'PY'
             from pathlib import Path
@@ -75,77 +52,46 @@ jobs:
             import psycopg
             from psycopg.rows import dict_row
             import server, script_library_store
-
-            prod_dir = Path(sys.argv[1])
-            def read_env_file(path):
-                values={}
-                if path.exists():
-                    for raw in path.read_text(encoding='utf-8').splitlines():
-                        line=raw.strip()
-                        if line and not line.startswith('#') and '=' in line:
-                            k,v=line.split('=',1); values[k.strip()]=v.strip().strip('"').strip("'")
-                return values
-            def read_process_env(pid):
-                try: raw=Path(f'/proc/{pid}/environ').read_bytes()
-                except OSError: return {}
-                values={}
-                for item in raw.split(b'\0'):
-                    if b'=' in item:
-                        k,v=item.split(b'=',1); values[k.decode(errors='ignore')]=v.decode(errors='ignore')
-                return values
-
-            prod_env={}
-            prod_env.update(read_env_file(prod_dir/'.env')); prod_env.update(read_env_file(prod_dir/'.env.rds'))
-            try:
-                pid=subprocess.check_output(['systemctl','show','-p','MainPID','--value','aia-auto-ip'],text=True).strip()
-                if pid and pid!='0': prod_env.update(read_process_env(pid))
-            except Exception: pass
-
-            # Preferred Preview baseline credentials live in GitHub Actions secrets, so Preview can
-            # read RDS without adding database passwords to the repo or production checkout.
-            secret_map={
-                'DB_HOST':'AIA_RDS_HOST','DB_PORT':'AIA_RDS_PORT','DB_NAME':'AIA_RDS_NAME',
-                'DB_USER':'AIA_RDS_USER','DB_PASSWORD':'AIA_RDS_PASSWORD','DB_SSLMODE':'AIA_RDS_SSLMODE',
-            }
-            for target, source in secret_map.items():
-                value=os.getenv(source,'').strip()
-                if value: prod_env[target]=value
-
-            required=['DB_HOST','DB_NAME','DB_USER','DB_PASSWORD']
-            missing=[key for key in required if not prod_env.get(key)]
-            if missing:
-                raise SystemExit('Preview baseline blocked: missing RDS connection settings: '+', '.join(missing)+'. Configure AIA_RDS_* repository secrets once; do not place passwords in code.')
-
-            connargs=dict(host=prod_env['DB_HOST'],port=int(prod_env.get('DB_PORT','5432')),dbname=prod_env['DB_NAME'],user=prod_env['DB_USER'],password=prod_env['DB_PASSWORD'],sslmode=prod_env.get('DB_SSLMODE','require') or 'require',row_factory=dict_row)
-            with psycopg.connect(**connargs) as pg:
-                scripts=[dict(r) for r in pg.execute('''SELECT batch,level1_tag,level2_tag,title_1,title_2,title_3,body,word_count,estimated_minutes,is_hot,reviewed_at,status,content_hash FROM public.script_library WHERE status='active' ORDER BY script_id''').fetchall()]
+            prod_dir=Path(sys.argv[1])
+            def envfile(p):
+                out={}
+                if p.exists():
+                    for raw in p.read_text(encoding='utf-8').splitlines():
+                        s=raw.strip()
+                        if s and not s.startswith('#') and '=' in s:
+                            k,v=s.split('=',1); out[k.strip()]=v.strip().strip('"').strip("'")
+                return out
+            prod={}; prod.update(envfile(prod_dir/'.env')); prod.update(envfile(prod_dir/'.env.rds'))
+            mapping={'DB_HOST':'AIA_RDS_HOST','DB_PORT':'AIA_RDS_PORT','DB_NAME':'AIA_RDS_NAME','DB_USER':'AIA_RDS_USER','DB_PASSWORD':'AIA_RDS_PASSWORD','DB_SSLMODE':'AIA_RDS_SSLMODE'}
+            for k,s in mapping.items():
+                if os.getenv(s,'').strip(): prod[k]=os.getenv(s).strip()
+            missing=[k for k in ['DB_HOST','DB_NAME','DB_USER','DB_PASSWORD'] if not prod.get(k)]
+            if missing: raise SystemExit('Preview baseline blocked: missing '+','.join(missing))
+            args=dict(host=prod['DB_HOST'],port=int(prod.get('DB_PORT','5432')),dbname=prod['DB_NAME'],user=prod['DB_USER'],password=prod['DB_PASSWORD'],sslmode=prod.get('DB_SSLMODE','prefer') or 'prefer',row_factory=dict_row)
+            with psycopg.connect(**args) as pg:
+                scripts=[dict(r) for r in pg.execute("SELECT batch,level1_tag,level2_tag,title_1,title_2,title_3,body,word_count,estimated_minutes,is_hot,reviewed_at,status,content_hash FROM public.script_library WHERE status='active' ORDER BY script_id").fetchall()]
                 agents=[dict(r) for r in pg.execute('SELECT agent_id,name,survey_json,imported_at FROM public.agents ORDER BY agent_id').fetchall()]
                 profiles=[dict(r) for r in pg.execute('SELECT agent_id,profile_json,updated_at FROM public.saved_profiles ORDER BY agent_id').fetchall()]
                 reviews=[dict(r) for r in pg.execute('SELECT agent_id,reviewer_nickname,relationship,traits,topics,roles,intro,imported_at FROM public.peer_reviews ORDER BY id').fetchall()]
-            if not scripts or not agents: raise SystemExit('Production baseline is unexpectedly empty')
-
+            if not scripts or not agents: raise SystemExit('Production baseline unexpectedly empty')
             server.load_local_env()
             if server.database_engine()!='sqlite': raise SystemExit('Preview safety guard failed')
-            server.initialize_database()
-            script_library_store.initialize_script_library(server.database,server.database_engine)
-            script_library_store.upsert_scripts(server.database,scripts)
-
-            # Preserve Preview-generated chats/proposals across deploys, but refresh authoritative source data.
-            db_path = server.DB_PATH
-            with sqlite3.connect(db_path) as db:
+            server.initialize_database(); script_library_store.initialize_script_library(server.database,server.database_engine); script_library_store.upsert_scripts(server.database,scripts)
+            with sqlite3.connect(server.DB_PATH) as db:
                 db.execute('PRAGMA foreign_keys=ON')
-                db.execute('DELETE FROM peer_reviews')
+                # peer_reviews is production-source reference data; older Preview DBs predate this table.
+                db.execute('''CREATE TABLE IF NOT EXISTS peer_reviews (id INTEGER PRIMARY KEY AUTOINCREMENT, agent_id TEXT NOT NULL, reviewer_nickname TEXT, relationship TEXT, traits TEXT, topics TEXT, roles TEXT, intro TEXT, imported_at TEXT NOT NULL, FOREIGN KEY(agent_id) REFERENCES agents(agent_id))''')
+                db.execute('CREATE INDEX IF NOT EXISTS idx_peer_reviews_agent_id ON peer_reviews(agent_id)')
                 for r in agents:
                     db.execute('''INSERT INTO agents(agent_id,name,survey_json,imported_at) VALUES(?,?,?,?) ON CONFLICT(agent_id) DO UPDATE SET name=excluded.name,survey_json=excluded.survey_json,imported_at=excluded.imported_at''',(str(r['agent_id']),r['name'],r['survey_json'] if isinstance(r['survey_json'],str) else json.dumps(r['survey_json'] or {},ensure_ascii=False),str(r['imported_at'])))
                 for r in profiles:
                     db.execute('''INSERT INTO saved_profiles(agent_id,profile_json,updated_at) VALUES(?,?,?) ON CONFLICT(agent_id) DO UPDATE SET profile_json=excluded.profile_json,updated_at=excluded.updated_at''',(str(r['agent_id']),r['profile_json'] if isinstance(r['profile_json'],str) else json.dumps(r['profile_json'] or {},ensure_ascii=False),str(r['updated_at'])))
+                db.execute('DELETE FROM peer_reviews')
                 for r in reviews:
-                    db.execute('''INSERT INTO peer_reviews(agent_id,reviewer_nickname,relationship,traits,topics,roles,intro,imported_at) VALUES(?,?,?,?,?,?,?,?)''',(str(r['agent_id']),r['reviewer_nickname'],r['relationship'],r['traits'],r['topics'],r['roles'],r['intro'],str(r['imported_at'])))
+                    db.execute('INSERT INTO peer_reviews(agent_id,reviewer_nickname,relationship,traits,topics,roles,intro,imported_at) VALUES(?,?,?,?,?,?,?,?)',(str(r['agent_id']),r['reviewer_nickname'],r['relationship'],r['traits'],r['topics'],r['roles'],r['intro'],str(r['imported_at'])))
                 db.commit()
             print(f'Preview baseline ready: scripts={len(scripts)}, agents={len(agents)}, profiles={len(profiles)}, peer_reviews={len(reviews)}')
             PY
-
-            echo '=== 5. Install/start independent Preview service on 127.0.0.1:8001 ==='
             cat > "$PREVIEW_SERVICE" <<'UNIT'
             [Unit]
             Description=AIA Auto IP Preview
@@ -159,23 +105,16 @@ jobs:
             [Install]
             WantedBy=multi-user.target
             UNIT
-            systemctl daemon-reload
-            systemctl enable aia-auto-ip-preview >/dev/null
-            systemctl restart aia-auto-ip-preview
-            sleep 2
+            systemctl daemon-reload; systemctl enable aia-auto-ip-preview >/dev/null; systemctl restart aia-auto-ip-preview; sleep 2
             systemctl is-active --quiet aia-auto-ip-preview
             curl -fsS --retry 5 --retry-delay 1 http://127.0.0.1:8001/ >/dev/null
-
-            echo '=== 6. Ensure /preview nginx route ==='
-            PROD_NGINX=$(grep -Rsl 'proxy_pass http://127.0.0.1:8000' /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null | head -1 || true)
-            [ -n "$PROD_NGINX" ]
-            PROD_NGINX=$(readlink -f "$PROD_NGINX")
+            PROD_NGINX=$(grep -Rsl 'proxy_pass http://127.0.0.1:8000' /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null | head -1 || true); [ -n "$PROD_NGINX" ]; PROD_NGINX=$(readlink -f "$PROD_NGINX")
             NGINX_BACKUP="${PROD_NGINX}.preview-backup"; cp "$PROD_NGINX" "$NGINX_BACKUP"
             rollback(){ cp "$NGINX_BACKUP" "$PROD_NGINX"; nginx -t; systemctl reload nginx; }
             python3 - "$PROD_NGINX" <<'PY'
             from pathlib import Path
             import re,sys
-            path=Path(sys.argv[1]); text=path.read_text(); begin='    # AIA_PREVIEW_BEGIN\n'; end='    # AIA_PREVIEW_END\n'
+            p=Path(sys.argv[1]); t=p.read_text(); b='    # AIA_PREVIEW_BEGIN\n'; e='    # AIA_PREVIEW_END\n'
             block='''    # AIA_PREVIEW_BEGIN
                 location = /preview { return 302 /preview/; }
                 location /preview/ {
@@ -193,16 +132,12 @@ jobs:
                 }
                 # AIA_PREVIEW_END
             '''
-            if begin in text and end in text: text=re.sub(re.escape(begin)+r'.*?'+re.escape(end),block,text,count=1,flags=re.S)
+            if b in t and e in t: t=re.sub(re.escape(b)+r'.*?'+re.escape(e),block,t,count=1,flags=re.S)
             else:
-                pos=text.find('proxy_pass http://127.0.0.1:8000'); candidates=list(re.finditer(r'(?m)^\s*location\s+/\s*\{',text[:pos])); marker=candidates[-1]; text=text[:marker.start()]+block+text[marker.start():]
-            path.write_text(text)
+                pos=t.find('proxy_pass http://127.0.0.1:8000'); ms=list(re.finditer(r'(?m)^\s*location\s+/\s*\{',t[:pos])); t=t[:ms[-1].start()]+block+t[ms[-1].start():]
+            p.write_text(t)
             PY
-            nginx -t || { rollback; exit 1; }
-            systemctl reload nginx
-            sleep 2
-
-            echo '=== 7. Verify Preview and production ==='
+            nginx -t || { rollback; exit 1; }; systemctl reload nginx; sleep 2
             curl -fsS --retry 8 --retry-delay 1 http://127.0.0.1/preview/ >/dev/null || { rollback; exit 1; }
             curl -fsS --retry 5 http://127.0.0.1/ >/dev/null || { rollback; exit 1; }
             systemctl is-active --quiet aia-auto-ip || { rollback; exit 1; }
