@@ -21,11 +21,7 @@
     lifeRoles: [[/宝妈|孩子的妈妈|两个孩子的妈妈|三个孩子的妈妈/, '宝妈'], [/宝爸|孩子的爸爸|两个孩子的爸爸|三个孩子的爸爸/, '宝爸'], [/创业者|企业主/, '创业者'], [/职场人|上班族/, '职场人']],
     hobbies: [[/骑行|自行车/, '骑行'], [/跑步|马拉松/, '跑步'], [/徒步|露营|登山|户外/, '户外'], [/旅行|旅游/, '旅行'], [/摄影|拍照/, '摄影'], [/读书|阅读/, '读书'], [/美食|烹饪|做饭/, '美食'], [/健身|瑜伽|游泳|羽毛球|网球/, '运动健身']],
   };
-  function extractFactsFromIntro(profile) {
-    normalizeSignupProfile(profile); const intro = text(profile?.selfIntro); if (!intro) return profile;
-    Object.entries(FACT_RULES).forEach(([field, rules]) => { const found = rules.filter(([pattern]) => pattern.test(intro)).map(([, label]) => label); if (found.length) profile[field] = uniq([...splitValues(profile[field]), ...found]).join('｜'); });
-    return profile;
-  }
+  function extractFactsFromIntro(profile) { normalizeSignupProfile(profile); const intro = text(profile?.selfIntro); if (!intro) return profile; Object.entries(FACT_RULES).forEach(([field, rules]) => { const found = rules.filter(([pattern]) => pattern.test(intro)).map(([, label]) => label); if (found.length) profile[field] = uniq([...splitValues(profile[field]), ...found]).join('｜'); }); return profile; }
   function normalizeCountItems(items) { const map = new Map(); (items || []).forEach((item) => { const label = text(item?.label ?? item); if (!label) return; const count = Math.max(1, Number(item?.count || 1) || 1); map.set(label, (map.get(label) || 0) + count); }); return [...map.entries()].map(([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, 'zh-CN')); }
   function chipList(items) { const wrap = document.createElement('div'); wrap.className = 'peer-feedback-chips'; normalizeCountItems(items).forEach(({ label, count }) => { const chip = document.createElement('span'); chip.className = 'peer-feedback-chip'; chip.textContent = count > 1 ? `${label} ×${count}` : label; wrap.appendChild(chip); }); return wrap; }
   function feedbackSection(title, items) { const section = document.createElement('section'); section.className = 'peer-feedback-section'; const h = document.createElement('h4'); h.textContent = title; section.append(h, chipList(items)); return section; }
@@ -41,13 +37,46 @@
     card.appendChild(block);
   }
   function ensureIntroLast() { const card = document.getElementById('profile-card'); const intro = text(state.profile?.selfIntro); if (!card || !intro) return; let group = card.querySelector('[data-signup-intro="1"]'); if (!group) { group = document.createElement('div'); group.className = 'profile-group profile-group-full'; group.dataset.signupIntro = '1'; const label = document.createElement('span'); label.className = 'profile-label'; label.textContent = '个人介绍'; const value = document.createElement('div'); value.className = 'profile-value profile-long-value'; group.append(label, value); } group.querySelector('.profile-label').textContent = '个人介绍'; group.querySelector('.profile-value').textContent = intro; card.appendChild(group); }
-  function nicknameAudit(profile) { normalizeSignupProfile(profile); const video = text(profile.videoNickname); const xhs = text(profile.xiaohongshuNickname); if (!video && !xhs) return null; const same = !!(video && xhs && video === xhs); return { video, xhs, same, message: video && xhs && !same ? '你的视频号和小红书昵称目前不一致。IP 经营应保持跨平台一致，建议统一为同一个长期昵称。昵称不宜频繁变化，否则会降低用户识别和记忆。' : '如果现有昵称合规、好记、符合定位，优先建议保留。昵称不宜频繁变化，否则会降低用户识别和记忆。' }; }
+
+  function nicknameProblems(name) {
+    const value = text(name); const problems = [];
+    if (!value) return ['为空'];
+    if (value.length > 14) problems.push('偏长，不利于记忆');
+    if (/友邦|\bAIA\b/i.test(value)) problems.push('包含品牌词，跨平台合规风险较高');
+    if (/[©®™]|https?:\/\/|www\.|微信|vx|V信|电话|手机号/i.test(value)) problems.push('包含不适合放在昵称里的导流或特殊信息');
+    if (/^[\d\W_]+$/u.test(value)) problems.push('缺少可识别的文字主体');
+    return problems;
+  }
+  function chooseExistingNickname(profile) {
+    normalizeSignupProfile(profile); const video = text(profile.videoNickname); const xhs = text(profile.xiaohongshuNickname);
+    const candidates = uniq([video, xhs]).map((name) => ({ name, problems: nicknameProblems(name) }));
+    const good = candidates.filter((item) => item.name && item.problems.length === 0);
+    return { video, xhs, candidates, preferred: good[0]?.name || '', same: !!(video && xhs && video === xhs) };
+  }
+  function applyExistingNicknameStrategy(proposal, profile) {
+    const audit = chooseExistingNickname(profile); const options = proposal?.nicknameOptions;
+    if (!audit.preferred || !Array.isArray(options)) return audit;
+    const existed = options.some((item) => text(item?.name) === audit.preferred);
+    if (!existed) options.unshift({ name: audit.preferred, reason: '原昵称基础较好，优先建议保留；长期稳定使用更有利于用户识别和记忆', source: '报名表原昵称' });
+    proposal.nicknameOptions = options.slice(0, Math.max(3, options.length));
+    return audit;
+  }
+  function nicknameAudit(profile) {
+    const audit = chooseExistingNickname(profile); if (!audit.video && !audit.xhs) return null;
+    const bad = audit.candidates.filter((item) => item.problems.length);
+    let message = '';
+    if (audit.video && audit.xhs && !audit.same) message += '你的视频号和小红书昵称目前不一致。IP 经营应保持跨平台一致，建议统一为同一个长期昵称。';
+    if (audit.preferred) message += `${message ? ' ' : ''}现有昵称“${audit.preferred}”初步检查没有明显问题，优先建议保留，并提供备选方案供比较。`;
+    if (bad.length) message += `${message ? ' ' : ''}${bad.map((item) => `“${item.name}”：${item.problems.join('、')}`).join('；')}，建议调整。`;
+    message += ' 昵称不宜频繁变化，否则会降低用户识别和记忆。';
+    return { ...audit, message: message.trim() };
+  }
   function renderNicknameAudit() { const content = document.getElementById('proposal-content'); const audit = nicknameAudit(state.profile || {}); if (!content) return; content.querySelector('.nickname-audit-card')?.remove(); if (!audit) return; const card = document.createElement('section'); card.className = 'nickname-audit-card'; const h = document.createElement('h3'); h.textContent = '现有昵称建议'; const names = document.createElement('p'); names.className = 'nickname-audit-current'; const parts = []; if (audit.video) parts.push(`视频号：${audit.video}`); if (audit.xhs) parts.push(`小红书：${audit.xhs}`); names.textContent = parts.join('　'); const msg = document.createElement('p'); msg.textContent = audit.message; card.append(h, names, msg); content.prepend(card); }
   function relabelFloatingButtons() { const profileButton = document.querySelector('#profile-float-button, .profile-float-button'); const proposalButton = document.querySelector('#proposal-float-button, .proposal-float-button, .ip-proposal-float-button'); const setTwoLines = (button, a, b) => { if (!button || button.dataset.twoLineLabel === `${a}${b}`) return; button.innerHTML = ''; const s1 = document.createElement('span'); s1.textContent = a; const s2 = document.createElement('span'); s2.textContent = b; button.append(s1, s2); button.dataset.twoLineLabel = `${a}${b}`; button.classList.add('aia-two-line-float'); }; setTwoLines(profileButton, '我的', '资料'); setTwoLines(proposalButton, 'IP', '方案'); }
   if (!document.getElementById('product-rules-v27-style')) { const style = document.createElement('style'); style.id = 'product-rules-v27-style'; style.textContent = `.profile-group-full{grid-column:1/-1}.peer-feedback-card{display:block!important;padding-top:18px;border-top:1px solid #eee}.peer-feedback-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px}.peer-feedback-meta{font-size:12px;color:#8a7f83}.peer-feedback-section{margin:14px 0}.peer-feedback-section h4{margin:0 0 8px;font-size:13px;color:#5f5659}.peer-feedback-chips{display:flex;flex-wrap:wrap;gap:8px}.peer-feedback-chip{display:inline-flex;align-items:center;padding:7px 10px;border:1px solid #eadfe3;border-radius:999px;background:#fff7f9;color:#5f3d48;font-size:13px}.peer-feedback-quote-list{display:grid;gap:8px}.peer-feedback-quote-list p{margin:0;padding:10px 12px;border-radius:10px;background:#f8f7f7;line-height:1.65;color:#4f484a}.peer-feedback-more{margin-top:8px}.nickname-audit-card{margin-bottom:18px;padding:16px 18px;border:1px solid #eadfe3;border-radius:14px;background:#fff9fb}.nickname-audit-card h3{margin:0 0 8px}.nickname-audit-card p{margin:5px 0;line-height:1.65}.nickname-audit-current{font-weight:700;color:#4f3b42}.aia-two-line-float{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;line-height:1.05!important;gap:2px!important;text-align:center!important}.aia-two-line-float span{display:block;font-weight:700}`; document.head.appendChild(style); }
   if (typeof startWorkspace === 'function') { const base = startWorkspace; startWorkspace = function startWorkspaceV27(profile, ...rest) { extractFactsFromIntro(profile); return base(profile, ...rest); }; }
   if (typeof renderProfile === 'function') { const base = renderProfile; renderProfile = function renderProfileV27() { extractFactsFromIntro(state.profile || {}); const result = base(); requestAnimationFrame(() => { renderPeerFeedback(); ensureIntroLast(); relabelFloatingButtons(); }); return result; }; }
-  if (typeof renderProposal === 'function') { const base = renderProposal; renderProposal = function renderProposalV27(proposal, version) { normalizeSignupProfile(state.profile || {}); const result = base(proposal, version); requestAnimationFrame(renderNicknameAudit); return result; }; }
+  if (typeof renderProposal === 'function') { const base = renderProposal; renderProposal = function renderProposalV27(proposal, version) { normalizeSignupProfile(state.profile || {}); applyExistingNicknameStrategy(proposal, state.profile || {}); const result = base(proposal, version); requestAnimationFrame(renderNicknameAudit); return result; }; }
   new MutationObserver(relabelFloatingButtons).observe(document.body, { childList:true, subtree:true }); normalizeSignupProfile(state.profile || {}); relabelFloatingButtons();
-  window.aiaProfileRulesV27 = { normalizeSignupProfile, extractFactsFromIntro, nicknameAudit };
+  window.aiaProfileRulesV27 = { normalizeSignupProfile, extractFactsFromIntro, nicknameAudit, applyExistingNicknameStrategy };
 })();
