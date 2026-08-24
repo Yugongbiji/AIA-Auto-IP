@@ -1,11 +1,16 @@
 name: Frontend QA
 
+# Long-term rule: development commits do not consume GitHub-hosted minutes.
+# Full hosted QA is a final gate only: manual when needed, and once after main changes.
 on:
-  pull_request:
+  workflow_dispatch:
   push:
     branches:
       - main
-      - agent/frontend-engineering-v1
+
+concurrency:
+  group: aia-auto-ip-frontend-qa-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   playwright:
@@ -47,4 +52,4 @@ jobs:
         with:
           name: playwright-report
           path: playwright-report/
-          retention-days: 7
+          retention-days: 3
