@@ -1,6 +1,9 @@
-// 脚本推荐 V3：有 IP 时按保险主线 / 内容支线推荐；无 IP 时按二级标签浏览脚本库。
+// 脚本推荐 V4：有 IP 时按保险主线 / 内容支线推荐；无 IP 时按一级/二级标签浏览脚本库。
 (function () {
-  const recommendationState = { loaded: false, loading: false, batch: '', groups: [], detail: null, direction: '', library: null, libraryTag: '', libraryPage: 1 };
+  const recommendationState = {
+    loaded: false, loading: false, batch: '', groups: [], detail: null, direction: '',
+    library: null, libraryLevel1: '', libraryLevel2: '', libraryPage: 1,
+  };
   document.getElementById('script-recommendation-refresh')?.remove();
 
   function latestProposal() { return state.proposals?.[0]?.proposal || null; }
@@ -55,30 +58,72 @@
   }
   function addIpPrompt(root) {
     const prompt = document.createElement('section'); prompt.className = 'script-library-ip-prompt';
-    prompt.innerHTML = '<div><strong>完成 IP 人设，推荐会更懂你</strong><p>现在可以先浏览全部脚本。完成 IP 方案后，会根据你的保险主线、内容支线和个人特点优先推荐。</p></div>';
+    prompt.innerHTML = '<div><strong>完成 IP 人设，推荐会更懂你</strong><p>现在可以先浏览完整脚本库。完成 IP 方案后，会根据你的保险主线、内容支线和个人特点优先推荐。</p></div>';
     const button = document.createElement('button'); button.type = 'button'; button.className = 'primary'; button.textContent = '去完善我的 IP'; button.addEventListener('click', () => selectTool('ip'));
     prompt.appendChild(button); root.appendChild(prompt);
+  }
+  function tagButton(text, active, onClick) {
+    const button = document.createElement('button'); button.type = 'button'; button.className = `script-library-tag ${active ? 'active' : ''}`; button.textContent = text; button.addEventListener('click', onClick); return button;
+  }
+  function renderLibraryFilters(root, data) {
+    const filter = document.createElement('section'); filter.className = 'script-library-filter';
+    const level1Label = document.createElement('div'); level1Label.className = 'script-library-filter-label'; level1Label.textContent = '一级分类';
+    const level1 = document.createElement('div'); level1.className = 'script-library-tags script-library-level1';
+    level1.appendChild(tagButton('全部脚本', !recommendationState.libraryLevel1, () => {
+      recommendationState.libraryLevel1 = ''; recommendationState.libraryLevel2 = ''; recommendationState.libraryPage = 1; loadLibrary(true);
+    }));
+    (data.level1_tags || []).forEach((tag) => level1.appendChild(tagButton(tag, recommendationState.libraryLevel1 === tag, () => {
+      recommendationState.libraryLevel1 = tag; recommendationState.libraryLevel2 = ''; recommendationState.libraryPage = 1; loadLibrary(true);
+    })));
+    filter.append(level1Label, level1);
+
+    if (recommendationState.libraryLevel1) {
+      const options = data.level2_by_level1?.[recommendationState.libraryLevel1] || [];
+      const level2Label = document.createElement('div'); level2Label.className = 'script-library-filter-label secondary'; level2Label.textContent = '二级分类';
+      const level2 = document.createElement('div'); level2.className = 'script-library-tags script-library-level2';
+      level2.appendChild(tagButton('全部', !recommendationState.libraryLevel2, () => {
+        recommendationState.libraryLevel2 = ''; recommendationState.libraryPage = 1; loadLibrary(true);
+      }));
+      options.forEach((tag) => level2.appendChild(tagButton(tag, recommendationState.libraryLevel2 === tag, () => {
+        recommendationState.libraryLevel2 = tag; recommendationState.libraryPage = 1; loadLibrary(true);
+      })));
+      filter.append(level2Label, level2);
+    }
+    root.appendChild(filter);
+  }
+  function paginationNumbers(page, pages) {
+    if (pages <= 7) return Array.from({ length: pages }, (_, i) => i + 1);
+    const result = [1];
+    const start = Math.max(2, page - 2), end = Math.min(pages - 1, page + 2);
+    if (start > 2) result.push('…');
+    for (let i = start; i <= end; i += 1) result.push(i);
+    if (end < pages - 1) result.push('…');
+    result.push(pages); return result;
+  }
+  function renderPager(root, data) {
+    if ((data.pages || 1) <= 1) return;
+    const pager = document.createElement('nav'); pager.className = 'script-library-pager'; pager.setAttribute('aria-label', '脚本库分页');
+    const prev = document.createElement('button'); prev.type = 'button'; prev.className = 'secondary-button'; prev.textContent = '上一页'; prev.disabled = data.page <= 1;
+    prev.addEventListener('click', () => { recommendationState.libraryPage = Math.max(1, data.page - 1); loadLibrary(true); }); pager.appendChild(prev);
+    paginationNumbers(data.page, data.pages).forEach((item) => {
+      if (item === '…') { const ellipsis = document.createElement('span'); ellipsis.className = 'script-page-ellipsis'; ellipsis.textContent = '…'; pager.appendChild(ellipsis); return; }
+      const button = document.createElement('button'); button.type = 'button'; button.className = `script-page-number ${item === data.page ? 'active' : ''}`; button.textContent = String(item); button.setAttribute('aria-current', item === data.page ? 'page' : 'false');
+      button.addEventListener('click', () => { recommendationState.libraryPage = item; loadLibrary(true); }); pager.appendChild(button);
+    });
+    const next = document.createElement('button'); next.type = 'button'; next.className = 'secondary-button'; next.textContent = '下一页'; next.disabled = data.page >= data.pages;
+    next.addEventListener('click', () => { recommendationState.libraryPage = Math.min(data.pages, data.page + 1); loadLibrary(true); }); pager.appendChild(next);
+    const summary = document.createElement('span'); summary.className = 'script-page-summary'; summary.textContent = `共 ${data.total || 0} 条`; pager.appendChild(summary);
+    root.appendChild(pager);
   }
   function renderLibrary() {
     const root = document.getElementById('script-recommendation-body'); if (!root) return; root.innerHTML = '';
     addIpPrompt(root);
     if (recommendationState.loading || !recommendationState.library) { root.insertAdjacentHTML('beforeend', '<div class="script-recommendation-loading">正在加载脚本库…</div>'); return; }
     const data = recommendationState.library;
-    const nav = document.createElement('div'); nav.className = 'script-library-tags';
-    ['全部', ...(data.tags || [])].forEach((tag) => {
-      const value = tag === '全部' ? '' : tag; const button = document.createElement('button'); button.type = 'button'; button.className = `script-library-tag ${recommendationState.libraryTag === value ? 'active' : ''}`; button.textContent = tag;
-      button.addEventListener('click', () => { recommendationState.libraryTag = value; recommendationState.libraryPage = 1; loadLibrary(true); }); nav.appendChild(button);
-    }); root.appendChild(nav);
+    renderLibraryFilters(root, data);
     const list = document.createElement('div'); list.className = 'script-card-list script-library-grid'; (data.scripts || []).forEach((script) => renderScriptCard(script, list));
     if (!data.scripts?.length) list.innerHTML = '<p class="script-recommendation-empty">这个分类暂时没有脚本。</p>'; root.appendChild(list);
-    if ((data.pages || 1) > 1) {
-      const pager = document.createElement('div'); pager.className = 'script-library-pager';
-      const prev = document.createElement('button'); prev.type = 'button'; prev.className = 'secondary-button'; prev.textContent = '上一页'; prev.disabled = data.page <= 1;
-      const info = document.createElement('span'); info.textContent = `${data.page} / ${data.pages}`;
-      const next = document.createElement('button'); next.type = 'button'; next.className = 'secondary-button'; next.textContent = '下一页'; next.disabled = data.page >= data.pages;
-      prev.addEventListener('click', () => { recommendationState.libraryPage -= 1; loadLibrary(true); }); next.addEventListener('click', () => { recommendationState.libraryPage += 1; loadLibrary(true); });
-      pager.append(prev, info, next); root.appendChild(pager);
-    }
+    renderPager(root, data);
   }
   function renderRecommendations() {
     if (!hasIpPlan()) return renderLibrary();
@@ -97,9 +142,12 @@
     if (recommendationState.loading) return; if (!force && recommendationState.library) return renderLibrary();
     recommendationState.loading = true; renderLibrary();
     try {
-      const query = new URLSearchParams({ page: String(recommendationState.libraryPage), pageSize: '20' }); if (recommendationState.libraryTag) query.set('tag', recommendationState.libraryTag);
+      const query = new URLSearchParams({ page: String(recommendationState.libraryPage), pageSize: '20' });
+      if (recommendationState.libraryLevel1) query.set('level1', recommendationState.libraryLevel1);
+      if (recommendationState.libraryLevel2) query.set('level2', recommendationState.libraryLevel2);
       const response = await fetch(scriptApiUrl(`library?${query.toString()}`)); if (!response.ok) throw new Error(); recommendationState.library = await response.json();
-    } catch (_) { recommendationState.library = { tags: [], scripts: [], page: 1, pages: 1 }; }
+      recommendationState.libraryPage = recommendationState.library.page || recommendationState.libraryPage;
+    } catch (_) { recommendationState.library = { level1_tags: [], level2_by_level1: {}, scripts: [], page: 1, pages: 1, total: 0 }; }
     finally { recommendationState.loading = false; renderLibrary(); }
   }
   async function loadRecommendations(force = false) {
@@ -124,8 +172,28 @@
     const detail = recommendationState.detail; if (!detail) return; const source = [detail.title_1, detail.body].filter(Boolean).join('\n'); track(detail.script_id, tool === 'script' ? 'rewrite_click' : 'xhs_click', recommendationState.direction); closeDetail(); selectTool(tool); const input = document.getElementById(tool === 'script' ? 'script-input' : 'xhs-input'); if (input) { input.value = source; input.dispatchEvent(new Event('input', { bubbles: true })); input.focus(); }
   }
   function escapeHtml(value) { const div = document.createElement('div'); div.textContent = String(value || ''); return div.innerHTML; }
-  if (!document.getElementById('script-library-v3-style')) {
-    const style = document.createElement('style'); style.id = 'script-library-v3-style'; style.textContent = `.script-library-ip-prompt{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:16px 18px;margin-bottom:16px;border:1px solid #eadde1;border-radius:14px;background:#fff8fa}.script-library-ip-prompt p{margin:5px 0 0;color:#756970}.script-library-tags{display:flex;gap:8px;overflow-x:auto;padding:2px 0 12px}.script-library-tag{flex:0 0 auto;border:0;border-radius:999px;padding:8px 14px;background:#f5f1f2}.script-library-tag.active{background:#d31145;color:#fff}.script-library-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 24px}.script-library-pager{display:flex;align-items:center;justify-content:center;gap:14px;padding:18px 0}@media(max-width:640px){.script-library-ip-prompt{align-items:flex-start;flex-direction:column}.script-library-grid{grid-template-columns:1fr}}`; document.head.appendChild(style);
+  function reset() {
+    recommendationState.loaded = false; recommendationState.loading = false; recommendationState.groups = []; recommendationState.library = null; recommendationState.libraryPage = 1;
+  }
+  if (!document.getElementById('script-library-v4-style')) {
+    const style = document.createElement('style'); style.id = 'script-library-v4-style'; style.textContent = `
+      .script-library-ip-prompt{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:16px 18px;margin-bottom:18px;border:1px solid #eadde1;border-radius:14px;background:#fff8fa}
+      .script-library-ip-prompt p{margin:5px 0 0;color:#756970}
+      .script-library-filter{padding:14px 0 6px;border-bottom:1px solid #eee6e8;margin-bottom:18px}
+      .script-library-filter-label{font-size:13px;font-weight:700;color:#6d6267;margin:0 0 8px}
+      .script-library-filter-label.secondary{margin-top:12px}
+      .script-library-tags{display:flex;gap:8px;overflow-x:auto;padding:2px 0 4px;scrollbar-width:thin}
+      .script-library-tag{flex:0 0 auto;border:1px solid transparent;border-radius:999px;padding:8px 14px;background:#f5f1f2;color:#51484c}
+      .script-library-tag.active{background:#fff0f4;color:#d31145;border-color:#e7a7b9;font-weight:700}
+      .script-library-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 18px}
+      .script-library-grid .script-recommendation-card{margin:0;border:1px solid #eee5e8;border-radius:14px;padding:15px 16px;background:#fff;box-shadow:0 2px 10px #2b1b2008}
+      .script-library-grid .script-recommendation-card:hover{border-color:#e6c4ce;box-shadow:0 5px 18px #2b1b2010}
+      .script-library-pager{display:flex;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap;padding:24px 0 8px}
+      .script-page-number{min-width:36px;height:36px;padding:0 10px;border:1px solid #e6dde0;border-radius:9px;background:#fff;color:#554b4f}
+      .script-page-number.active{border-color:#d31145;background:#fff0f4;color:#d31145;font-weight:700}
+      .script-page-ellipsis{padding:0 2px;color:#8b8185}.script-page-summary{margin-left:8px;font-size:13px;color:#81777b}
+      @media(max-width:640px){.script-library-ip-prompt{align-items:flex-start;flex-direction:column}.script-library-grid{grid-template-columns:1fr;gap:12px}.script-library-pager{gap:5px}.script-page-summary{width:100%;text-align:center;margin:4px 0 0}}
+    `; document.head.appendChild(style);
   }
   if (typeof selectTool === 'function') {
     const baseSelectTool = selectTool;
@@ -136,5 +204,5 @@
   }
   document.querySelector('[data-tool="recommendation"]')?.addEventListener('click', () => selectTool('recommendation'));
   document.getElementById('script-detail-close')?.addEventListener('click', closeDetail); document.getElementById('script-detail-rewrite')?.addEventListener('click', () => handoff('script')); document.getElementById('script-detail-xhs')?.addEventListener('click', () => handoff('xhs'));
-  window.scriptRecommendationV1 = { currentDirections, loadRecommendations, openDetail };
+  window.scriptRecommendationV1 = { currentDirections, loadRecommendations, loadLibrary, openDetail, reset };
 })();
