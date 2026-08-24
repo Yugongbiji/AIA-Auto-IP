@@ -33,22 +33,20 @@
     for(const item of items){const label=txt(item?.label??item),count=Number(item?.count||1);if(label&&count>=2&&!out.includes(label))out.push(label);if(out.length>=2)break;}
     return out;
   }
-  function realServices(p){
-    return uniq(['services','serviceAreas','serviceCapabilities','expertise','specialties'].flatMap(k=>split(p?.[k]))).slice(0,4);
-  }
+  function realServices(p){return uniq(['services','serviceAreas','serviceCapabilities','expertise','specialties'].flatMap(k=>split(p?.[k]))).slice(0,4);}
   function naturalIdentity(p){
     const family=specificFamilyIdentity(p),job=career(p);
-    if(family&&job) return `${family}，曾从事${job}`;
+    if(family&&job)return `${family}，曾从事${job}`;
     return family||job||'';
   }
 
   // 70/74：一句话定位不带称呼；保险必须是主内容，支线素材不能反客为主。
   function safeHeadline(p){
     const job=career(p),family=specificFamilyIdentity(p);
-    if(job) return `从${job}跨界，持续分享保险、家庭保障与长期规划`;
-    if(family) return `从${family}视角，分享保险、家庭保障与长期规划`;
+    if(job)return `从${job}跨界，持续分享保险、家庭保障与长期规划`;
+    if(family)return `从${family}视角，分享保险、家庭保障与长期规划`;
     const proof=proofItems(p)[0];
-    if(proof) return `用${proof}做底色，讲清保险、家庭保障与长期规划`;
+    if(proof)return `用${proof}做底色，讲清保险、家庭保障与长期规划`;
     return '围绕保险、家庭保障与长期规划，分享实用而真实的内容';
   }
 
@@ -57,25 +55,18 @@
   const line=(emoji,value)=>txt(value)?`${emoji} ${txt(value)}`:'';
   const XHS_DISCLAIMER='📌 本账号所述内容为个人意见，不代表任何官方意见。';
   const VIDEO_DISCLAIMER='📌 本账号上所陈述或表达的内容仅为我个人意见，并不代表友邦人寿的意见。';
-
   function commonAssets(p){return {identity:naturalIdentity(p),proof:proofItems(p),traits:feedbackTraits(p),services:realServices(p)};}
   function mainContent(platform){return platform==='xhs'?'分享家庭保障、养老准备与长期规划相关内容':'分享保险、家庭保障、养老与长期规划相关内容';}
+
   function xhsVersions(p){
-    const a=commonAssets(p),identity=xhsSafe(a.identity)?a.identity:'',proof=a.proof.filter(xhsSafe),traits=a.traits.filter(xhsSafe),services=a.services.filter(xhsSafe);
-    const trust=traits.length?`客户常提到：${traits.join('、')}`:'';
+    const a=commonAssets(p),identity=xhsSafe(a.identity)?a.identity:'',proof=a.proof.filter(xhsSafe),traits=a.traits.filter(xhsSafe),services=a.services.filter(xhsSafe),trust=traits.length?`客户常提到：${traits.join('、')}`:'';
     return [
       {label:'方案 A · 专业背书',focus:'我是谁 + 为什么值得相信',lines:uniq([line('👤',identity),line('🏅',proof.join('｜')),line('💬',mainContent('xhs')),line('✨',trust),XHS_DISCLAIMER]).filter(Boolean)},
       {label:'方案 B · 人设记忆',focus:'让别人先记住这个人',lines:uniq([line('👤',identity),line('✨',trust),line('🏅',proof[0]||''),line('💬',mainContent('xhs')),XHS_DISCLAIMER]).filter(Boolean)},
       {label:'方案 C · 价值服务',focus:'我能给你带来什么',lines:uniq([line('👤',identity),services.length?line('🧭',services.join('｜')):'',line('💬',mainContent('xhs')),line('🏅',proof.join('｜')),XHS_DISCLAIMER]).filter(Boolean)}
     ];
   }
-  function videoCompliance(p){
-    const lines=[];
-    if(txt(p?.department)) lines.push(`📍 ${txt(p.department)}`);
-    lines.push('📌 执业编号：000');
-    lines.push(VIDEO_DISCLAIMER);
-    return lines;
-  }
+  function videoCompliance(p){const out=[];if(txt(p?.department))out.push(`📍 ${txt(p.department)}`);out.push('📌 执业编号：000',VIDEO_DISCLAIMER);return out;}
   function videoVersions(p){
     const a=commonAssets(p),trust=a.traits.length?`客户常提到：${a.traits.join('、')}`:'',req=videoCompliance(p);
     const mk=(label,focus,body)=>({label,focus,lines:uniq([...body.filter(Boolean),...req])});
@@ -85,40 +76,33 @@
       mk('方案 C · 价值服务','我能给你带来什么',[line('👤',a.identity),a.services.length?line('🧭',a.services.join('｜')):'',line('💬',mainContent('video')),line('🏅',a.proof.join('｜'))])
     ];
   }
-  function enforceProposal(proposal,p){
-    if(!proposal)return;
-    proposal.headline=safeHeadline(p||{});
-    proposal.bios=proposal.bios||{};
-    proposal.bios.xiaohongshu=xhsVersions(p||{});
-    proposal.bios.videoDouyin=videoVersions(p||{});
-  }
+  function enforceProposal(proposal,p){if(!proposal)return;proposal.headline=safeHeadline(p||{});proposal.bios=proposal.bios||{};proposal.bios.xiaohongshu=xhsVersions(p||{});proposal.bios.videoDouyin=videoVersions(p||{});}
 
-  // 71：两个悬浮入口只保留图标，文字完全移除。
-  function icon(kind){return kind==='profile'?'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8c.7-4 3-6 7-6s6.3 2 7 6"/></svg>':'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/></svg>';}
+  // 71：只显示图标。旧 V30/V31 仍可维护按钮文字 DOM，但通过 CSS 隐藏，避免多个 MutationObserver 互相改 innerHTML 造成页面卡顿。
   function iconOnlyFloats(){
     const p=document.querySelector('.ip-floating-profile-button'),s=document.querySelector('.ip-floating-proposal-button');
-    [[p,'profile','我的资料'],[s,'proposal','IP方案']].forEach(([b,k,label])=>{if(!b)return;b.classList.add('aia-v33-icon-float');b.innerHTML=icon(k);b.setAttribute('aria-label',label);b.setAttribute('title',label);});
+    if(p){p.classList.add('aia-v33-icon-float','aia-v33-profile-icon');p.setAttribute('aria-label','我的资料');p.setAttribute('title','我的资料');}
+    if(s){s.classList.add('aia-v33-icon-float','aia-v33-proposal-icon');s.setAttribute('aria-label','IP方案');s.setAttribute('title','IP方案');}
   }
 
   // 73：首次复制只出现完整合规弹窗；沿用“可以说 / 不可以说”的原有合规内容，不再给“返回检查”。
   const seen={nickname:false,bio:false};
-  function complianceData(){
-    try{return COMPLIANCE_TIPS;}catch(_){return {allowed:[{emoji:'✅',title:'真实信息',text:'可表达真实个人经历、城市、专业服务方向与已获得的荣誉。'}],avoid:[{emoji:'⛔',title:'联系方式与导流',text:'不要写联系方式、链接或明显导流信息。'}]};}
-  }
+  function complianceData(){try{return COMPLIANCE_TIPS;}catch(_){return {allowed:[{emoji:'✅',title:'真实信息',text:'可表达真实个人经历、城市、专业服务方向与已获得的荣誉。'}],avoid:[{emoji:'⛔',title:'联系方式与导流',text:'不要写联系方式、链接或明显导流信息。'}]};}}
   function closeModal(back){back?.remove();document.body.classList.remove('copy-reminder-open');}
+  function copyNow(textValue,button){navigator.clipboard?.writeText(textValue).then(()=>{const old=button.textContent;button.textContent='已复制';setTimeout(()=>button.textContent=old,1200);}).catch(()=>{button.textContent='请手动复制';});}
   function showCompliance(kind,textValue,button){
     const data=complianceData(),back=document.createElement('div');back.className='copy-reminder-backdrop aia-v33-compliance-backdrop';
     const card=document.createElement('section');card.className='copy-reminder-modal aia-v33-compliance-modal';
     const title=document.createElement('h3');title.textContent=kind==='nickname'?'复制昵称前，请先看一眼合规提示':'复制简介前，请先看一眼合规提示';
     const grid=document.createElement('div');grid.className='aia-v33-compliance-grid';
-    const make=(heading,items,cls)=>{const col=document.createElement('section');col.className=`aia-v33-compliance-col ${cls}`;const h=document.createElement('h4');h.textContent=heading;col.appendChild(h);(items||[]).forEach(item=>{const row=document.createElement('div');row.className='aia-v33-compliance-item';row.innerHTML=`<span>${item.emoji||''}</span><div><strong>${item.title||''}</strong><p>${item.text||''}</p></div>`;col.appendChild(row);});return col;};
+    const make=(heading,items,cls)=>{const col=document.createElement('section');col.className=`aia-v33-compliance-col ${cls}`;const h=document.createElement('h4');h.textContent=heading;col.appendChild(h);(items||[]).forEach(item=>{const row=document.createElement('div');row.className='aia-v33-compliance-item';const mark=document.createElement('span');mark.textContent=item.emoji||'';const body=document.createElement('div');const strong=document.createElement('strong');strong.textContent=item.title||'';const p=document.createElement('p');p.textContent=item.text||'';body.append(strong,p);row.append(mark,body);col.appendChild(row);});return col;};
     grid.append(make('可以说',data.allowed,'is-allowed'),make('不可以说',data.avoid,'is-avoid'));
-    const actions=document.createElement('div');actions.className='copy-reminder-actions';const ok=document.createElement('button');ok.type='button';ok.className='primary';ok.textContent='我已了解，继续复制';ok.onclick=()=>{seen[kind]=true;closeModal(back);navigator.clipboard?.writeText(textValue).then(()=>{const old=button.textContent;button.textContent='已复制';setTimeout(()=>button.textContent=old,1200);});};actions.appendChild(ok);card.append(title,grid,actions);back.appendChild(card);document.body.appendChild(back);document.body.classList.add('copy-reminder-open');ok.focus();
+    const actions=document.createElement('div');actions.className='copy-reminder-actions';const ok=document.createElement('button');ok.type='button';ok.className='primary';ok.textContent='我已了解，继续复制';ok.onclick=()=>{seen[kind]=true;closeModal(back);copyNow(textValue,button);};actions.appendChild(ok);card.append(title,grid,actions);back.appendChild(card);document.body.appendChild(back);document.body.classList.add('copy-reminder-open');ok.focus();
   }
   function replaceCopyButton(oldButton,kind,textValue){
     if(!oldButton||oldButton.dataset.aiaV33Copy==='1')return;
     const button=oldButton.cloneNode(true);button.dataset.aiaV33Copy='1';oldButton.replaceWith(button);
-    button.addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();if(!seen[kind]){showCompliance(kind,textValue,button);return;}navigator.clipboard?.writeText(textValue).then(()=>{const old=button.textContent;button.textContent='已复制';setTimeout(()=>button.textContent=old,1200);});},true);
+    button.addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();if(!seen[kind])return showCompliance(kind,textValue,button);copyNow(textValue,button);},true);
   }
   function rebindCopyButtons(){
     const root=document.getElementById('proposal-content');if(!root)return;
@@ -128,13 +112,13 @@
 
   const baseRender=typeof renderProposal==='function'?renderProposal:null;
   if(baseRender)renderProposal=function(proposal,version){enforceProposal(proposal,state.profile||{});const result=baseRender(proposal,version);requestAnimationFrame(()=>requestAnimationFrame(()=>{iconOnlyFloats();rebindCopyButtons();}));return result;};
-  // 老集成层仍可能在 DOM 变化时写回文字；轻量观察只在悬浮容器变化时收口为纯图标。
-  const floatRoot=document.querySelector('.ip-floating-actions');if(floatRoot)new MutationObserver(iconOnlyFloats).observe(floatRoot,{childList:true,subtree:true});
   iconOnlyFloats();
 
   if(!document.getElementById('product-integration-v33-style')){const s=document.createElement('style');s.id='product-integration-v33-style';s.textContent=`
-    .ip-floating-button.aia-v33-icon-float{width:48px!important;min-width:48px!important;height:48px!important;min-height:48px!important;padding:0!important;border-radius:50%!important;display:grid!important;place-items:center!important}
-    .ip-floating-button.aia-v33-icon-float svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+    .ip-floating-button.aia-v33-icon-float{width:48px!important;min-width:48px!important;height:48px!important;min-height:48px!important;padding:0!important;border-radius:50%!important;display:grid!important;place-items:center!important;font-size:0!important;line-height:0!important}
+    .ip-floating-button.aia-v33-icon-float>*{display:none!important}.ip-floating-button.aia-v33-icon-float::before{content:"";display:block;width:22px;height:22px;background:currentColor;mask-position:center;mask-repeat:no-repeat;mask-size:contain;-webkit-mask-position:center;-webkit-mask-repeat:no-repeat;-webkit-mask-size:contain}
+    .ip-floating-button.aia-v33-profile-icon::before{mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8c.7-4 3-6 7-6s6.3 2 7 6' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8c.7-4 3-6 7-6s6.3 2 7 6' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E")}
+    .ip-floating-button.aia-v33-proposal-icon::before{mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 4h14v16H5zM8 8h8M8 12h8M8 16h5' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 4h14v16H5zM8 8h8M8 12h8M8 16h5' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
     .aia-v33-compliance-modal{width:min(820px,100%)}.aia-v33-compliance-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.aia-v33-compliance-col{border:1px solid #eee;border-radius:14px;padding:14px}.aia-v33-compliance-col h4{margin:0 0 10px}.aia-v33-compliance-col.is-allowed{background:#f7fbf8}.aia-v33-compliance-col.is-avoid{background:#fff7f8}.aia-v33-compliance-item{display:flex;gap:9px;padding:9px 0;border-top:1px solid rgba(0,0,0,.06)}.aia-v33-compliance-item:first-of-type{border-top:0}.aia-v33-compliance-item strong{display:block;font-size:13px}.aia-v33-compliance-item p{margin:3px 0 0;font-size:12px;line-height:1.55;color:#666}.aia-v33-compliance-modal .copy-reminder-actions{justify-content:center}.aia-v33-compliance-modal .copy-reminder-actions .primary{min-width:180px}
     @media(max-width:620px){.aia-v33-compliance-grid{grid-template-columns:1fr}.aia-v33-compliance-modal{max-height:82vh}}
   `;document.head.appendChild(s);}
