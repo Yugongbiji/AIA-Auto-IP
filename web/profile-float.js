@@ -1,5 +1,5 @@
 // IP 人设悬浮入口：圆形“我的 IP 资料” + 红色“最新 IP 方案”。
-// 只在 IP 对话页显示；资料浮层支持明确关闭，方案/脚本详情等覆盖页自动隐藏。
+// 只在“已进入工作台的 IP 对话页”显示；登录页、方案页、脚本推荐、脚本改写、小红书等一律隐藏。
 (function () {
   const panel = document.querySelector('.profile-panel');
   if (!panel) return;
@@ -31,8 +31,17 @@
     return ['proposal-screen', 'content-plan-screen', 'script-detail-screen'].some((id) => !document.getElementById(id)?.classList.contains('hidden'));
   }
 
+  function workspaceReady() {
+    const workspace = document.getElementById('workspace');
+    const identity = document.getElementById('identity-screen');
+    return !!workspace
+      && !workspace.classList.contains('hidden')
+      && (!identity || identity.classList.contains('hidden'));
+  }
+
   function isIpVisible() {
-    return state.activeTool === 'ip'
+    return workspaceReady()
+      && state.activeTool === 'ip'
       && !document.getElementById('ip-chat-panel')?.classList.contains('hidden')
       && !overlayOpen();
   }
@@ -257,10 +266,10 @@
   const generateButton = document.getElementById('generate-button');
   if (generateButton) generateButton.onclick = generateProposal;
 
-  const overlayObserver = new MutationObserver(syncVisibility);
-  ['proposal-screen', 'content-plan-screen', 'script-detail-screen'].forEach((id) => {
+  const visibilityObserver = new MutationObserver(syncVisibility);
+  ['workspace', 'identity-screen', 'ip-chat-panel', 'proposal-screen', 'content-plan-screen', 'script-detail-screen'].forEach((id) => {
     const target = document.getElementById(id);
-    if (target) overlayObserver.observe(target, { attributes: true, attributeFilter: ['class'] });
+    if (target) visibilityObserver.observe(target, { attributes: true, attributeFilter: ['class'] });
   });
 
   if (!document.getElementById('profile-floating-close-style')) {
