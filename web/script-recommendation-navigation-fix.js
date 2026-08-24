@@ -8,7 +8,7 @@
       return baseSelectTool(tool);
     }
     state.activeTool='recommendation';
-    updateWorkspaceHeadings?.();
+    if(typeof updateWorkspaceHeadings==='function')updateWorkspaceHeadings();
     document.querySelectorAll('[data-tool]').forEach(button=>button.classList.toggle('active',button.dataset.tool==='recommendation'));
     ['ip-chat-panel','planning-panel','script-panel','xhs-panel','tool-placeholder'].forEach(id=>document.getElementById(id)?.classList.add('hidden'));
     document.getElementById('script-recommendation-panel')?.classList.remove('hidden');
@@ -17,4 +17,14 @@
     // 每次进入都按当前 IP/数据库状态加载；失败时推荐模块自己显示明确空态，不再整页空白。
     window.aiaScriptRecommendation?.load?.(true);
   };
+})();
+
+// 70-74 最终产品收口层必须在所有旧规则之后执行，避免旧渲染器再次覆盖。
+(function(){
+  if(document.querySelector('script[data-aia-v33="1"]'))return;
+  const script=document.createElement('script');
+  script.src='product-integration-v33.js';
+  script.async=false;
+  script.dataset.aiaV33='1';
+  document.body.appendChild(script);
 })();
