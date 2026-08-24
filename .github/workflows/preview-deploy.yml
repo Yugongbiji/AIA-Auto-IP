@@ -18,10 +18,18 @@ jobs:
     steps:
       - name: Deploy isolated Preview to ECS
         uses: appleboy/ssh-action@v1
+        env:
+          AIA_RDS_HOST: ${{ secrets.AIA_RDS_HOST }}
+          AIA_RDS_PORT: ${{ secrets.AIA_RDS_PORT }}
+          AIA_RDS_NAME: ${{ secrets.AIA_RDS_NAME }}
+          AIA_RDS_USER: ${{ secrets.AIA_RDS_USER }}
+          AIA_RDS_PASSWORD: ${{ secrets.AIA_RDS_PASSWORD }}
+          AIA_RDS_SSLMODE: ${{ secrets.AIA_RDS_SSLMODE }}
         with:
           host: ${{ secrets.ECS_HOST }}
           username: ${{ secrets.ECS_USER }}
           key: ${{ secrets.ECS_SSH_KEY }}
+          envs: AIA_RDS_HOST,AIA_RDS_PORT,AIA_RDS_NAME,AIA_RDS_USER,AIA_RDS_PASSWORD,AIA_RDS_SSLMODE
           script: |
             set -euo pipefail
 
@@ -63,7 +71,7 @@ jobs:
             cd "$PREVIEW_DIR"
             "$PREVIEW_DIR/.venv/bin/python" - "$PROD_DIR" <<'PY'
             from pathlib import Path
-            import json, sqlite3, subprocess, sys
+            import json, os, sqlite3, subprocess, sys
             import psycopg
             from psycopg.rows import dict_row
             import server, script_library_store
@@ -92,8 +100,21 @@ jobs:
                 pid=subprocess.check_output(['systemctl','show','-p','MainPID','--value','aia-auto-ip'],text=True).strip()
                 if pid and pid!='0': prod_env.update(read_process_env(pid))
             except Exception: pass
+
+            # Preferred Preview baseline credentials live in GitHub Actions secrets, so Preview can
+            # read RDS without adding database passwords to the repo or production checkout.
+            secret_map={
+                'DB_HOST':'AIA_RDS_HOST','DB_PORT':'AIA_RDS_PORT','DB_NAME':'AIA_RDS_NAME',
+                'DB_USER':'AIA_RDS_USER','DB_PASSWORD':'AIA_RDS_PASSWORD','DB_SSLMODE':'AIA_RDS_SSLMODE',
+            }
+            for target, source in secret_map.items():
+                value=os.getenv(source,'').strip()
+                if value: prod_env[target]=value
+
             required=['DB_HOST','DB_NAME','DB_USER','DB_PASSWORD']
-            if not all(prod_env.get(k) for k in required): raise SystemExit('Production RDS connection unavailable; cannot build truthful Preview baseline')
+            missing=[key for key in required if not prod_env.get(key)]
+            if missing:
+                raise SystemExit('Preview baseline blocked: missing RDS connection settings: '+', '.join(missing)+'. Configure AIA_RDS_* repository secrets once; do not place passwords in code.')
 
             connargs=dict(host=prod_env['DB_HOST'],port=int(prod_env.get('DB_PORT','5432')),dbname=prod_env['DB_NAME'],user=prod_env['DB_USER'],password=prod_env['DB_PASSWORD'],sslmode=prod_env.get('DB_SSLMODE','require') or 'require',row_factory=dict_row)
             with psycopg.connect(**connargs) as pg:
@@ -110,7 +131,8 @@ jobs:
             script_library_store.upsert_scripts(server.database,scripts)
 
             # Preserve Preview-generated chats/proposals across deploys, but refresh authoritative source data.
-            with sqlite3.connect('data/aia_auto_ip.db') as db:
+            db_path = server.DB_PATH
+            with sqlite3.connect(db_path) as db:
                 db.execute('PRAGMA foreign_keys=ON')
                 db.execute('DELETE FROM peer_reviews')
                 for r in agents:
