@@ -1,4 +1,4 @@
-/* IP 人设快捷入口：可移动圆形资料按钮 + 友邦红最新方案按钮。 */
+/* IP 人设快捷入口：两个统一的纯图标悬浮按钮。 */
 .workspace { grid-template-columns:minmax(0,1fr)!important; }
 
 .ip-floating-actions {
@@ -15,49 +15,33 @@
 .ip-floating-actions.hidden { display:none!important; }
 
 .ip-floating-button {
-  min-height:46px;
-  padding:0 16px;
+  width:52px;
+  min-width:52px;
+  height:52px;
+  min-height:52px;
+  padding:0;
   display:flex;
   align-items:center;
   justify-content:center;
-  gap:7px;
-  border-radius:999px;
-  border:1px solid #e8dde1;
-  font-size:13px;
-  font-weight:800;
-  line-height:1;
-  white-space:nowrap;
+  border-radius:50%;
+  border:1px solid #ead7dd;
   cursor:pointer;
   box-shadow:0 9px 24px #3c07121f;
+  transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;
 }
+.ip-floating-button:hover { transform:translateY(-1px); box-shadow:0 12px 28px #3c07122a; }
 .ip-floating-profile-button {
-  width:54px;
-  min-width:54px;
-  height:54px;
-  min-height:54px;
-  padding:0;
-  border-radius:50%;
-  background:#fff;
-  color:#32272b;
-  font-size:20px;
+  background:#fff3f6;
+  color:#b20f3b;
+  border-color:#e8c8d2;
 }
-.ip-floating-profile-button span:last-child {
-  position:absolute;
-  width:1px;
-  height:1px;
-  padding:0;
-  margin:-1px;
-  overflow:hidden;
-  clip:rect(0,0,0,0);
-  white-space:nowrap;
-  border:0;
-}
-.ip-floating-profile-button:hover { border-color:#d8bcc5; }
+.ip-floating-profile-button:hover { border-color:#d79aac; }
 .ip-floating-proposal-button {
   border-color:#d31145;
   background:#d31145;
   color:#fff;
 }
+.ip-floating-proposal-button:hover { border-color:#b80f3c; }
 .ip-floating-button.hidden { display:none!important; }
 .ip-floating-button:focus-visible { outline:3px solid #d3114540; outline-offset:2px; }
 
@@ -122,7 +106,6 @@
 .profile-group:nth-child(-n+2) { border-top:0; }
 .profile-inline-hint { margin:5px 0 0; color:#7A7278; font-size:11px; line-height:1.55; }
 
-/* 多选题：选项区可滚动，但确认按钮始终留在选项区底部。 */
 .quick-replies:has(.multi-confirm) {
   max-height:min(36dvh,280px);
   overflow-y:auto;
@@ -144,8 +127,7 @@
 
 @media (max-width:720px) {
   .ip-floating-actions { right:12px; bottom:18px; gap:7px; }
-  .ip-floating-profile-button { width:50px; min-width:50px; height:50px; min-height:50px; font-size:18px; }
-  .ip-floating-proposal-button { min-height:44px; padding:0 13px; font-size:12px; }
+  .ip-floating-button { width:48px; min-width:48px; height:48px; min-height:48px; }
   .profile-panel.profile-floating-detail {
     right:10px;
     bottom:78px;
@@ -156,24 +138,8 @@
   .profile-floating-detail .profile-card { grid-template-columns:1fr; padding:2px 11px 8px; }
   .profile-group:nth-child(2) { border-top:1px solid var(--line); }
   .profile-conversation-hint { margin:0 11px 11px; font-size:10.5px; }
-
-  .quick-replies:has(.multi-confirm) {
-    max-height:min(32dvh,230px);
-    padding:0 12px 8px;
-    gap:7px;
-    border-top:1px solid #f1edef;
-  }
-  .quick-replies:has(.multi-confirm) button:not(.multi-confirm) {
-    max-width:100%;
-    white-space:normal;
-    text-align:left;
-  }
-  .quick-replies:has(.multi-confirm) .custom-multi-input {
-    flex:1 0 100%;
-    min-width:0;
-  }
-  .quick-replies:has(.multi-confirm) .multi-confirm {
-    min-height:44px;
-    border-radius:10px;
-  }
+  .quick-replies:has(.multi-confirm) { max-height:min(32dvh,230px); padding:0 12px 8px; gap:7px; border-top:1px solid #f1edef; }
+  .quick-replies:has(.multi-confirm) button:not(.multi-confirm) { max-width:100%; white-space:normal; text-align:left; }
+  .quick-replies:has(.multi-confirm) .custom-multi-input { flex:1 0 100%; min-width:0; }
+  .quick-replies:has(.multi-confirm) .multi-confirm { min-height:44px; border-radius:10px; }
 }
