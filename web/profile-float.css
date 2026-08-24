@@ -1,4 +1,4 @@
-/* IP 人设快捷入口：可移动白色资料按钮 + 友邦红最新方案按钮。 */
+/* IP 人设快捷入口：可移动圆形资料按钮 + 友邦红最新方案按钮。 */
 .workspace { grid-template-columns:minmax(0,1fr)!important; }
 
 .ip-floating-actions {
@@ -8,7 +8,7 @@
   bottom:26px;
   display:flex;
   flex-direction:column;
-  align-items:stretch;
+  align-items:flex-end;
   gap:9px;
   touch-action:none;
 }
@@ -31,8 +31,26 @@
   box-shadow:0 9px 24px #3c07121f;
 }
 .ip-floating-profile-button {
+  width:54px;
+  min-width:54px;
+  height:54px;
+  min-height:54px;
+  padding:0;
+  border-radius:50%;
   background:#fff;
   color:#32272b;
+  font-size:20px;
+}
+.ip-floating-profile-button span:last-child {
+  position:absolute;
+  width:1px;
+  height:1px;
+  padding:0;
+  margin:-1px;
+  overflow:hidden;
+  clip:rect(0,0,0,0);
+  white-space:nowrap;
+  border:0;
 }
 .ip-floating-profile-button:hover { border-color:#d8bcc5; }
 .ip-floating-proposal-button {
@@ -46,9 +64,9 @@
 .profile-panel.profile-floating-detail {
   display:none;
   position:fixed;
-  z-index:29;
+  z-index:31;
   right:22px;
-  bottom:138px;
+  bottom:92px;
   width:min(520px,calc(100vw - 32px));
   max-height:min(70dvh,680px);
   padding:0;
@@ -58,7 +76,7 @@
   background:#fff;
   box-shadow:0 16px 42px #3c07122b;
 }
-.profile-panel.profile-floating-detail.profile-floating-detail-open { display:block; }
+.profile-panel.profile-floating-detail.profile-floating-detail-open { display:block!important; }
 
 .profile-floating-detail .profile-title {
   position:sticky;
@@ -126,10 +144,11 @@
 
 @media (max-width:720px) {
   .ip-floating-actions { right:12px; bottom:18px; gap:7px; }
-  .ip-floating-button { min-height:44px; padding:0 13px; font-size:12px; }
+  .ip-floating-profile-button { width:50px; min-width:50px; height:50px; min-height:50px; font-size:18px; }
+  .ip-floating-proposal-button { min-height:44px; padding:0 13px; font-size:12px; }
   .profile-panel.profile-floating-detail {
     right:10px;
-    bottom:124px;
+    bottom:78px;
     width:calc(100vw - 20px);
     max-height:68dvh;
     border-radius:14px;
