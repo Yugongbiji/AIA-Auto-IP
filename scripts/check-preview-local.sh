@@ -8,7 +8,7 @@ log(){ printf '\n[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"; }
 fail(){ echo "❌ $*" >&2; exit 1; }
 warn(){ echo "⚠️ $*" >&2; }
 
-log "1/4 检查项目 Python 虚拟环境与 IP contract tests"
+log "1/4 检查项目 Python 虚拟环境与 IP / Preview 回归测试"
 PY="$ROOT/.venv/bin/python"
 if [[ ! -x "$PY" ]]; then
   fail "未找到 $PY。请先按 Preview 部署流程创建项目 .venv。"
@@ -16,7 +16,11 @@ fi
 if ! "$PY" -m pytest --version >/dev/null 2>&1; then
   fail "Preview .venv 尚未安装 pytest。执行：.venv/bin/pip install -r requirements-dev.txt"
 fi
-"$PY" -m pytest tests/test_ip_policy_contract.py -q
+"$PY" -m pytest \
+  tests/test_ip_policy_contract.py \
+  tests/test_preview_ui_stability_contract.py \
+  tests/test_regressions_80_85.py \
+  -q
 
 log "2/4 检查 index.html 实际加载的 JavaScript 文件与可用语法门禁"
 mapfile -t JS_FILES < <(grep -oE '<script src="[^"]+"' web/index.html | sed -E 's/.*src="([^"]+)"/\1/' | grep -E '\.js$')
@@ -43,7 +47,15 @@ log "3/4 禁止复活扫描：核心业务只能由唯一规则源拥有"
 for retired in \
   product-integration-v30.js product-integration-v31.js product-integration-v33.js \
   product-rules-v15.js product-rules-v23.js product-rules-v26.js; do
-  if grep -q "$retired" web/index.html; then fail "已停用脚本重新进入加载链：$retired"; fi
+  if grep -q "$retired" web/index.html; then fail "已停用脚本重新进入 index 加载链：$retired"; fi
+done
+
+# 80-85：静态 index 不够。所有当前实际加载脚本也不得在运行时重新注入退役业务层。
+for rel in "${JS_FILES[@]}"; do
+  file="web/$rel"
+  for retired in product-integration-v30.js product-integration-v31.js product-integration-v33.js; do
+    if grep -q "$retired" "$file"; then fail "当前加载脚本在运行时引用退役层：$file -> $retired"; fi
+  done
 done
 
 LEGACY=(
@@ -61,7 +73,7 @@ done
 grep -q 'window.aiaIpPolicy' web/ip-policy-core.js || fail "ip-policy-core.js 未导出唯一 IP policy"
 grep -q 'function complianceFooter' web/ip-policy-core.js || fail "合规尾部唯一 owner 缺失"
 grep -q 'rankIpContentBranches' web/ip-policy-core.js || fail "内容支线唯一排序入口缺失"
-echo "✅ 禁止复活扫描通过"
+echo "✅ 禁止复活扫描通过（含运行时动态加载检查）"
 
 log "4/4 检查当前 Git 状态"
 echo "branch: $(git branch --show-current)"
