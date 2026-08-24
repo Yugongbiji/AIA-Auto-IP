@@ -1,8 +1,13 @@
 # Preview is intentionally isolated from production: separate checkout, service, port and SQLite user data.
+# Long-term rule: do not deploy Preview on every PR commit. Trigger only at a natural stage-validation point.
 name: Deploy Preview
 on:
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Development branch to deploy to Preview
+        required: true
+        default: agent/ip-product-optimization-20260821
 concurrency:
   group: aia-auto-ip-preview
   cancel-in-progress: true
@@ -29,7 +34,7 @@ jobs:
             set -euo pipefail
             PREVIEW_DIR=/opt/AIA-Auto-IP-preview
             PROD_DIR=/opt/AIA-Auto-IP
-            PREVIEW_BRANCH="${{ github.head_ref }}"
+            PREVIEW_BRANCH="${{ inputs.branch }}"
             PREVIEW_SERVICE=/etc/systemd/system/aia-auto-ip-preview.service
             [ -n "$PREVIEW_BRANCH" ]
             systemctl is-active --quiet aia-auto-ip
@@ -79,7 +84,6 @@ jobs:
             server.initialize_database(); script_library_store.initialize_script_library(server.database,server.database_engine); script_library_store.upsert_scripts(server.database,scripts)
             with sqlite3.connect(server.DB_PATH) as db:
                 db.execute('PRAGMA foreign_keys=ON')
-                # peer_reviews is production-source reference data; older Preview DBs predate this table.
                 db.execute('''CREATE TABLE IF NOT EXISTS peer_reviews (id INTEGER PRIMARY KEY AUTOINCREMENT, agent_id TEXT NOT NULL, reviewer_nickname TEXT, relationship TEXT, traits TEXT, topics TEXT, roles TEXT, intro TEXT, imported_at TEXT NOT NULL, FOREIGN KEY(agent_id) REFERENCES agents(agent_id))''')
                 db.execute('CREATE INDEX IF NOT EXISTS idx_peer_reviews_agent_id ON peer_reviews(agent_id)')
                 for r in agents:
