@@ -14,15 +14,31 @@ def recommend(database, payload: dict) -> dict:
     return build_recommendation_payload(database, directions, limit_per_direction=10)
 
 
-def library(database, *, tag: str = "", page: int = 1, page_size: int = 20) -> dict:
+def library(database, *, level1: str = "", level2: str = "", tag: str = "", page: int = 1, page_size: int = 20) -> dict:
     page = max(1, int(page or 1))
     page_size = max(1, min(50, int(page_size or 20)))
-    tag = str(tag or "").strip()
+    # tag 保留旧接口兼容；新前端统一使用 level1 / level2。
+    level1 = str(level1 or "").strip()
+    level2 = str(level2 or tag or "").strip()
     scripts = store.list_active_scripts(database)
-    tags = sorted({str(item.get("level2_tag") or "").strip() for item in scripts if str(item.get("level2_tag") or "").strip()})
-    if tag:
-        scripts = [item for item in scripts if str(item.get("level2_tag") or "").strip() == tag]
+
+    level1_tags = sorted({str(item.get("level1_tag") or "").strip() for item in scripts if str(item.get("level1_tag") or "").strip()})
+    level2_by_level1 = {}
+    for parent in level1_tags:
+        level2_by_level1[parent] = sorted({
+            str(item.get("level2_tag") or "").strip()
+            for item in scripts
+            if str(item.get("level1_tag") or "").strip() == parent and str(item.get("level2_tag") or "").strip()
+        })
+
+    if level1:
+        scripts = [item for item in scripts if str(item.get("level1_tag") or "").strip() == level1]
+    if level2:
+        scripts = [item for item in scripts if str(item.get("level2_tag") or "").strip() == level2]
+
     total = len(scripts)
+    pages = max(1, (total + page_size - 1) // page_size) if total else 1
+    page = min(page, pages)
     start = (page - 1) * page_size
     items = []
     for script in scripts[start:start + page_size]:
@@ -36,12 +52,16 @@ def library(database, *, tag: str = "", page: int = 1, page_size: int = 20) -> d
             "is_hot": bool(script.get("is_hot")),
         })
     return {
-        "tags": tags,
-        "tag": tag,
+        "level1_tags": level1_tags,
+        "level2_by_level1": level2_by_level1,
+        "tags": sorted({value for values in level2_by_level1.values() for value in values}),
+        "level1": level1,
+        "level2": level2,
+        "tag": level2,
         "page": page,
         "page_size": page_size,
         "total": total,
-        "pages": max(1, (total + page_size - 1) // page_size) if total else 1,
+        "pages": pages,
         "scripts": items,
     }
 
