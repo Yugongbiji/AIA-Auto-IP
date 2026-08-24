@@ -82,7 +82,12 @@
   actions.addEventListener('pointerup',endDrag);actions.addEventListener('pointercancel',endDrag);
   try{const saved=JSON.parse(localStorage.getItem('aia-ip-floating-position')||'null');if(saved?.left&&saved?.top){actions.style.left=saved.left;actions.style.top=saved.top;actions.style.right='auto';actions.style.bottom='auto';}}catch(_){}
 
-  // 页面可见性变化只做轻量同步，不修改 DOM 文案/业务结果。
-  new MutationObserver(()=>queueMicrotask(syncVisibility)).observe(document.body,{subtree:true,attributes:true,attributeFilter:['class']});
+  // 79：禁止观察整个 document.body 子树。只监听真正决定悬浮入口可见性的少量容器，
+  // 避免 loading / 消息渲染 / Toast 等任意 class 变化把同步逻辑放大成高频反馈链。
+  const visibilityNodes = ['workspace','identity-screen','ip-chat-panel','proposal-screen','content-plan-screen','script-detail-screen']
+    .map((id)=>document.getElementById(id)).filter(Boolean);
+  const visibilityObserver = new MutationObserver(()=>queueMicrotask(syncVisibility));
+  visibilityNodes.forEach((node)=>visibilityObserver.observe(node,{attributes:true,attributeFilter:['class']}));
+
   window.aiaFloatingUi=Object.freeze({syncVisibility,closeProfileDetail,ownsProfileData:false});
 })();
