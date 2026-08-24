@@ -1,40 +1,8 @@
-// 产品规则 V24：统一 IP 页面术语；报名资料同时选择拓客/增员时必须重新收束为单一阶段目标。
+// 产品规则 V24（兼容层）：仅负责页面术语与欢迎文案。
+// 拓客/增员的标准化和二选一由 ip-policy-core.js 唯一负责。
 (function () {
-  const purposeQuestion = Array.isArray(questions) ? questions.find((item) => item.key === 'purpose') : null;
-  if (purposeQuestion) {
-    purposeQuestion.ask = '刚刚起号阶段，建议先从“拓客”和“增员”里选一个方向开始，不要一开始两边都做。先把一个方向做清楚，更容易让平台和用户认识你；等账号运营成熟后，再拓展另一个方向。你这阶段想先做哪一个？';
-    purposeQuestion.chips = ['拓客', '增员'];
-    purposeQuestion.multiple = false;
-  }
+  'use strict';
 
-  function normalizePurpose(value) {
-    const text = String(value || '').trim();
-    if (!text) return '';
-    if (/获客/.test(text) && !/拓客/.test(text)) return text.replace(/获客/g, '拓客');
-    return text;
-  }
-
-  function needsPurposeReselection(value) {
-    const text = normalizePurpose(value);
-    if (!text) return false;
-    const hasAcquisition = /拓客/.test(text);
-    const hasRecruitment = /增员/.test(text);
-    return (hasAcquisition && hasRecruitment) || /都要|两者|兼顾|同时|都想|两个都|一起做|个人品牌/.test(text);
-  }
-
-  // V13 已处理部分旧值，这里把报名表/历史数据中更宽泛的“双目标”写法一起收口。
-  if (typeof startWorkspace === 'function') {
-    const baseStartWorkspaceV24 = startWorkspace;
-    startWorkspace = function startWorkspaceV24(profile, matched, history = [], proposals = [], planningHistory = [], contentPlans = [], creativeHistory = []) {
-      if (profile) {
-        profile.purpose = normalizePurpose(profile.purpose);
-        if (needsPurposeReselection(profile.purpose)) profile.purpose = '';
-      }
-      return baseStartWorkspaceV24(profile, matched, history, proposals, planningHistory, contentPlans, creativeHistory);
-    };
-  }
-
-  // 首次 IP 欢迎卡使用产品文档里的标准术语：“内容方向”，不使用“表达方向”。
   if (typeof addIpWelcomeCard === 'function') {
     const baseAddIpWelcomeCardV24 = addIpWelcomeCard;
     addIpWelcomeCard = function addIpWelcomeCardV24() {
@@ -49,7 +17,7 @@
     };
   }
 
-  window.aiaProductCopyRulesV24 = {
+  window.aiaProductCopyRulesV24 = Object.freeze({
     canonicalTerms: {
       contentDirection: '内容方向',
       insuranceLine: '保险主线',
@@ -57,6 +25,7 @@
       acquisition: '拓客',
       recruitment: '增员',
     },
-    purposeMustBeSingleAtStart: true,
-  };
+    compatibilityOnly: true,
+    ownsBusinessRules: false,
+  });
 })();
