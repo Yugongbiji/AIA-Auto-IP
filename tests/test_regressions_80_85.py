@@ -7,6 +7,7 @@ NAV = (WEB / 'script-recommendation-navigation-fix.js').read_text(encoding='utf-
 RECOMMEND = (WEB / 'script-recommendation-v1.js').read_text(encoding='utf-8')
 CONTENT_VIEW = (WEB / 'product-rules-v20.js').read_text(encoding='utf-8')
 CORE = (WEB / 'ip-policy-core.js').read_text(encoding='utf-8')
+COMPLIANCE_UI = (WEB / 'product-rules-v10.js').read_text(encoding='utf-8')
 INDEX = (WEB / 'index.html').read_text(encoding='utf-8')
 STYLES = (WEB / 'styles.css').read_text(encoding='utf-8')
 FLOAT = (WEB / 'profile-float.js').read_text(encoding='utf-8')
@@ -46,6 +47,13 @@ def test_bio_visual_anchors_live_in_canonical_owner():
     assert 'function complianceFooter(profile,platform)' in CORE
     assert 'proposal.bios.xiaohongshu=buildBios' in CORE.replace(' ', '')
     assert 'proposal.bios.videoDouyin=buildBios' in CORE.replace(' ', '')
+
+
+def test_compliance_help_does_not_turn_whole_card_into_flex_row():
+    assert "parentElement?.classList.add('aia-compliance-heading')" not in COMPLIANCE_UI
+    assert 'aia-compliance-title-row' in COMPLIANCE_UI
+    assert "row.append(heading,b)" in COMPLIANCE_UI.replace(' ', '')
+    assert '.aia-compliance-title-row{display:flex' in COMPLIANCE_UI.replace(' ', '')
 
 
 def test_proposal_layout_contract_remains_vertical_for_nickname_and_sections():
