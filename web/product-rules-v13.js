@@ -21,13 +21,23 @@
     educationQuestion.collectIfMissing = true;
   }
 
+  const schoolQuestion = Array.isArray(questions) ? questions.find((item) => item.key === 'schoolTier') : null;
+  if (schoolQuestion) {
+    schoolQuestion.ask = '如愿意，可补充最高学校背景，看看是否有值得突出的一项。';
+    schoolQuestion.chips = ['985', '211', '双一流', 'QS 前 100', '都不是'];
+    schoolQuestion.collectIfMissing = true;
+  }
+
   const styleQuestion = Array.isArray(questions) ? questions.find((item) => item.key === 'contentTone') : null;
   if (styleQuestion) {
+    styleQuestion.label = '账号表达风格';
     styleQuestion.ask = '你希望自己的内容说起话来是什么感觉？可以选 1～2 个最像你的风格，也可以自己补充。这个选择会影响后续的脚本改写风格。';
-    styleQuestion.chips = ['专业理性', '温暖陪伴', '干练直接', '生活化真诚', '轻松有梗', '真诚克制'];
+    // 恢复 2026-08-20 已确认的完整风格词库，不再缩减。
+    styleQuestion.chips = ['专业理性', '亲和温暖', '风趣幽默', '干练直接', '生活化真诚', '观点鲜明', '沉稳可信', '轻松有梗'];
     styleQuestion.multiple = true;
     styleQuestion.maxSelections = 2;
     styleQuestion.collectIfMissing = true;
+    if (typeof labels !== 'undefined') labels.contentTone = '账号表达风格';
   }
 
   // #132/#135：保存档案属于后台持久化，不得阻塞“下一题立即出现”。
@@ -43,12 +53,19 @@
     };
   }
 
-  // 表达风格最多 2 个；其它多选维持原逻辑。
+  function selectionLimitMessage() {
+    if (typeof addMessage === 'function') addMessage('这个风格最多选 2 个。先取消一个，再选择新的风格。', 'system', false);
+  }
+
+  // 表达风格最多 2 个；第三个不能“没反应”，要明确告诉用户原因。
   if (typeof toggleMultiOption === 'function') {
     const baseToggleMultiOption = toggleMultiOption;
     toggleMultiOption = function questionnaireToggleMultiOption(value) {
       const question = questions?.[state.currentQuestion];
-      if (question?.key === 'contentTone' && !state.multiSelection.has(value) && state.multiSelection.size >= 2) return;
+      if (question?.key === 'contentTone' && !state.multiSelection.has(value) && state.multiSelection.size >= 2) {
+        selectionLimitMessage();
+        return;
+      }
       return baseToggleMultiOption(value);
     };
   }
@@ -58,5 +75,6 @@
     ownsBusinessRules: false,
     collectIfMissing: Object.freeze([...collectIfMissing]),
     profileSaveIsNonBlocking: true,
+    contentToneMaxSelections: 2,
   });
 })();
