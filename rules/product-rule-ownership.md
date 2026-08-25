@@ -28,7 +28,7 @@
 | 推荐脚本“换一批/今日日期/详情清理” | `web/product-rules-v21.js` | 纯展示交互 | 不得改变推荐业务归类 |
 | 脚本详情上一篇/下一篇 | `web/product-rules-v17.js` | 记录当前浏览列表并调用 `aiaScriptRecommendation.openDetail()` | 不得监听整个 body，不得依赖退役推荐对象 |
 | 智能改写表达风格 | `web/product-rules-v11.js` + `backend/script_persona_rules.py` | 根据账号表达风格做题材适配、格式异常重试 | 其他 IP 规则不得把生活标签当脚本风格 |
-| 小红书确定性排版围栏 | `backend/xhs_formatting_contract.py` | 保留原文字词、修复孤立标点/括号行，并按专项规则维持 2–3 句话约 1 个 Emoji、最多连续 3 句无提示表情的节奏 | 不得改原文字词或事实；不得自行收紧成“每连续两句强制一个 Emoji” |
+| 小红书确定性排版围栏 | `backend/xhs_formatting_contract.py` | 保留原文字词、修复孤立标点/括号行，并按 `rules/xhs-formatting-rules.md` V4 保证平均 1–2 句话至少 1 个 Emoji、任意连续 2 句至少 1 个表情锚点 | 不得改原文字词或事实；不得回退到旧的“2–3 句 / 最多连续 3 句”密度 |
 | 通用多选 Composer 提交 | `web/composer-submit-v2.js` + app.js 的 `state.multiSelection/planningState.multiSelection` | 业务状态唯一真源，发送直接调用业务提交；桌面 Enter、触屏不主动唤键盘 | `interaction-v2.js` 等视觉层不得维护第二套 Set、不得隐藏按钮 `.click()` 模拟提交 |
 | Composer / 自动跟随 / 视口 / 错误态 UI | `web/interaction-v2.js` | 只读取业务选择状态渲染标签；自动滚动、键盘视口、错误重试 UI | 不得拥有业务提交状态，不得再次创建隐藏确认提交链 |
 | Preview API / 会话隔离 | `web/api-routing-v1.js` + `web/product-rules-v16.js` | Preview API 路由、短时只读补充、localStorage 环境隔离 | Preview 不得长时间依赖正式站，也不得读取正式会话缓存 |
