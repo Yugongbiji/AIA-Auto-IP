@@ -22,22 +22,22 @@ echo "HEAD: $HEAD_SHA"
 
 log "2/7 确认 Preview 数据隔离"
 [[ -f "$PREVIEW_DIR/.env" ]] || fail "缺少 Preview .env"
-DB_ENGINE_VALUE="$(awk -F= '/^[[:space:]]*DB_ENGINE[[:space:]]*=/{value=$2; gsub(/^[[:space:]\"'"']+|[[:space:]\"'"']+$/, "", value); print tolower(value); exit}' "$PREVIEW_DIR/.env")"
-[[ "$DB_ENGINE_VALUE" == "sqlite" ]] || fail "DB_ENGINE 不是 sqlite（当前：${DB_ENGINE_VALUE:-未设置}），拒绝继续，防止误碰正式 RDS。"
+grep -Eq "^[[:space:]]*DB_ENGINE[[:space:]]*=[[:space:]]*(sqlite|'sqlite'|\"sqlite\")[[:space:]]*$" "$PREVIEW_DIR/.env" || fail "DB_ENGINE 不是 sqlite，拒绝继续，防止误碰正式 RDS。"
 [[ -f "$PREVIEW_DIR/data/persona.sqlite3" ]] || fail "缺少 Preview SQLite：data/persona.sqlite3"
 
 log "3/7 跑完整发布门禁（含 Node 解析 32 个实际加载 JS）"
 cd "$PREVIEW_DIR"
 bash scripts/check-preview-local.sh
 
-log "4/7 只读预检 Preview 测试历史与昵称预设"
+log "4/7 只读预检 Preview 测试历史"
 "$PREVIEW_DIR/.venv/bin/python" scripts/reset_preview_test_data.py
 
-log "5/7 停止 Preview，备份并清理测试历史"
+log "5/7 停止 Preview，备份并清理测试历史，再导入 57 人昵称预设"
 systemctl stop "$SERVICE"
 restart_on_exit=1
 trap 'if [[ "${restart_on_exit:-0}" == 1 ]]; then systemctl start "$SERVICE" || true; fi' EXIT
 "$PREVIEW_DIR/.venv/bin/python" scripts/reset_preview_test_data.py --apply
+"$PREVIEW_DIR/.venv/bin/python" scripts/import_nickname_presets.py
 
 log "6/7 重启 Preview 并检查本机/反代健康"
 systemctl start "$SERVICE"
@@ -67,8 +67,9 @@ preview: http://8.139.255.134/preview/
 - 32 个实际加载 JS 的 Node 语法检查
 - Preview SQLite 安全备份
 - 测试对话 / IP方案 / 内容规划 / 创作历史 / 推荐点击历史清零
-- 57 人原始 agents 保留
-- nickname 相关 saved_profiles 字段保留
+- 原始 agents 保留
+- 现有 nickname 相关 saved_profiles 字段保留
+- 仓库 57 人 approved nicknamePreset 已导入 Preview 并由导入脚本校验 57/57
 
 下一步只做浏览器最终验收，不要直接合并 main。
 EOF
