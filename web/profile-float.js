@@ -40,8 +40,10 @@
     return !!workspace && !workspace.classList.contains('hidden') && (!identity || identity.classList.contains('hidden'));
   }
   function isIpConversationVisible() {
+    // 88：可见性以真实 DOM 为准，不依赖 state.activeTool 的同步时序。
+    // 桌面端恢复会话/导航 wrapper 可能先切面板、后更新 state；若把 state 当第二真源，会误隐藏悬浮入口。
     const chat=document.getElementById('ip-chat-panel');
-    return workspaceReady() && state.activeTool==='ip' && chat && !chat.classList.contains('hidden') && !overlayOpen();
+    return workspaceReady() && !!chat && !chat.classList.contains('hidden') && !overlayOpen();
   }
   function closeProfileDetail() {
     panel.classList.remove('profile-floating-detail-open'); panel.setAttribute('aria-expanded','false'); profileButton.setAttribute('aria-expanded','false');
