@@ -8,7 +8,7 @@ log(){ printf '\n[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"; }
 fail(){ echo "❌ $*" >&2; exit 1; }
 warn(){ echo "⚠️ $*" >&2; }
 
-log "1/5 检查项目 Python 环境、核心契约与第三轮回归"
+log "1/5 检查项目 Python 环境、核心契约与最新有效需求回归"
 PY="$ROOT/.venv/bin/python"
 if [[ ! -x "$PY" ]]; then
   fail "未找到 $PY。请先按 Preview 部署流程创建项目 .venv。"
@@ -21,6 +21,7 @@ fi
   tests/test_preview_ui_stability_contract.py \
   tests/test_regressions_80_85.py \
   tests/test_product_experience_contract_round3.py \
+  tests/test_current_effective_requirements_contract.py \
   tests/backend/test_xhs_formatting_contract.py \
   tests/backend/test_script_persona_rules.py \
   -q
@@ -94,6 +95,12 @@ if grep -q 'navigator\.clipboard' web/product-rules-v10.js; then
 fi
 if grep -q 'renderStructuredFeedback' web/product-rules-v29.js; then
   fail "V29 重新获得客户反馈展示权限"
+fi
+if grep -q 'confirm\.click' web/interaction-v2.js; then
+  fail "通用 Composer 重新通过隐藏确认按钮模拟提交"
+fi
+if grep -q 'const selected = new Set()' web/interaction-v2.js; then
+  fail "通用 Composer 重新维护第二套选择状态"
 fi
 
 grep -q 'window.aiaIpPolicy' web/ip-policy-core.js || fail "ip-policy-core.js 未导出唯一 IP policy"
