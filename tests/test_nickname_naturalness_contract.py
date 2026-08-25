@@ -50,7 +50,7 @@ def test_107_generic_suffixes_are_not_default_generated_routes():
     assert "'的小世界'" in owner
     assert "'聊生活'" in owner
     assert "'看世界'" in owner
-    assert "已有昵称可保留成熟表达" in owner
+    assert "已有昵称可保留成熟表达" in rules
     assert "宁缺毋滥" in rules
     assert "'美食':'生活'" not in owner
     assert "goal==='recruitment'" not in owner
@@ -100,8 +100,39 @@ def test_111_distinctive_current_traits_rank_before_plain_name():
     assert "八块腹肌刘畅" in rules
     assert "飞行员刘畅" in rules
     assert "function distinctiveOptions" in owner
-    assert "const distinctive=distinctiveOptions(profile,a)" in owner
-    assert owner.index("distinctive.forEach") < owner.index("add(a,'突出人物'")
+    assert "distinctiveOptions(profile,a).forEach" in owner
+    assert owner.index("distinctiveOptions(profile,a).forEach") < owner.index("add(a,'突出人物'")
     assert "已有且有特色的好昵称" in prompt
     assert "单独本名" in prompt
     assert "过往职业" in prompt
+
+
+def test_112_memorable_supported_descriptor_ranks_before_bare_anchor():
+    owner = read("web/nickname-policy-v1.js")
+    rules = read("rules/nickname-naturalness-rules-20260825.md")
+    prompt = read("prompts/ip-persona-prompt.md")
+    assert "有料有趣的流火" in rules
+    assert "function memorablePeerDescriptor" in owner
+    assert "function descriptorOptions" in owner
+    assert "descriptorOptions(profile,a).forEach" in owner
+    assert owner.index("descriptorOptions(profile,a).forEach") < owner.index("add(a,'突出人物'")
+    assert "有证据的鲜明修饰语可以优先于裸称呼" in prompt
+    assert "靠谱的XX" in rules
+
+
+def test_113_full_english_symbols_and_emoji_are_deprioritized_or_filtered():
+    owner = read("web/nickname-policy-v1.js")
+    rules = read("rules/nickname-naturalness-rules-20260825.md")
+    prompt = read("prompts/ip-persona-prompt.md")
+    assert "中文可记忆、可搜索优先" in rules
+    assert "TotoroFelix" in rules
+    assert "兔子Nici" in rules
+    assert "特殊符号" in rules
+    assert "Emoji" in rules
+    assert "function normalizeSearchable" in owner
+    assert "function fullEnglish" in owner
+    assert "if(fullEnglish(n)||!hasChinese(n))return '';" in owner
+    assert "replace(/[^\\u4e00-\\u9fa5A-Za-z0-9]/g,'')" in owner
+    assert "全英文昵称原则上不作为首选" in prompt
+    assert "特殊符号" in prompt
+    assert "Emoji" in prompt
