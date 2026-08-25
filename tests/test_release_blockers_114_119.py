@@ -27,8 +27,10 @@ def test_114_122_ip_conversation_forces_floating_profile_entry_visible():
     assert "if(tool==='ip')closeStaleOverlaysForIp()" in FLOAT
     # 启动完成后必须继续以最终 DOM 为准，不能重新依赖 state.activeTool。
     assert "state.activeTool==='ip'" not in FLOAT
+    assert "function ipChatDomVisible" in FLOAT
     assert "const chat=document.getElementById('ip-chat-panel')" in FLOAT
-    assert "if(chat&&!chat.classList.contains('hidden'))closeStaleOverlaysForIp()" in FLOAT
+    assert "return !!chat && !chat.classList.contains('hidden')" in FLOAT
+    assert "if(ipChatDomVisible())closeStaleOverlaysForIp()" in FLOAT
 
 
 def test_115_existing_nickname_advice_reuses_proposal_card_component():
@@ -47,7 +49,6 @@ def test_120_124_bio_line_length_and_same_dimension_packing_are_enforced():
     assert "packBioItems(advantages)" in dimensions
     assert "packBioItems(values)" in dimensions
     assert "identityCore" in dimensions and "advantages" in dimensions and "values" in dimensions
-    # 最终可见/复制层再做一次兜底，防止短 slogan 或历史方案绕过 Core 的正文 packing。
     assert "function sanitizeBioBlocks" in V10
     assert "lineWeight(visibleBioText(line))>=BIO_MIN" in V10
     assert "isFixedFooter(line)" in V10
