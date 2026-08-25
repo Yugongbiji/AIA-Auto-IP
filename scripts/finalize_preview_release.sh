@@ -22,7 +22,8 @@ echo "HEAD: $HEAD_SHA"
 
 log "2/7 确认 Preview 数据隔离"
 [[ -f "$PREVIEW_DIR/.env" ]] || fail "缺少 Preview .env"
-grep -Eq '^DB_ENGINE=["'"']?sqlite["'"']?[[:space:]]*$' "$PREVIEW_DIR/.env" || fail "DB_ENGINE 不是 sqlite，拒绝继续，防止误碰正式 RDS。"
+DB_ENGINE_VALUE="$(awk -F= '/^[[:space:]]*DB_ENGINE[[:space:]]*=/{value=$2; gsub(/^[[:space:]\"'"']+|[[:space:]\"'"']+$/, "", value); print tolower(value); exit}' "$PREVIEW_DIR/.env")"
+[[ "$DB_ENGINE_VALUE" == "sqlite" ]] || fail "DB_ENGINE 不是 sqlite（当前：${DB_ENGINE_VALUE:-未设置}），拒绝继续，防止误碰正式 RDS。"
 [[ -f "$PREVIEW_DIR/data/persona.sqlite3" ]] || fail "缺少 Preview SQLite：data/persona.sqlite3"
 
 log "3/7 跑完整发布门禁（含 Node 解析 32 个实际加载 JS）"
