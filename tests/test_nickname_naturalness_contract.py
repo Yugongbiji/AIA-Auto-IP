@@ -68,3 +68,25 @@ def test_nickname_reason_is_deterministic_owner_copy_not_free_deepseek_copy():
     assert "优先保护已有用户记忆" in owner
     assert "优先使用客户/身边人真实称呼" in owner
     assert "不得让 DeepSeek 每次自由编写不同风格的保留理由" in rules
+
+
+def test_108_former_career_is_not_a_nickname_generation_route():
+    owner = read("web/nickname-policy-v1.js")
+    rules = read("rules/nickname-naturalness-rules-20260825.md")
+    assert "过往职业只进入简介、不进入推荐昵称" in owner
+    assert "function career(" not in owner
+    assert "const job=career(profile)" not in owner
+    assert "过往职业只能用于简介、IP 一句话定位" in rules
+    assert "地产人成涛" in rules
+    assert "财务人宋雨阳" in rules
+    assert "前广告人张蕊" in rules
+
+
+def test_109_simple_person_name_routes_are_capped_and_not_filled_with_aliases():
+    owner = read("web/nickname-policy-v1.js")
+    rules = read("rules/nickname-naturalness-rules-20260825.md")
+    assert "纯姓名、真实称呼及其极简变体合计最多 **2 个**" in rules
+    assert "这里只生成一个核心人物称呼型候选" in owner
+    assert "已有好昵称最多再占一个名额" in owner
+    assert "郭局 / 东哥 / 郭老师 / 郭旭东" in rules
+    assert "宁可只推荐 2–3 个" in rules
