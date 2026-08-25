@@ -54,10 +54,10 @@
     const pattern=kind==='nickname'?/推荐昵称|昵称推荐/:/简介/;
     const heading=[...content.querySelectorAll('h2,h3,strong')].find(n=>pattern.test(t(n.textContent)));
     if(!heading)return;
-    const existing=content.querySelector(`.aia-compliance-help[data-kind="${kind}"]`);if(existing)return;
-    const b=document.createElement('button');b.type='button';b.className='aia-compliance-help';b.dataset.kind=kind;b.textContent='?';b.setAttribute('aria-label',kind==='nickname'?'查看昵称合规提示':'查看简介合规提示');b.title=b.getAttribute('aria-label');b.onclick=()=>complianceModal(kind,'',b,false);
-    const row=document.createElement('div');row.className='aia-compliance-title-row';
-    heading.parentNode.insertBefore(row,heading);row.append(heading,b);
+    const existing=content.querySelector(`.aia-compliance-help-row[data-kind="${kind}"]`);if(existing)return;
+    const b=document.createElement('button');b.type='button';b.className='aia-compliance-help';b.dataset.kind=kind;b.textContent=kind==='nickname'?'查看昵称合规提示':'查看简介合规提示';b.setAttribute('aria-label',b.textContent);b.title=b.getAttribute('aria-label');b.onclick=()=>complianceModal(kind,'',b,false);
+    const row=document.createElement('div');row.className='aia-compliance-help-row';row.dataset.kind=kind;row.appendChild(b);
+    heading.insertAdjacentElement('afterend',row);
   }
   function appendThird(content,proposal){const cols=[...content.querySelectorAll('.platform-column')];if(cols.length<2||typeof addCopyBlock!=='function')return;const hs=cols.map(c=>c.querySelector('h4'));if(hs[0])hs[0].textContent='小红书简介 · 三套选择';if(hs[1])hs[1].textContent='视频号 / 抖音简介 · 三套选择';[[cols[0],proposal?.bios?.xiaohongshu?.[2],'小红书'],[cols[1],proposal?.bios?.videoDouyin?.[2],'视频号 / 抖音']].forEach(([c,item,p])=>{if(item&&c.querySelectorAll('.bio-copy-block').length<3)addCopyBlock(c,item,p);});}
   function enhance(content,proposal){appendThird(content,proposal);content.querySelector('.ip-compliance-fold')?.remove();content.querySelectorAll('.compliance-card,.platform-reminders').forEach(n=>n.classList.add('aia-compliance-source-hidden'));help(content,'nickname');help(content,'bio');content.querySelectorAll('.nickname-option').forEach(r=>bind(r.querySelector('.copy-button'),'nickname',r.querySelector('strong')?.textContent?.trim()||''));content.querySelectorAll('.bio-copy-block').forEach(b=>bind(b.querySelector('.copy-button'),'bio',b.querySelector('textarea')?.value||''));}
@@ -72,7 +72,7 @@
   }
 
   if(!document.getElementById('compliance-v10-redesign-style')){
-    const s=document.createElement('style');s.id='compliance-v10-redesign-style';s.textContent='.aia-compliance-source-hidden{display:none!important}.aia-compliance-title-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px}.aia-compliance-title-row>h2,.aia-compliance-title-row>h3,.aia-compliance-title-row>strong{margin:0!important}.aia-compliance-help{position:static!important;width:26px;height:26px;flex:0 0 26px;border-radius:50%;border:1px solid #d9c5cb;background:#fff7f9;color:#b20f3b;font-weight:800;cursor:pointer}.aia-compliance-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}.aia-compliance-column{padding:14px;border-radius:12px}.aia-compliance-can{background:#f4fbf7}.aia-compliance-cannot{background:#fff5f6}.aia-compliance-column h4{margin:0 0 8px}.aia-compliance-column ul{margin:0;padding-left:20px}@media(max-width:720px){.aia-compliance-grid{grid-template-columns:1fr}}';document.head.appendChild(s);
+    const s=document.createElement('style');s.id='compliance-v10-redesign-style';s.textContent='.aia-compliance-source-hidden{display:none!important}.aia-compliance-help-row{display:flex;justify-content:flex-end;margin:-6px 0 14px}.aia-compliance-help{position:static!important;min-height:30px;padding:5px 10px;border-radius:999px;border:1px solid #eadde1;background:#fff7f9;color:#9e2444;font-size:12px;font-weight:700;cursor:pointer}.aia-compliance-help:hover{border-color:#d8b7c1;background:#fff1f5}.aia-compliance-help:focus-visible{outline:3px solid #d3114540;outline-offset:2px}.aia-compliance-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}.aia-compliance-column{padding:14px;border-radius:12px}.aia-compliance-can{background:#f4fbf7}.aia-compliance-cannot{background:#fff5f6}.aia-compliance-column h4{margin:0 0 8px}.aia-compliance-column ul{margin:0;padding-left:20px}@media(max-width:720px){.aia-compliance-help-row{justify-content:flex-start;margin-top:-4px}.aia-compliance-grid{grid-template-columns:1fr}}';document.head.appendChild(s);
   }
   window.aiaComplianceUiV10=Object.freeze({complianceModal,firstCopy,ownsClipboard:false});
 })();
