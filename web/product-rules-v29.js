@@ -1,33 +1,19 @@
-// 产品规则 V29（展示层）：客户反馈结构化展示 + 原有昵称谨慎审查。
-// 不生成 nicknameOptions，不修改简介/内容方向。
+// 产品规则 V29：只负责原有昵称谨慎审查与展示。
+// 客户反馈展示唯一 Owner 是 product-rules-v27.js；本文件不得重复渲染客户反馈。
 (function () {
   'use strict';
   const text=value=>String(value??'').trim();
   const uniq=values=>[...new Set((values||[]).filter(Boolean))];
   const missing=value=>/^(无|没有|暂无|未填|未填写|未设置|未提供|不知道|不详|NA|N\/A|null|none)$/i.test(text(value));
 
-  function normalizeItems(items){const map=new Map();(items||[]).forEach(item=>{const label=text(item?.label??item);if(!label||missing(label))return;const count=Math.max(1,Number(item?.count||1)||1);map.set(label,(map.get(label)||0)+count);});return[...map.entries()].map(([label,count])=>({label,count})).sort((a,b)=>b.count-a.count||a.label.localeCompare(b.label,'zh-CN'));}
-  function feedbackChips(items){const wrap=document.createElement('div');wrap.className='peer-feedback-chips';normalizeItems(items).forEach(({label,count})=>{const chip=document.createElement('span');chip.className='peer-feedback-chip';chip.textContent=count>1?`${label} ×${count}`:label;wrap.appendChild(chip);});return wrap;}
-  function addFeedbackSection(parent,title,items){const normalized=normalizeItems(items);if(!normalized.length)return;const section=document.createElement('section');section.className='peer-feedback-section';const h=document.createElement('h4');h.textContent=title;section.append(h,feedbackChips(normalized));parent.appendChild(section);}
-  function renderStructuredFeedback(){
-    const card=document.getElementById('profile-card'),summary=state.profile?.peerReviewSummary;if(!card)return;
-    card.querySelector('[data-profile-peer-review="1"]')?.remove();card.querySelector('.peer-review-summary')?.remove();card.querySelector('[data-peer-feedback="1"]')?.remove();
-    if(!summary||!Number(summary.reviewCount||0))return;
-    const block=document.createElement('div');block.className='profile-group profile-group-full peer-feedback-card';block.dataset.peerFeedback='1';
-    const head=document.createElement('div');head.className='peer-feedback-head';const title=document.createElement('span');title.className='profile-label';title.textContent='客户反馈';const meta=document.createElement('span');meta.className='peer-feedback-meta';meta.textContent=`共 ${Number(summary.reviewCount)} 位客户反馈`;head.append(title,meta);block.appendChild(head);
-    addFeedbackSection(block,'大家怎么称呼我',summary.topNicknames);addFeedbackSection(block,'他们和我的关系',summary.relationships||summary.topRelationships);addFeedbackSection(block,'他们眼中的我',summary.topTraits);addFeedbackSection(block,'他们愿意找我聊什么',summary.topTopics);addFeedbackSection(block,'他们觉得我更像哪种人',summary.topRoles);
-    const quotes=uniq((summary.representativeQuotes||summary.quotes||[]).map(item=>text(item?.label??item))).filter(q=>q&&!missing(q));
-    if(quotes.length){const section=document.createElement('section');section.className='peer-feedback-section peer-feedback-quotes';const h=document.createElement('h4');h.textContent='他们怎么向别人介绍我';section.appendChild(h);const list=document.createElement('div');list.className='peer-feedback-quote-list';quotes.forEach((quote,index)=>{const p=document.createElement('p');p.textContent=quote;if(index>=3)p.hidden=true;list.appendChild(p);});section.appendChild(list);if(quotes.length>3){const button=document.createElement('button');button.type='button';button.className='text-button peer-feedback-more';button.textContent=`查看全部 ${quotes.length} 条`;button.onclick=()=>{const expanded=button.dataset.expanded==='1';[...list.children].forEach((node,index)=>{if(index>=3)node.hidden=expanded;});button.dataset.expanded=expanded?'0':'1';button.textContent=expanded?`查看全部 ${quotes.length} 条`:'收起';};section.appendChild(button);}block.appendChild(section);}
-    const intro=card.querySelector('[data-signup-intro="1"]');if(intro)card.insertBefore(block,intro);else card.appendChild(block);
-  }
-
-  function knownAddresses(profile){const items=[];const preferred=text(profile?.preferredName);if(preferred&&!missing(preferred))items.push(preferred);(profile?.peerReviewSummary?.topNicknames||[]).forEach(item=>{const label=text(item?.label);if(label&&!missing(label))items.push(label);});const name=text(profile?.name);if(name){items.push(name);if(name.length>=2)items.push(name.slice(1),name.slice(-1));}return uniq(items).filter(Boolean);}
+  function knownAddresses(profile){const items=[];(profile?.peerReviewSummary?.topNicknames||[]).forEach(item=>{const label=text(item?.label);if(label&&!missing(label))items.push(label);});const preferred=text(profile?.preferredName);if(preferred&&!missing(preferred))items.push(preferred);const name=text(profile?.name);if(name){if(name.length===2)items.push(name.slice(1));if(name.length>=3)items.push(name.slice(-2));items.push(name);}return uniq(items).filter(Boolean);}
   function evaluateNickname(name,profile){
     const value=text(name),issues=[],strengths=[];if(!value||missing(value))return{name:value,issues:['当前没有填写昵称'],strengths:[],hasPersonAnchor:false,missing:true};
     if(value.length<=10)strengths.push('长度比较利落，容易记');else if(value.length>14)issues.push('昵称偏长，不容易一次记住');
-    if(/友邦|\bAIA\b/i.test(value))issues.push('包含品牌词，跨平台长期使用存在合规风险');
+    if(/保险|友邦|\bAIA\b/i.test(value))issues.push('包含当前推荐规则中的禁用业务/品牌词');
     if(/[©®™]|https?:\/\/|www\.|微信|vx|V信|电话|手机号/i.test(value))issues.push('包含联系方式、链接或导流信息');
-    const matched=knownAddresses(profile).filter(address=>address&&value.includes(address));const distinct=uniq(matched.filter(a=>a.length>1));if(distinct.length>1)issues.push('一个昵称里出现了两个称呼主体，读起来像把两个名字拼在一起');
+    const matched=knownAddresses(profile).filter(address=>address&&value.includes(address));
+    const distinct=uniq(matched.filter(a=>a.length>1));if(distinct.length>1)issues.push('一个昵称里出现了两个称呼主体，读起来像把两个名字拼在一起');
     const hasPersonAnchor=distinct.length===1||matched.length===1;if(hasPersonAnchor)strengths.push('有稳定的人物称呼，人物识别度较好');
     return{name:value,issues,strengths,hasPersonAnchor,missing:false};
   }
@@ -39,8 +25,7 @@
     const note=document.createElement('p');note.className='nickname-general-note';note.textContent='AI 推荐昵称仅供参考。标准化推荐不一定最能代表你；你最喜欢、最愿意长期使用、对你有特殊含义的名字，也可能就是最好的昵称。';const heading=[...target.querySelectorAll('h2,h3,strong')].find(node=>/推荐昵称|昵称推荐/.test(text(node.textContent)));(heading?.parentElement||target).appendChild(note);
   }
 
-  const baseRenderProfile=renderProfile;renderProfile=function renderProfileV29(){const result=baseRenderProfile();requestAnimationFrame(renderStructuredFeedback);return result;};
   const baseRenderProposal=renderProposal;renderProposal=function renderProposalV29(proposal,version){const result=baseRenderProposal(proposal,version);requestAnimationFrame(()=>requestAnimationFrame(renderNicknameAuditInPlace));return result;};
-  if(!document.getElementById('product-rules-v29-style')){const style=document.createElement('style');style.id='product-rules-v29-style';style.textContent='.nickname-general-note{margin:10px 0 0;padding:10px 12px;border-radius:10px;background:#f7f4f5;color:#6a5f63;font-size:13px;line-height:1.6}.peer-feedback-card{grid-column:1/-1!important}';document.head.appendChild(style);}
-  window.aiaProductRulesV29=Object.freeze({renderStructuredFeedback,evaluateNickname,auditExistingNicknames,renderNicknameAuditInPlace,ownsNicknameOptions:false});
+  if(!document.getElementById('product-rules-v29-style')){const style=document.createElement('style');style.id='product-rules-v29-style';style.textContent='.nickname-general-note{margin:10px 0 0;padding:10px 12px;border-radius:10px;background:#f7f4f5;color:#6a5f63;font-size:13px;line-height:1.6}';document.head.appendChild(style);}
+  window.aiaProductRulesV29=Object.freeze({evaluateNickname,auditExistingNicknames,renderNicknameAuditInPlace,ownsNicknameOptions:false,ownsPeerFeedback:false});
 })();
