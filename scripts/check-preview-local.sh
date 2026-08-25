@@ -18,6 +18,8 @@ if ! "$PY" -m pytest --version >/dev/null 2>&1; then
 fi
 "$PY" -m pytest \
   tests/test_ip_policy_contract.py \
+  tests/test_nickname_naturalness_contract.py \
+  tests/test_nickname_presets_contract.py \
   tests/test_preview_ui_stability_contract.py \
   tests/test_regressions_80_85.py \
   tests/test_product_experience_contract_round3.py \
