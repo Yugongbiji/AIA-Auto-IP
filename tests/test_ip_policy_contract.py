@@ -82,14 +82,35 @@ def test_bio_has_single_compliance_footer_owner_and_correct_video_order():
         assert 'proposal.bios=' not in source.replace(' ', '')
 
 
-def test_bio_uses_real_assets_and_not_hobby_tag_wall():
-    for source in ['previousCareer', 'selfIntro', 'insuranceYears', 'honors', 'peerReviewSummary', 'services']:
-        assert source in POLICY
-    bio_block = POLICY.split('function bioBody(profile,platform,variant)', 1)[1].split('function explicitLicense', 1)[0]
-    assert 'profile?.hobbies' not in bio_block
-    assert 'feedbackSentence(assets)' in bio_block
-    assert '客户比较常提到我' in POLICY
-    assert "asset.items.join('｜')" in POLICY
+def test_bio_outputs_one_recommendation_per_platform_and_three_semantic_dimensions():
+    assert "小红书简介 · 推荐版" in POLICY
+    assert "视频号 / 抖音简介 · 推荐版" in POLICY
+    assert "return [{label,focus:'我是谁 + 我的优势 + 我能提供什么价值'" in POLICY
+    assert "groups.identity.forEach" in POLICY
+    assert "groups.advantage.forEach" in POLICY
+    assert "groups.value.forEach" in POLICY
+    assert "方案 A · 专业背书" not in POLICY
+    assert "方案 B · 人设记忆" not in POLICY
+    assert "方案 C · 价值服务" not in POLICY
+
+
+def test_bio_uses_strict_career_evidence_and_does_not_upgrade_generic_law_keyword():
+    assert 'function bioCareerFacts(profile)' in POLICY
+    assert 'BIO_GENERIC_DOMAINS' in POLICY
+    assert '法律|教育|金融|医疗' in POLICY
+    assert 'BIO_CAREER_SIGNAL' in POLICY
+    assert "资料只有“法律”" not in POLICY  # rule prose belongs in docs, not runtime copy
+    assert '曾从事${job}' not in POLICY.split('const XHS_BANNED', 1)[1]
+    assert '客户比较常提到我' not in POLICY
+
+
+def test_bio_high_density_packing_keeps_same_dimension_together():
+    assert 'function packBioItems(items,maxWeight=22,maxLines=3)' in POLICY
+    assert "`${current}｜${item}`" in POLICY
+    assert "type:'identity'" in POLICY
+    assert "type:'advantage'" in POLICY
+    assert "type:'value'" in POLICY
+    assert 'services.slice(0,4)' not in POLICY
 
 
 def test_missing_nickname_is_never_treated_as_keepable():
@@ -99,13 +120,14 @@ def test_missing_nickname_is_never_treated_as_keepable():
     assert '建议优先保留' in V29
 
 
-def test_floating_buttons_are_icons_only_and_no_version_text():
+def test_floating_buttons_are_icons_only_and_visibility_has_one_page_truth_source():
     assert '<svg aria-hidden="true"' in FLOAT
     assert 'profileButton.innerHTML' in FLOAT
     assert 'proposalButton.innerHTML' in FLOAT
     assert '最新 IP 方案 · V' not in FLOAT
     assert "querySelector('span:last-child')" not in FLOAT
-    assert "state.activeTool==='ip'" in FLOAT
+    assert "state.activeTool==='ip'" not in FLOAT
+    assert 'isIpConversationVisible' in FLOAT
     assert 'ownsProfileData:false' in FLOAT
 
 
@@ -124,7 +146,6 @@ def test_compliance_ui_does_not_generate_bios_and_has_two_columns():
 
 
 def test_clipboard_success_has_one_owner():
-    # V22 is only Toast/loading utility; V28 performs the real clipboard write and success/failure feedback.
     assert 'navigator.clipboard.writeText =' not in V22
     assert 'copyStateObserver' not in V22
     assert 'ownsClipboard:false' in V22
