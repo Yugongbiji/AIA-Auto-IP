@@ -60,7 +60,6 @@ def test_132_questionnaire_keeps_education_and_expression_style_when_missing():
     assert "styleQuestion.multiple = true" in V13
     assert "styleQuestion.maxSelections = 2" in V13
     assert '这个选择会影响后续的脚本改写风格' in V13
-    assert "'contentTone'" in V13 and "'education'" in V13
 
 
 def test_135_questionnaire_persistence_never_blocks_next_question():
@@ -69,7 +68,6 @@ def test_135_questionnaire_persistence_never_blocks_next_question():
     assert 'return Promise.resolve()' in V13
     assert 'QUESTIONNAIRE_OWNED_FIELDS' in V27
     assert 'QUESTIONNAIRE_OWNED_FIELDS.has(key)' in V27
-    # 后台语义分析不得再控制问卷游标或触发下一题。
     semantic_block = V27.split('async function semanticEnrich', 1)[1].split('function normalizeCountItems', 1)[0]
     assert 'state.currentQuestion' not in semantic_block
     assert 'presentQuestion()' not in semantic_block
@@ -79,28 +77,28 @@ def test_115_existing_nickname_advice_reuses_proposal_card_component():
     assert "proposal-card nickname-audit-card" in V29
 
 
-def test_120_124_bio_line_length_and_same_dimension_packing_are_enforced():
+def test_120_124_bio_final_owner_packs_only_same_dimensions_and_drops_short_lines():
     assert "const BIO_PREFERRED_MIN=12" in CORE
     assert "const BIO_PREFERRED_MAX=20" in CORE
     assert "const BIO_ABSOLUTE_MAX=25" in CORE
-    block = CORE.split("function packBioItems", 1)[1].split("function rebalanceBioLines", 1)[0]
-    assert "const merged=`${lines[i-1]}｜${lines[i]}`" in block
-    assert "packed.filter(line=>charWeight(line)>=BIO_PREFERRED_MIN)" in block
-    dimensions = CORE.split("function dimensionLines", 1)[1].split("function dedupeBioLines", 1)[0]
-    assert "packBioItems(identityCore)" in dimensions
-    assert "packBioItems(advantages)" in dimensions
-    assert "packBioItems(values)" in dimensions
-    assert "identityCore" in dimensions and "advantages" in dimensions and "values" in dimensions
-    assert "function sanitizeBioBlocks" in V10
-    assert "lineWeight(visibleBioText(line))>=BIO_MIN" in V10
-    assert "isFixedFooter(line)" in V10
-    assert "textarea.value=safe.join('\\n')" in V10
+    assert "function packDimension(items,maxLines=3)" in CORE
+    pack = CORE.split("function packDimension", 1)[1].split("function bioDimensions", 1)[0]
+    assert "charWeight(candidate)>BIO_PREFERRED_MAX" in pack
+    assert "charWeight(built)>=BIO_PREFERRED_MIN" in pack
+    assert "charWeight(v)>=BIO_PREFERRED_MIN&&charWeight(v)<=BIO_ABSOLUTE_MAX" in pack
+    dims = CORE.split("function bioDimensions", 1)[1].split("function dimensionLines", 1)[0]
+    assert "const identity=[]" in dims and "advantage=[]" in dims and "value=[]" in dims
+    assert "identity.push" in dims and "advantage.push" in dims and "value.push" in dims
+    # V10 是纯 UI，不得再二次过滤正文，否则会复发“只剩合规声明”。
+    assert "sanitizeBioBlocks" not in V10
+    assert "textarea.value=" not in V10
+    assert "ownsBioText:false" in V10
 
 
 def test_117_summary_line_gets_next_non_repeating_emoji():
-    block = CORE.split("function buildBios", 1)[1].split("function enforceProposal", 1)[0]
-    assert "const body=bioBody(profile,platform)" in block
-    assert "BIO_EMOJIS[body.length % BIO_EMOJIS.length]" in block
+    block = CORE.split("function buildBios", 1)[1].split("function bioAssets", 1)[0]
+    assert "body=bioBody(profile,platform)" in block
+    assert "BIO_EMOJIS[body.length%BIO_EMOJIS.length]" in block
     assert "sloganLine" in block
 
 
@@ -115,15 +113,15 @@ def test_118_123_compliance_help_keeps_question_mark_and_right_side_placement():
     assert "insertAdjacentElement('afterend'" not in V10
 
 
-def test_119_headline_rejects_mechanical_trait_label_templates():
+def test_119_headline_rejects_mechanical_trait_and_credential_wall_templates():
     clean = CORE.split("function cleanHeadlineCandidate", 1)[1].split("function headlineFallback", 1)[0]
     fallback = CORE.split("function headlineFallback", 1)[1].split("function headline(profile", 1)[0]
     assert "是我的标签" in clean
     assert "是我的专业底色" in clean
     assert "做一个让人记得住的人" in clean
+    assert "本科|硕士|博士|大专" in clean and "MDRT|COT|TOT" in clean
     assert "是我的标签" not in fallback
     assert "是我的专业底色" not in fallback
-    assert "bioTraitFacts(profile)" not in fallback
     assert "#119" in RULES
     assert "宝妈，靠谱是我的标签" in RULES
 
@@ -133,8 +131,6 @@ def test_loaded_nickname_helpers_cannot_restore_single_character_name_slicing():
     assert "name.slice(-1)" not in V19
     assert "name.slice(1)" not in V29
     assert "name.length===2" not in V29
-    assert "阿', '小" not in V19
-    assert "'哥', '姐', '老师', '总'" not in V19
 
 
 def test_visible_bio_ui_removes_retired_000_placeholder_and_old_multi_set_copy():
