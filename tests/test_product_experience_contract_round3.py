@@ -21,6 +21,8 @@ V28 = (WEB / "product-rules-v28.js").read_text(encoding="utf-8")
 SCRIPT_SERVER = (ROOT / "script_server.py").read_text(encoding="utf-8")
 SEMANTIC = (BACKEND / "profile_semantic.py").read_text(encoding="utf-8")
 XHS = (BACKEND / "xhs_formatting_contract.py").read_text(encoding="utf-8")
+PERSONA_GENERATOR = (BACKEND / "ip_persona_generator.py").read_text(encoding="utf-8")
+CREATIVE_CONTRACTS = (BACKEND / "script_persona_rules.py").read_text(encoding="utf-8")
 PROMPT = (ROOT / "prompts" / "ip-persona-prompt.md").read_text(encoding="utf-8")
 
 
@@ -51,6 +53,7 @@ def test_retired_content_planning_no_longer_controls_default_navigation():
 def test_profile_semantics_are_goal_aware_and_frontend_reconnected():
     assert "/api/profile/analyze" in PROFILE
     assert "semanticEnrich" in PROFILE
+    assert "currentSemanticKey" in PROFILE
     assert "recruitmentGroups" in SEMANTIC and "recruitmentAges" in SEMANTIC
     assert 'goal == "recruitment"' in SEMANTIC
     assert 'allowed -= {"customerGroups", "customerAges"}' in SEMANTIC
@@ -129,3 +132,10 @@ def test_prompt_cannot_confuse_agent_id_with_license_number():
     assert "执业证编号" in video_section
     assert "营销员编号只用于账号/资料匹配" in video_section
     assert "营销服务部与营销员编号" not in video_section
+
+
+def test_runtime_ip_generation_reads_prompt_file_instead_of_hardcoded_product_rules():
+    assert 'PROMPT_PATH = ROOT / "prompts" / "ip-persona-prompt.md"' in PERSONA_GENERATOR
+    assert "PROMPT_PATH.read_text" in PERSONA_GENERATOR
+    assert "core_module.deepseek_generate = generate" in PERSONA_GENERATOR
+    assert "ip_persona_generator.install(core_module)" in CREATIVE_CONTRACTS
