@@ -166,6 +166,10 @@
   const XHS_BANNED=/保险|金融|理财|贷款|股票|基金|医疗|护理|教育|玄学|友邦|\bAIA\b|微信|手机号|电话|QQ|二维码|私信|稳赚|无风险|财富自由/i;
   const VIDEO_DISCLAIMER='本账号上所陈述或表达的内容仅为我个人意见，并不代表友邦人寿的意见';
   const XHS_DISCLAIMER='本账号所述内容为个人意见，不代表任何官方意见。';
+  const BIO_PREFERRED_MIN=12;
+  const BIO_PREFERRED_MAX=20;
+  const BIO_ABSOLUTE_MAX=25;
+  const BIO_EMOJIS=Object.freeze(['✨','🎓','🏅','🌿','💡','🎯','🧭','📚','🌟','💼','🩺','🚀']);
   function safeXhs(v){return text(v)&&!XHS_BANNED.test(text(v));}
   function emojiLine(emoji,value){const v=text(value);return v?`${emoji} ${v}`:'';}
   function sameMeaning(a,b){
@@ -178,7 +182,6 @@
     pool.push(asset);
   }
 
-  // 简介使用比 headline 更严格的职业证据边界：泛领域词不能升级为职业经历。
   const BIO_GENERIC_DOMAINS=/^(法律|教育|金融|医疗|健康|养老|育儿|科技|互联网|房地产|管理|市场|销售|财务常识|职场|创业经营)$/;
   const BIO_CAREER_SIGNAL=/法务|律师|教师|老师|医生|工程师|HR|人力资源|财务|会计|银行|记者|主持人|程序员|创业者|企业管理|管理者|教练|精算师|工作经验|从业经验|从业经历|工作经历/;
   function normalizeBioCareer(value){
@@ -193,7 +196,6 @@
   }
   function bioCareerFacts(profile){
     const explicit=split(profile?.previousCareer).map(normalizeBioCareer).filter(Boolean);
-    // 个人介绍只有出现明确职业/工作语义时才提取，单独出现“法律”等领域词不构成职业证据。
     const intro=text(profile?.selfIntro);const derived=[];
     const patterns=[
       /(\d+\s*年[^，。；\n]{0,12}(?:企业)?法务(?:工作)?(?:经验|经历)?)/,
@@ -238,15 +240,43 @@
     interests.forEach((value,index)=>pushAsset(pool,{type:'identity',subtype:'interest',value,score:55-index,source:'真实兴趣'}));
     return pool.sort((a,b)=>b.score-a.score);
   }
-  function charWeight(value){return [...text(value)].reduce((n,ch)=>n+(/[\u0000-\u00ff]/.test(ch)?0.6:1),0);}
-  function packBioItems(items,maxWeight=22,maxLines=3){
+  function charWeight(value){
+    return [...text(value)].reduce((n,ch)=>{
+      if(/\p{Extended_Pictographic}/u.test(ch))return n+2;
+      if(/[\u0000-\u007f]/.test(ch))return n+0.6;
+      return n+1;
+    },0);
+  }
+  function packBioItems(items,maxLines=3){
     const clean=uniq(items.map(text).filter(Boolean));const lines=[];let current='';
     clean.forEach(item=>{
       const candidate=current?`${current}｜${item}`:item;
-      if(current&&charWeight(candidate)>maxWeight){lines.push(current);current=item;}else current=candidate;
+      if(current&&charWeight(candidate)>BIO_PREFERRED_MAX){lines.push(current);current=item;}else current=candidate;
     });
     if(current)lines.push(current);
-    return lines.slice(0,maxLines);
+    for(let i=lines.length-1;i>0;i--){
+      if(charWeight(lines[i])>=BIO_PREFERRED_MIN)continue;
+      const merged=`${lines[i-1]}｜${lines[i]}`;
+      if(charWeight(merged)<=BIO_ABSOLUTE_MAX){lines[i-1]=merged;lines.splice(i,1);}
+    }
+    return lines.flatMap(line=>{
+      if(charWeight(line)<=BIO_ABSOLUTE_MAX)return [line];
+      const parts=split(line),out=[];let acc='';
+      parts.forEach(part=>{const next=acc?`${acc}｜${part}`:part;if(acc&&charWeight(next)>BIO_ABSOLUTE_MAX){out.push(acc);acc=part;}else acc=next;});
+      if(acc)out.push(acc);return out;
+    }).slice(0,maxLines);
+  }
+  function rebalanceBioLines(lines){
+    const out=[...lines];
+    for(let i=out.length-1;i>0;i--){
+      const a=charWeight(out[i-1]),b=charWeight(out[i]);
+      if(b>=BIO_PREFERRED_MIN||a-b<8)continue;
+      const parts=split(out[i-1]);
+      if(parts.length<2)continue;
+      const moved=parts.pop();const left=parts.join('｜');const right=`${moved}｜${out[i]}`;
+      if(charWeight(left)>=BIO_PREFERRED_MIN&&charWeight(right)<=BIO_PREFERRED_MAX){out[i-1]=left;out[i]=right;}
+    }
+    return out;
   }
   function dimensionLines(profile,platform){
     const assets=bioAssets(profile,platform);
@@ -255,31 +285,29 @@
     const advantages=assets.filter(a=>a.type==='advantage').map(a=>a.value);
     let values=assets.filter(a=>a.type==='value').map(a=>a.value);
     if(!values.length){
-      values=inferPrimaryGoal(profile)===PRIMARY_GOALS.RECRUITMENT?['职业选择','转型成长','长期发展']:(platform==='xhs'?['家庭保障','养老规划','长期规划']:['家庭保障','养老规划','保险知识']);
+      values=inferPrimaryGoal(profile)===PRIMARY_GOALS.RECRUITMENT?['职业选择','转型成长','长期发展']:(platform==='xhs'?['家庭生活','长期规划','个人成长']:['家庭保障','养老规划','保险知识']);
       if(platform==='xhs')values=values.filter(safeXhs);
     }
-    const identity=[...packBioItems(identityCore),...packBioItems(identityInterest)].slice(0,3);
-    return {identity,advantage:packBioItems(advantages),value:packBioItems(values)};
+    let identity=packBioItems(identityCore);
+    const interests=packBioItems(identityInterest);
+    if(identity.length<3)identity=[...identity,...interests].slice(0,3);
+    return {identity:rebalanceBioLines(identity),advantage:rebalanceBioLines(packBioItems(advantages)),value:rebalanceBioLines(packBioItems(values))};
   }
   function dedupeBioLines(lines){
     const out=[];lines.map(text).filter(Boolean).forEach(line=>{if(!out.some(existing=>sameMeaning(existing,line)))out.push(line);});return out;
   }
   function bioBody(profile,platform){
-    const groups=dimensionLines(profile,platform);const raw=[];
-    groups.identity.forEach(v=>raw.push(emojiLine('👤',v)));
-    groups.advantage.forEach(v=>raw.push(emojiLine('🏅',v)));
-    groups.value.forEach(v=>raw.push(emojiLine('🧭',v)));
-    let lines=dedupeBioLines(raw);
-    if(platform==='xhs')lines=lines.filter(safeXhs);
+    const groups=dimensionLines(profile,platform);const values=[...groups.identity,...groups.advantage,...groups.value];
+    let lines=dedupeBioLines(values).map((v,index)=>emojiLine(BIO_EMOJIS[index % BIO_EMOJIS.length],v));
+    if(platform==='xhs')lines=lines.filter(line=>safeXhs(line.replace(/^\S+\s+/,'')));
     return lines;
   }
   function explicitLicense(profile){return text(profile?.licenseNumber||profile?.practiceLicense||profile?.licenseNo||profile?.['执业证编号']||profile?.['执业编号']);}
   function complianceFooter(profile,platform){
     if(platform==='xhs') return [XHS_DISCLAIMER];
-    const out=[VIDEO_DISCLAIMER];
-    const department=text(profile?.department); out.push(`营销服务部：${department||'待补充'}`);
-    const license=explicitLicense(profile); out.push(`执业证编号：${license||'000'}`);
-    return out;
+    const department=text(profile?.department||profile?.marketingServiceDepartment||profile?.['营销服务部']);
+    const license=explicitLicense(profile);
+    return [VIDEO_DISCLAIMER,`营销服务部：${department||'待补充'}`,`执业证编号：${license||'待补充'}`];
   }
   function buildBios(profile,platform){
     const label=platform==='xhs'?'小红书简介 · 推荐版':'视频号 / 抖音简介 · 推荐版';
@@ -310,7 +338,6 @@
     startWorkspace=function ipPolicyStartWorkspace(profile,matched,history=[],proposals=[],...rest){
       prepareProfileGoal(profile);installGoalGate();canonicalizeHistory(proposals,profile);
       const result=base(profile,matched,history,proposals,...rest);
-      // 独立“内容规划”已退役，历史 contentPlans 不得再决定默认落到脚本改写。
       if(!state.requestedTool&&state.activeTool==='script'&&typeof selectTool==='function')selectTool('ip');
       proposals.forEach(entry=>persistCanonical(entry));
       return result;
@@ -319,7 +346,6 @@
   if (typeof presentQuestion==='function') { const base=presentQuestion; presentQuestion=function ipPolicyPresentQuestion(...args){installGoalGate();prepareProfileGoal(state.profile||{});return base.apply(this,args);}; }
   if (typeof renderProposal==='function') { const base=renderProposal; renderProposal=function ipPolicyRenderProposal(proposal,version){enforceProposal(proposal,state.profile||{});const result=base.call(this,proposal,version);const entry=state.proposals?.find(x=>Number(x?.version)===Number(version));if(entry)persistCanonical(entry);return result;}; }
 
-  // Canonicalize /api/generate before app.js stores or downstream modules read it.
   const policyFetch=window.fetch.bind(window);let lastGenerated=null;
   window.fetch=async function ipPolicyFetch(input,init){
     const response=await policyFetch(input,init);const url=typeof input==='string'?input:(input?.url||'');
