@@ -50,7 +50,7 @@ def test_107_generic_suffixes_are_not_default_generated_routes():
     assert "'的小世界'" in owner
     assert "'聊生活'" in owner
     assert "'看世界'" in owner
-    assert "已有昵称可保留成熟表达" in rules
+    assert "已有好昵称不机械改造" in rules
     assert "宁缺毋滥" in rules
     assert "'美食':'生活'" not in owner
     assert "goal==='recruitment'" not in owner
