@@ -36,6 +36,6 @@
     document.head.appendChild(style);
   }
 
+  // toolbar-account 是静态骨架节点；一次挂载足够，不允许为测试按钮监听整个 document.body。
   ensurePreviewResetButton();
-  new MutationObserver(ensurePreviewResetButton).observe(document.body, { childList: true, subtree: true });
 })();
