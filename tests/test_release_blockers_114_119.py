@@ -15,17 +15,20 @@ SEMANTIC = (ROOT / "backend" / "profile_semantic.py").read_text(encoding="utf-8"
 RULES = (ROOT / "rules" / "ip-headline-slogan-rules.md").read_text(encoding="utf-8")
 
 
-def test_114_ip_conversation_restores_floating_profile_entry():
+def test_114_122_ip_conversation_forces_floating_profile_entry_visible():
     assert "function isIpConversationVisible" in FLOAT
+    assert "function settleVisibility" in FLOAT
     assert "queueMicrotask(syncVisibility)" in FLOAT
-    assert "requestAnimationFrame(syncVisibility)" in FLOAT
+    assert "requestAnimationFrame" in FLOAT
+    assert "actions.style.display=visible?'flex':'none'" in FLOAT
+    assert "aia-ip-conversation-active" in FLOAT
 
 
 def test_115_existing_nickname_advice_reuses_proposal_card_component():
     assert "proposal-card nickname-audit-card" in V29
 
 
-def test_120_bio_line_length_and_same_dimension_packing_are_enforced():
+def test_120_124_bio_line_length_and_same_dimension_packing_are_enforced():
     assert "const BIO_PREFERRED_MIN=12" in CORE
     assert "const BIO_PREFERRED_MAX=20" in CORE
     assert "const BIO_ABSOLUTE_MAX=25" in CORE
@@ -37,6 +40,11 @@ def test_120_bio_line_length_and_same_dimension_packing_are_enforced():
     assert "packBioItems(advantages)" in dimensions
     assert "packBioItems(values)" in dimensions
     assert "identityCore" in dimensions and "advantages" in dimensions and "values" in dimensions
+    # 最终可见/复制层再做一次兜底，防止短 slogan 或历史方案绕过 Core 的正文 packing。
+    assert "function sanitizeBioBlocks" in V10
+    assert "lineWeight(visibleBioText(line))>=BIO_MIN" in V10
+    assert "isFixedFooter(line)" in V10
+    assert "textarea.value=safe.join('\\n')" in V10
 
 
 def test_117_summary_line_gets_next_non_repeating_emoji():
@@ -46,11 +54,15 @@ def test_117_summary_line_gets_next_non_repeating_emoji():
     assert "sloganLine" in block
 
 
-def test_118_compliance_help_keeps_question_mark_affordance():
+def test_118_123_compliance_help_keeps_question_mark_and_right_side_placement():
     assert "b.textContent='?'" in V10
     assert "查看昵称合规提示" in V10
     assert "查看简介合规提示" in V10
     assert "width:28px" in V10 and "border-radius:50%" in V10
+    assert "position:absolute!important" in V10
+    assert "right:16px" in V10
+    assert "card.appendChild(b)" in V10
+    assert "insertAdjacentElement('afterend'" not in V10
 
 
 def test_119_headline_rejects_mechanical_trait_label_templates():
