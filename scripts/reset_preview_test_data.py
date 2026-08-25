@@ -6,14 +6,12 @@ Hard safety boundaries:
 - Keeps agents (raw signup records), peer_reviews and script_library.
 - Keeps all nickname-related keys in saved_profiles, including approved presets/manual alternatives.
 - Clears generated/test conversation, proposal, planning, creative and script-activity history.
-- Creates a timestamped SQLite backup before mutation.
+- Creates a timestamped SQLite-consistent backup before mutation.
 """
 from __future__ import annotations
 
 import argparse
 import json
-import os
-import shutil
 import sqlite3
 from datetime import datetime
 from pathlib import Path
@@ -95,6 +93,15 @@ def preset_count(conn: sqlite3.Connection) -> int:
     return total
 
 
+def sqlite_backup(conn: sqlite3.Connection, target: Path) -> None:
+    backup_conn = sqlite3.connect(target)
+    try:
+        conn.backup(backup_conn)
+        backup_conn.commit()
+    finally:
+        backup_conn.close()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--apply", action="store_true", help="真正执行；不带此参数只做只读预检")
@@ -132,7 +139,7 @@ def main() -> int:
         stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
         backup = BACKUP_DIR / f"persona-before-reset-{stamp}.sqlite3"
         conn.commit()
-        shutil.copy2(DB_PATH, backup)
+        sqlite_backup(conn, backup)
         print(f"✅ 已备份：{backup}")
 
         conn.execute("BEGIN IMMEDIATE")
