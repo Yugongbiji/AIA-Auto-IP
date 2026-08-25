@@ -29,10 +29,8 @@ def test_legacy_layers_no_longer_own_core_business_outputs():
     for source in [V5,V6,V10,V12,V13,V16,V19,V24,V27,V29]:
         assert 'proposal.bios=' not in source.replace(' ','')
         assert 'proposal.contentMainline=' not in source.replace(' ','')
-    assert 'ownsBusinessRules: false' in V12
-    assert 'ownsBusinessRules: false' in V13
-    assert 'ownsNicknameOptions:false' in V19
-    assert 'ownsNicknameOptions:false' in V29
+    assert 'ownsBusinessRules: false' in V12 and 'ownsBusinessRules: false' in V13
+    assert 'ownsNicknameOptions:false' in V19 and 'ownsNicknameOptions:false' in V29
 
 
 def test_goal_is_binary_and_ambiguous_purpose_requires_clarification():
@@ -44,8 +42,7 @@ def test_goal_is_binary_and_ambiguous_purpose_requires_clarification():
 
 
 def test_skip_and_other_options_are_removed_centrally():
-    assert 'const OMIT = /^(其他|其它|不希望填写|跳过' in POLICY
-    assert 'cleanQuestionOptions' in POLICY
+    assert 'const OMIT = /^(其他|其它|不希望填写|跳过' in POLICY and 'cleanQuestionOptions' in POLICY
     assert "['大专', '本科', '硕士', '博士']" in V13
 
 
@@ -82,23 +79,17 @@ def test_bio_outputs_one_recommendation_per_platform_and_three_semantic_dimensio
 def test_bio_uses_strict_career_evidence_and_does_not_upgrade_generic_law_keyword():
     assert 'function bioCareerFacts(profile)' in POLICY and 'BIO_GENERIC_DOMAINS' in POLICY
     assert '法律|教育|金融|医疗' in POLICY and 'BIO_CAREER_SIGNAL' in POLICY
-    assert '曾从事${job}' not in POLICY.split('const XHS_BANNED',1)[1]
-    assert '客户比较常提到我' not in POLICY
+    assert '曾从事${job}' not in POLICY.split('const XHS_BANNED',1)[1] and '客户比较常提到我' not in POLICY
 
 
 def test_bio_layout_has_12_20_preferred_range_and_25_absolute_cap():
-    assert 'const BIO_PREFERRED_MIN=12;' in POLICY
-    assert 'const BIO_PREFERRED_MAX=20;' in POLICY
-    assert 'const BIO_ABSOLUTE_MAX=25;' in POLICY
-    assert 'charWeight(candidate)>BIO_PREFERRED_MAX' in POLICY
-    assert 'charWeight(merged)<=BIO_ABSOLUTE_MAX' in POLICY
-    assert 'charWeight(line)<=BIO_ABSOLUTE_MAX' in POLICY
-    assert 'function rebalanceBioLines(lines)' in POLICY
+    assert 'const BIO_PREFERRED_MIN=12;' in POLICY and 'const BIO_PREFERRED_MAX=20;' in POLICY and 'const BIO_ABSOLUTE_MAX=25;' in POLICY
+    assert 'charWeight(candidate)>BIO_PREFERRED_MAX' in POLICY and 'charWeight(merged)<=BIO_ABSOLUTE_MAX' in POLICY
+    assert 'charWeight(line)<=BIO_ABSOLUTE_MAX' in POLICY and 'function rebalanceBioLines(lines)' in POLICY
 
 
 def test_bio_short_assets_are_merged_instead_of_forced_to_standalone_lines():
-    assert 'function packBioItems(items,maxLines=3)' in POLICY
-    assert "`${current}｜${item}`" in POLICY
+    assert 'function packBioItems(items,maxLines=3)' in POLICY and "`${current}｜${item}`" in POLICY
     assert 'if(charWeight(lines[i])>=BIO_PREFERRED_MIN)continue' in POLICY
     assert "type:'identity'" in POLICY and "type:'advantage'" in POLICY and "type:'value'" in POLICY
     assert 'services.slice(0,4)' not in POLICY
@@ -107,8 +98,7 @@ def test_bio_short_assets_are_merged_instead_of_forced_to_standalone_lines():
 def test_bio_emoji_is_unique_by_line_and_person_icon_is_retired():
     assert 'const BIO_EMOJIS=Object.freeze' in POLICY
     bio_block=POLICY.split('function bioBody(profile,platform)',1)[1].split('function explicitLicense',1)[0]
-    assert 'BIO_EMOJIS[index % BIO_EMOJIS.length]' in bio_block
-    assert "emojiLine('👤'" not in bio_block
+    assert 'BIO_EMOJIS[index % BIO_EMOJIS.length]' in bio_block and "emojiLine('👤'" not in bio_block
     assert "'👤'" not in POLICY.split('const BIO_EMOJIS',1)[1].split('function safeXhs',1)[0]
 
 
@@ -122,10 +112,8 @@ def test_bio_prefers_specific_quantified_fact_over_vague_same_family_summary():
 
 def test_bio_preserves_time_precision_and_never_invents_vague_duration():
     block=POLICY.split('function bioInsuranceExperience(profile)',1)[1].split('function bioTraitFacts',1)[0]
-    assert "replace(/年多$/,'年+')" in block
-    assert "return `${raw}保险从业经验`" in block
-    assert "if(/多年/.test(raw))return '多年保险行业经验'" in block
-    assert "return '保险从业'" in block
+    assert "replace(/年多$/,'年+')" in block and "return `${raw}保险从业经验`" in block
+    assert "if(/多年/.test(raw))return '多年保险行业经验'" in block and "return '保险从业'" in block
     assert '长期保险行业经验' not in POLICY
 
 
@@ -138,18 +126,15 @@ def test_bio_does_not_invent_default_value_lines_just_to_reach_three_lines():
     assert "['家庭生活','长期规划','个人成长']" not in dimension_block
 
 
-def test_bio_102_uses_one_canonical_body_then_only_xhs_compliance_filter():
-    assert 'function canonicalBioBody(profile)' in POLICY
-    assert 'function applyBioPlatformCompliance(lines,platform)' in POLICY
-    canonical=POLICY.split('function canonicalBioBody(profile)',1)[1].split('function applyBioPlatformCompliance',1)[0]
-    assert "platform==='xhs'" not in canonical
-    assert 'safeXhs' not in canonical
-    platform=POLICY.split('function applyBioPlatformCompliance(lines,platform)',1)[1].split('function bioBody',1)[0]
-    assert "platform!=='xhs'" in platform
-    assert 'safeXhs' in platform
-    body=POLICY.split('function bioBody(profile,platform)',1)[1].split('function explicitLicense',1)[0]
-    assert 'canonicalBioBody(profile)' in body
-    assert 'applyBioPlatformCompliance' in body
+def test_bio_102_platform_difference_is_only_explicit_xhs_compliance_and_footer():
+    service_block=POLICY.split('function bioServiceFacts(profile,platform)',1)[1].split('function bioInterestFacts',1)[0]
+    body_block=POLICY.split('function bioBody(profile,platform)',1)[1].split('function explicitLicense',1)[0]
+    assert "if(platform==='xhs')values=values.filter(safeXhs)" in service_block
+    assert "if(platform==='xhs')lines=lines.filter" in body_block and 'safeXhs' in body_block
+    for forbidden in ['slice(0,2)','slice(0,3)','platform===\'xhs\'?2','platform===\'xhs\'?3']:
+        assert forbidden not in body_block
+    assert "proposal.bios.xiaohongshu=buildBios(p,'xhs')" in POLICY
+    assert "proposal.bios.videoDouyin=buildBios(p,'video')" in POLICY
 
 
 def test_missing_nickname_is_never_treated_as_keepable():
