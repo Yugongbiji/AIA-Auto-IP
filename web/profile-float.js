@@ -40,8 +40,7 @@
     return !!workspace && !workspace.classList.contains('hidden') && (!identity || identity.classList.contains('hidden'));
   }
   function isIpConversationVisible() {
-    // 88/114：可见性以真实 DOM 为准，不依赖 state.activeTool 的同步时序。
-    // 桌面端恢复会话/导航 wrapper 可能先切面板、后更新 state；若把 state 当第二真源，会误隐藏悬浮入口。
+    // 88/114/122：可见性只以最终 DOM 为准，不依赖 state.activeTool 的同步时序。
     const chat=document.getElementById('ip-chat-panel');
     return workspaceReady() && !!chat && !chat.classList.contains('hidden') && !overlayOpen();
   }
@@ -59,7 +58,18 @@
     const latest=state.proposals?.[0]; proposalButton.classList.toggle('hidden',!latest);
   }
   function syncVisibility() {
-    const visible=isIpConversationVisible(); actions.classList.toggle('hidden',!visible); if(!visible)closeProfileDetail(); syncProposalButton();
+    const visible=isIpConversationVisible();
+    actions.classList.toggle('hidden',!visible);
+    // 122：最终可见状态显式落到 display，避免历史兼容层遗留 class/style 让入口“逻辑可见、实际不可见”。
+    actions.style.display=visible?'flex':'none';
+    document.body.classList.toggle('aia-ip-conversation-active',visible);
+    if(!visible)closeProfileDetail();
+    syncProposalButton();
+  }
+  function settleVisibility(){
+    syncVisibility();
+    queueMicrotask(syncVisibility);
+    requestAnimationFrame(()=>{syncVisibility();requestAnimationFrame(syncVisibility);});
   }
 
   profileButton.addEventListener('click',(event)=>{if(actions.dataset.dragged==='1')return;event.preventDefault();event.stopPropagation();toggleProfileDetail();});
@@ -73,16 +83,14 @@
   ensureConversationHint(); ensureCloseButton(); syncVisibility();
 
   // 只在既有渲染完成后同步 UI，不拥有资料渲染。
-  if (typeof renderProfile==='function') { const base=renderProfile; renderProfile=function floatingUiRenderProfile(){const result=base.apply(this,arguments);ensureConversationHint();ensureCloseButton();syncVisibility();return result;}; }
-  if (typeof selectTool==='function') { const base=selectTool; selectTool=function floatingUiSelectTool(tool){const result=base(tool);syncVisibility();return result;}; }
+  if (typeof renderProfile==='function') { const base=renderProfile; renderProfile=function floatingUiRenderProfile(){const result=base.apply(this,arguments);ensureConversationHint();ensureCloseButton();settleVisibility();return result;}; }
+  if (typeof selectTool==='function') { const base=selectTool; selectTool=function floatingUiSelectTool(tool){const result=base(tool);settleVisibility();return result;}; }
   if (typeof refreshProposalButton==='function') { const base=refreshProposalButton; refreshProposalButton=function floatingUiRefreshProposalButton(){const result=base.apply(this,arguments);syncProposalButton();return result;}; }
   if (typeof startWorkspace==='function') {
     const base=startWorkspace;
     startWorkspace=function floatingUiStartWorkspace(){
       const result=base.apply(this,arguments);
-      // 114：登录/恢复会话完成后再按最终 DOM 状态同步一次，避免初始隐藏状态被保留下来。
-      queueMicrotask(syncVisibility);
-      requestAnimationFrame(syncVisibility);
+      settleVisibility();
       return result;
     };
   }
@@ -94,12 +102,11 @@
   actions.addEventListener('pointerup',endDrag);actions.addEventListener('pointercancel',endDrag);
   try{const saved=JSON.parse(localStorage.getItem('aia-ip-floating-position')||'null');if(saved?.left&&saved?.top){actions.style.left=saved.left;actions.style.top=saved.top;actions.style.right='auto';actions.style.bottom='auto';}}catch(_){}
 
-  // 79：禁止观察整个 document.body 子树。只监听真正决定悬浮入口可见性的少量容器，
-  // 避免 loading / 消息渲染 / Toast 等任意 class 变化把同步逻辑放大成高频反馈链。
+  // 禁止观察整个 document.body 子树，只监听决定悬浮入口可见性的容器。
   const visibilityNodes = ['workspace','identity-screen','ip-chat-panel','proposal-screen','content-plan-screen','script-detail-screen']
     .map((id)=>document.getElementById(id)).filter(Boolean);
-  const visibilityObserver = new MutationObserver(()=>queueMicrotask(syncVisibility));
+  const visibilityObserver = new MutationObserver(()=>queueMicrotask(settleVisibility));
   visibilityNodes.forEach((node)=>visibilityObserver.observe(node,{attributes:true,attributeFilter:['class']}));
 
-  window.aiaFloatingUi=Object.freeze({syncVisibility,closeProfileDetail,ownsProfileData:false});
+  window.aiaFloatingUi=Object.freeze({syncVisibility:settleVisibility,closeProfileDetail,ownsProfileData:false});
 })();
