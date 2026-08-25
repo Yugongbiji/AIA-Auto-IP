@@ -90,3 +90,18 @@ def test_109_simple_person_name_routes_are_capped_and_not_filled_with_aliases():
     assert "已有好昵称最多再占一个名额" in owner
     assert "郭局 / 东哥 / 郭老师 / 郭旭东" in rules
     assert "宁可只推荐 2–3 个" in rules
+
+
+def test_111_distinctive_current_traits_rank_before_plain_name():
+    owner = read("web/nickname-policy-v1.js")
+    rules = read("rules/nickname-naturalness-rules-20260825.md")
+    prompt = read("prompts/ip-persona-prompt.md")
+    assert "首选优先有记忆点、有网感" in rules
+    assert "八块腹肌刘畅" in rules
+    assert "飞行员刘畅" in rules
+    assert "function distinctiveOptions" in owner
+    assert "const distinctive=distinctiveOptions(profile,a)" in owner
+    assert owner.index("distinctive.forEach") < owner.index("add(a,'突出人物'")
+    assert "已有且有特色的好昵称" in prompt
+    assert "单独本名" in prompt
+    assert "过往职业" in prompt
