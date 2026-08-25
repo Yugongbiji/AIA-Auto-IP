@@ -27,11 +27,21 @@
     lifeRoles: [[/宝妈|孩子的妈妈|两个孩子的妈妈|三个孩子的妈妈/, '宝妈'], [/宝爸|孩子的爸爸|两个孩子的爸爸|三个孩子的爸爸/, '宝爸'], [/创业者|企业主/, '创业者'], [/职场人|上班族/, '职场人']],
     hobbies: [[/骑行|自行车/, '骑行'], [/跑步|马拉松/, '跑步'], [/徒步|露营|登山|户外/, '户外'], [/旅行|旅游/, '旅行'], [/摄影|拍照/, '摄影'], [/读书|阅读/, '读书'], [/美食|烹饪|做饭/, '美食'], [/健身|瑜伽|游泳|羽毛球|网球/, '运动健身']],
   };
+  function explicitCareerIntro(intro) {
+    return text(intro).split(/[，。；;\n]+/).filter((fragment) => {
+      if (/曾任|曾做|做过|从事|任职|工作|职业|以前|过去|原来|此前|本职/.test(fragment)) return true;
+      if (/\d+(?:\.\d+)?\s*年.{0,12}(?:经验|经历)/.test(fragment)) return true;
+      return /我是.{0,10}(?:教师|老师|医生|护士|律师|法务|会计|审计|财务|税务|产品经理|程序员|工程师)/.test(fragment);
+    }).join('｜');
+  }
   function extractFactsFromIntro(profile) {
     normalizeSignupProfile(profile);
     const intro = text(profile?.selfIntro); if (!intro) return profile;
     Object.entries(FACT_RULES).forEach(([field, rules]) => {
-      const found = rules.filter(([pattern]) => pattern.test(intro)).map(([, label]) => label);
+      // 过往职业必须有明确职业/经历语境；单独出现“财务/法律/教育”等领域关键词不能升级为人物经历。
+      const source = field === 'previousCareer' ? explicitCareerIntro(intro) : intro;
+      if (!source) return;
+      const found = rules.filter(([pattern]) => pattern.test(source)).map(([, label]) => label);
       if (found.length) profile[field] = uniq([...splitValues(profile[field]), ...found]).join('｜');
     });
     return profile;
@@ -102,5 +112,5 @@
   if (typeof renderProfile === 'function') { const base = renderProfile; renderProfile = function renderProfileV27() { extractFactsFromIntro(state.profile || {}); const result = base(); requestAnimationFrame(() => { renderPeerFeedback(); ensureIntroLast(); }); queueMicrotask(()=>semanticEnrich(state.profile||{})); return result; }; }
 
   normalizeSignupProfile(state.profile || {});
-  window.aiaProfileRulesV27 = Object.freeze({ normalizeSignupProfile, extractFactsFromIntro, semanticEnrich, renderPeerFeedback, ensureIntroLast, ownsNickname:false, ownsFloatingUi:false, ownsPeerFeedback:true });
+  window.aiaProfileRulesV27 = Object.freeze({ normalizeSignupProfile, extractFactsFromIntro, semanticEnrich, renderPeerFeedback, ensureIntroLast, explicitCareerIntro, ownsNickname:false, ownsFloatingUi:false, ownsPeerFeedback:true });
 })();
