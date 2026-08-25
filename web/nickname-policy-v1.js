@@ -1,6 +1,6 @@
 // 昵称受控生成：唯一 Owner。
 // 最新规则：客户/身边人真实高频称呼优先；最终昵称必须且只能包含一个人物称呼主体；
-// 禁止随意截取姓名单字造昵称；六类人物资产只用于启发，不机械拼接；候选必须通过中文口语自然度检查。
+// 禁止随意截取姓名单字造昵称；过往职业只进入简介、不进入推荐昵称；候选必须通过中文口语自然度检查。
 (function(){
   'use strict';
   const BANNED=/保险|友邦|\bAIA\b|金融|理财|贷款|股票|基金|医疗/i;
@@ -28,11 +28,6 @@
   }
   function anchors(p){return uniq([...peerAnchors(p),...preferredAnchors(p),...existingPersonAnchors(p),...naturalNameAnchors(p)]).filter(x=>x&&!BANNED.test(x)&&x.length<=10);}
   function pickAnchor(p){return anchors(p)[0]||'';}
-  function career(p){
-    const s=t(p.previousCareer)||t(p.selfIntro);if(!s)return '';
-    const allowed=['律师','医生','教师','老师','教练','精算师','HR','会计','财务','记者','主持人','程序员','环保工程师','工程师','创业者','企业主','银行从业者'];
-    return allowed.find(x=>s.includes(x))||'';
-  }
   function familyIdentity(p){const s=[p.selfIntro,p.identity,p.familyIdentity,p.lifeRoles].map(t).join(' ');return ['二宝妈妈','二孩宝妈','二孩妈妈','宝妈','妈妈','二孩宝爸','二孩爸爸','宝爸','爸爸'].find(x=>s.includes(x))||'';}
   function strongTrait(p){
     const allowed=['靠谱','真诚','细致','有耐心','理性','务实','有温度','温暖','阳光','行动力强','长期主义'];
@@ -97,13 +92,14 @@
     if(existing)add(existing,'优先保留','已有昵称自然、合规且包含稳定人物称呼时，优先保护已有用户记忆',{existing:true});
     add(a,'突出人物','优先使用客户/身边人真实称呼；没有真实称呼时再使用本人明确称呼或本名兜底');
 
-    const job=career(profile);if(job)add(`${job}${a}`,'突出身份','真实职业或长期经历有辨识度，且组合后仍需像自然昵称而不是简历标签');
-    const family=familyIdentity(profile);if(family)add(`${family}${a}`,'突出身份','真实家庭/生活身份可形成稳定人物记忆，只在本人资料有明确证据时使用');
+    // #108：过往职业只用于简介/IP 定位，不再作为推荐昵称路线，避免把历史职业误写成当前身份。
+    const family=familyIdentity(profile);if(family)add(`${family}${a}`,'突出身份','真实且当前持续存在的家庭/生活身份可形成稳定人物记忆，只在本人资料有明确证据时使用');
     const trait=strongTrait(profile);if(trait)add(`${trait}的${a}`,'突出性格','客户反馈只用于理解人物认知；仅在表达自然且确有多人证据时作为候选，不机械套“形容词+名字”');
     const topic=neutralTopic(profile);if(topic)add(`${a}聊${topic}`,'突出内容','只连接已确认且有辨识度的中性内容方向，不使用“聊生活/聊成长”等万能尾缀');
     const city=regionAsset(profile);if(city)add(`${a}在${city}`,'突出地域','真实地域只作为自然语境，不使用“城市+称呼”机械拼接');
     const education=educationAsset(profile);if(education)add(`${a}的${education}视角`,'突出学历','只使用档案明确的学历层级；生成后仍需通过自然度检查');
     const achievement=achievementAsset(profile);if(achievement)add(`${a}的${achievement}手记`,'突出成就','真实成就只作为灵感资产，不强制进入昵称，不使用“TOT+称呼”式机械拼接');
+    // #109：这里只生成一个核心人物称呼型候选；已有好昵称最多再占一个名额。其余路线必须提供新增信息，不能轮流罗列多个称呼。
     return candidates.slice(0,5);
   }
   function aiFallbackOptions(rawOptions,profile,anchor){
