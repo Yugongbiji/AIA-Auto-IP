@@ -25,9 +25,18 @@ def test_115_existing_nickname_advice_reuses_proposal_card_component():
     assert "proposal-card nickname-audit-card" in V29
 
 
-def test_116_tiny_bio_asset_cannot_occupy_a_line_alone():
+def test_120_bio_line_length_and_same_dimension_packing_are_enforced():
+    assert "const BIO_PREFERRED_MIN=12" in CORE
+    assert "const BIO_PREFERRED_MAX=20" in CORE
+    assert "const BIO_ABSOLUTE_MAX=25" in CORE
     block = CORE.split("function packBioItems", 1)[1].split("function rebalanceBioLines", 1)[0]
+    assert "const merged=`${lines[i-1]}｜${lines[i]}`" in block
     assert "packed.filter(line=>charWeight(line)>=BIO_PREFERRED_MIN)" in block
+    dimensions = CORE.split("function dimensionLines", 1)[1].split("function dedupeBioLines", 1)[0]
+    assert "packBioItems(identityCore)" in dimensions
+    assert "packBioItems(advantages)" in dimensions
+    assert "packBioItems(values)" in dimensions
+    assert "identityCore" in dimensions and "advantages" in dimensions and "values" in dimensions
 
 
 def test_117_summary_line_gets_next_non_repeating_emoji():
