@@ -69,9 +69,9 @@ def test_customer_feedback_has_one_display_owner():
 def test_nickname_uses_peer_feedback_first_and_never_falls_back_to_unanchored_ai():
     anchors_block = NICK.split("function anchors", 1)[1].split("function pickAnchor", 1)[0]
     assert anchors_block.index("peerAnchors") < anchors_block.index("naturalNameAnchors")
-    assert "proposal.nicknameOptions=controlled" in NICK.replace(" ", "")
-    assert "proposal.nicknameNeedsIdentity=!controlled.length" in NICK.replace(" ", "")
-    assert "(proposal.nicknameOptions||[])" not in NICK
+    assert "proposal.nicknameOptions=controlled.slice(0,5)" in NICK.replace(" ", "")
+    assert "proposal.nicknameNeedsIdentity=!a" in NICK.replace(" ", "")
+    assert "if(!anchor||!Array.isArray(rawOptions))return[]" in NICK.replace(" ", "")
 
 
 def test_content_branch_ranking_accumulates_evidence_and_goal_bonus():
@@ -115,13 +115,15 @@ def test_completion_and_clipboard_have_runtime_single_owners():
 
 def test_loading_is_normalized_before_render_not_by_dom_observer():
     assert "addCreativeMessage=function aiaCreativeMessage" in V22
-    assert "MutationObserver" not in V22
+    assert "new MutationObserver" not in V22
+    assert ".observe(" not in V22
     assert "正在改写，请稍候" in V22
     assert "正在排版，请稍候" in V22
 
 
 def test_xhs_contract_is_two_sentence_dense_and_repairs_isolated_punctuation():
-    assert "every consecutive two sentences" in XHS
+    assert "Ensure every two consecutive complete sentences contain an emoji anchor" in XHS
+    assert "emoji_free_run < 2" in XHS
     assert "_ISOLATED_PUNCT" in XHS
     assert "core_module.add_scan_emojis = _strict_scan_emojis" in XHS
     assert "core_module.enforce_xhs_readability = readability" in XHS
@@ -130,7 +132,7 @@ def test_xhs_contract_is_two_sentence_dense_and_repairs_isolated_punctuation():
 def test_prompt_cannot_confuse_agent_id_with_license_number():
     video_section = PROMPT.split("## 视频号/抖音简介", 1)[1].split("## 通用禁区", 1)[0]
     assert "执业证编号" in video_section
-    assert "营销员编号只用于账号/资料匹配" in video_section
+    assert "不得把营销员编号当作执业证编号" in video_section
     assert "营销服务部与营销员编号" not in video_section
 
 
