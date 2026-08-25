@@ -2,20 +2,21 @@
 // 最新规则：客户/身边人真实高频称呼优先；最终昵称必须且只能包含一个人物称呼主体；
 // 禁止随意截取姓名单字造昵称；过往职业只进入简介、不进入推荐昵称；候选必须通过中文口语自然度检查。
 // #111：已有特色原昵称优先；否则优先“人物锚点 + 当前仍成立的鲜明兴趣/特点”，单独本名/称呼仅作稳妥备选。
+// #112：有明确证据且自然的记忆点修饰语可排在裸称呼前；#113：中文可记忆/可搜索优先，降级全英文并过滤特殊符号/Emoji。
 (function(){
   'use strict';
   const BANNED=/保险|友邦|\bAIA\b|金融|理财|贷款|股票|基金|医疗/i;
   const GENERIC_SUFFIXES=['的小世界','小世界','的日常','聊生活','看世界'];
   function t(v){return String(v??'').trim();}
   function uniq(a){return [...new Set((a||[]).filter(Boolean))];}
-  function missing(v){return /^(无|没有|暂无|未填|未填写|未设置|未提供|不知道|不详|NA|N\/A|null|none)$/i.test(t(v));}
+  function missing(v){return /^(无|没有|暂无|未填|未填写|未设置|未提供|不知道|不详|0|NA|N\/A|null|none)$/i.test(t(v));}
   function peerAnchors(p){return (p.peerReviewSummary?.topNicknames||[]).filter(x=>!missing(x?.label)).sort((a,b)=>Number(b?.count||1)-Number(a?.count||1)).map(x=>t(x.label));}
   function preferredAnchors(p){const value=t(p.preferredName);return value&&!missing(value)?[value]:[];}
   function existingPersonAnchors(p){
     const values=[p.videoNickname,p.xiaohongshuNickname].map(t).filter(v=>v&&!missing(v)&&!BANNED.test(v));
     const out=[];
     values.forEach(value=>{
-      const matches=value.match(/(?:小[\u4e00-\u9fa5]{1,2}|阿[\u4e00-\u9fa5]{1,2}|[\u4e00-\u9fa5]{1,3}(?:姐|哥|老师|妈妈|妈|爸爸|爸|总)|[A-Za-z]{2,10}(?:姐|哥)?)/g)||[];
+      const matches=value.match(/(?:小[\u4e00-\u9fa5]{1,2}|阿[\u4e00-\u9fa5]{1,2}|[\u4e00-\u9fa5]{1,3}(?:姐|哥|老师|妈妈|妈|爸爸|爸|总)|[A-Za-z]{2,12}(?:姐|哥)?)/g)||[];
       matches.forEach(match=>out.push(match));
     });
     return uniq(out);
@@ -27,9 +28,9 @@
     out.push(n);
     return uniq(out).filter(x=>x.length>=2);
   }
-  function anchors(p){return uniq([...peerAnchors(p),...preferredAnchors(p),...existingPersonAnchors(p),...naturalNameAnchors(p)]).filter(x=>x&&!BANNED.test(x)&&x.length<=10);}
+  function anchors(p){return uniq([...peerAnchors(p),...preferredAnchors(p),...existingPersonAnchors(p),...naturalNameAnchors(p)]).filter(x=>x&&!BANNED.test(x)&&x.length<=12);}
   function pickAnchor(p){return anchors(p)[0]||'';}
-  function familyIdentity(p){const s=[p.selfIntro,p.identity,p.familyIdentity,p.lifeRoles].map(t).join(' ');return ['二宝妈妈','二孩宝妈','二孩妈妈','宝妈','妈妈','二孩宝爸','二孩爸爸','宝爸','爸爸'].find(x=>s.includes(x))||'';}
+  function familyIdentity(p){const s=[p.selfIntro,p.identity,p.familyIdentity,p.lifeRoles].map(t).join(' ');return ['四娃爸爸','四个儿子的父亲','二宝妈妈','二孩宝妈','二孩妈妈','宝妈','妈妈','二孩宝爸','二孩爸爸','宝爸','爸爸'].find(x=>s.includes(x))||'';}
   function strongTrait(p){
     const allowed=['靠谱','真诚','细致','有耐心','理性','务实','有温度','温暖','阳光','行动力强','长期主义'];
     const items=p.peerReviewSummary?.topTraits||p.peerReviewSummary?.topImpressions||[];
@@ -56,6 +57,17 @@
     const map={'育儿':'育儿','创业经营':'创业','读书':'读书','旅行':'旅行','跑步':'跑步','骑行':'骑行','摄影':'摄影','户外':'户外','运动健身':'运动'};
     return map[secondary]||'';
   }
+  function memorablePeerDescriptor(p){
+    // #112：只复用反馈/本人资料里真实出现、明显增加辨识度的短表达；不把普通“靠谱/专业”机械前缀化。
+    const quotes=(p.peerReviewSummary?.representativeQuotes||[]).map(t).join(' ');
+    const own=[p.selfIntro,p.strengths].map(t).join(' ');
+    const text=`${quotes} ${own}`;
+    return ['有料有趣','爱笑','拼命姑娘'].find(x=>text.includes(x))||'';
+  }
+  function descriptorOptions(profile,anchor){
+    const d=memorablePeerDescriptor(profile);if(!d)return [];
+    return [{name:`${d}的${anchor}`,angle:'突出记忆点',reason:'客户/身边人反馈或本人资料中已自然出现该鲜明表达，组合后比裸称呼更有记忆点'}];
+  }
   function distinctiveOptions(profile,anchor){
     // #111：只取当前仍成立、由本人资料明确支持的兴趣/生活特点；绝不读取过往职业来制造昵称。
     const s=[profile.selfIntro,profile.interests,profile.hobbies,profile.lifeRoles,Array.isArray(profile.secondaryContent)?profile.secondaryContent.join(' '):profile.secondaryContent].map(t).join(' ');
@@ -70,15 +82,29 @@
     if(/足球/.test(s))add(`足球迷${anchor}`,'本人持续足球兴趣可形成稳定记忆点');
     if(/读书|阅读/.test(s))add(`爱读书的${anchor}`,'本人持续阅读兴趣可形成稳定生活记忆点');
     if(/插花/.test(s))add(`爱插花的${anchor}`,'本人持续插花兴趣可形成鲜明生活记忆点');
+    if(/咖啡/.test(s))add(`咖啡${anchor}`,'本人明确喜欢咖啡时，可形成短而易记的生活型昵称');
     return out.slice(0,2);
   }
+  function normalizeSearchable(name){
+    // #113：推荐版本去除空格、特殊符号、Emoji、装饰标点；保留中文、英文和数字本身。
+    return t(name).replace(/\s+/g,'').replace(/[^\u4e00-\u9fa5A-Za-z0-9]/g,'');
+  }
+  function fullEnglish(name){const n=normalizeSearchable(name);return !!n&&/[A-Za-z]/.test(n)&&!/\u4e00-\u9fa5/.test('')&&/^[A-Za-z0-9]+$/.test(n)&&!/[^A-Za-z0-9]/.test(n)&&!/^[0-9]+$/.test(n)&&!/[\u4e00-\u9fa5]/.test(n);}
+  function hasChinese(name){return /[\u4e00-\u9fa5]/.test(t(name));}
   function existingNickname(profile,anchor){
     const values=[profile.videoNickname,profile.xiaohongshuNickname].map(t).filter(v=>v&&!missing(v)&&!BANNED.test(v));
-    return values.find(v=>anchor&&v.includes(anchor)&&v.split(anchor).length-1===1)||'';
+    for(const raw of values){
+      const value=normalizeSearchable(raw);
+      if(!value||fullEnglish(value)||!hasChinese(value))continue;
+      if(anchor&&value.includes(anchor)&&value.split(anchor).length-1===1)return value;
+    }
+    return '';
   }
   function safeName(name,anchor){
-    const n=t(name).replace(/\s+/g,'');
+    const n=normalizeSearchable(name);
     if(!n||BANNED.test(n)||!anchor||!n.includes(anchor))return '';
+    // #113：全英文不进入系统推荐；中英混合允许，但必须有中文承担记忆/搜索语义。
+    if(fullEnglish(n)||!hasChinese(n))return '';
     if(n.split(anchor).length-1!==1||n.length>18)return '';
     return n;
   }
@@ -102,10 +128,11 @@
     const add=(name,angle,reason,opts={})=>{name=safeName(name,a);if(name&&!mechanical(name,profile,a)&&!awkward(name,profile,a,opts)&&!candidates.some(x=>x.name===name))candidates.push({name,angle,reason});};
 
     const existing=existingNickname(profile,a);
-    if(existing)add(existing,'优先保留','已有昵称自然、合规、有特色且包含稳定人物称呼时，优先保护已有用户记忆',{existing:true});
+    if(existing)add(existing,'优先保留','已有昵称自然、合规、有特色、便于中文记忆搜索且包含稳定人物称呼时，优先保护已有用户记忆',{existing:true});
+    // #112：真实反馈中的鲜明自然修饰语可优先于裸称呼。
+    descriptorOptions(profile,a).forEach(item=>add(item.name,item.angle,item.reason));
     // #111：没有成熟原昵称时，先尝试有证据的当前兴趣/特点型昵称，再给纯人物称呼兜底。
-    const distinctive=distinctiveOptions(profile,a);
-    distinctive.forEach(item=>add(item.name,item.angle,item.reason));
+    distinctiveOptions(profile,a).forEach(item=>add(item.name,item.angle,item.reason));
     add(a,'突出人物','优先使用客户/身边人真实称呼；纯称呼/本名是稳妥备选，但有真实鲜明特点时不默认作为首选');
 
     // #108：过往职业只用于简介/IP 定位，不再作为推荐昵称路线，避免把历史职业误写成当前身份。
@@ -124,7 +151,7 @@
     rawOptions.forEach(item=>{
       const name=safeName(item?.name??item,anchor);
       if(!name||mechanical(name,profile,anchor)||awkward(name,profile,anchor)||result.some(x=>x.name===name))return;
-      result.push({name,angle:t(item?.angle)||'AI 补充',reason:t(item?.reason)||'受控候选不足时的补充；必须基于真实称呼和真实资料，并通过中文自然度检查'});
+      result.push({name,angle:t(item?.angle)||'AI 补充',reason:t(item?.reason)||'受控候选不足时的补充；必须基于真实称呼和真实资料，并通过中文自然度、可记忆与可搜索检查'});
     });
     return result;
   }
@@ -140,5 +167,5 @@
     return proposal;
   }
   if(typeof renderProposal==='function'){const base=renderProposal;renderProposal=function(proposal,version){enforce(proposal,state.profile||{});return base(proposal,version);};}
-  window.aiaNicknamePolicyV1=Object.freeze({controlledOptions,enforce,BANNED,anchors,pickAnchor,aiFallbackOptions,naturalNameAnchors,awkward,distinctiveOptions});
+  window.aiaNicknamePolicyV1=Object.freeze({controlledOptions,enforce,BANNED,anchors,pickAnchor,aiFallbackOptions,naturalNameAnchors,awkward,distinctiveOptions,memorablePeerDescriptor,descriptorOptions,normalizeSearchable,fullEnglish});
 })();
