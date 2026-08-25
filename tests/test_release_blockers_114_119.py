@@ -10,27 +10,36 @@ V22 = (ROOT / "web" / "product-rules-v22.js").read_text(encoding="utf-8")
 V25 = (ROOT / "web" / "product-rules-v25.js").read_text(encoding="utf-8")
 V27 = (ROOT / "web" / "product-rules-v27.js").read_text(encoding="utf-8")
 FLOAT = (ROOT / "web" / "profile-float.js").read_text(encoding="utf-8")
+FLOAT_CSS = (ROOT / "web" / "profile-float.css").read_text(encoding="utf-8")
 V29 = (ROOT / "web" / "product-rules-v29.js").read_text(encoding="utf-8")
 SEMANTIC = (ROOT / "backend" / "profile_semantic.py").read_text(encoding="utf-8")
 RULES = (ROOT / "rules" / "ip-headline-slogan-rules.md").read_text(encoding="utf-8")
 
 
-def test_114_122_ip_conversation_forces_floating_profile_entry_visible():
-    assert "function isIpConversationVisible" in FLOAT
-    assert "function settleVisibility" in FLOAT
-    assert "queueMicrotask(syncVisibility)" in FLOAT
-    assert "requestAnimationFrame" in FLOAT
-    assert "actions.style.display=visible?'flex':'none'" in FLOAT
-    assert "aia-ip-conversation-active" in FLOAT
-    assert "function closeStaleOverlaysForIp" in FLOAT
-    assert "document.body.classList.remove('proposal-open')" in FLOAT
-    assert "if(tool==='ip')closeStaleOverlaysForIp()" in FLOAT
-    # 启动完成后必须继续以最终 DOM 为准，不能重新依赖 state.activeTool。
-    assert "state.activeTool==='ip'" not in FLOAT
-    assert "function ipChatDomVisible" in FLOAT
-    assert "const chat=document.getElementById('ip-chat-panel')" in FLOAT
-    assert "return !!chat && !chat.classList.contains('hidden')" in FLOAT
-    assert "if(ipChatDomVisible())closeStaleOverlaysForIp()" in FLOAT
+def test_127_floating_ip_owner_is_isolated_from_legacy_panel_and_overlay_state():
+    assert "const IDS = Object.freeze" in FLOAT
+    assert "aia-ip-owner-actions" in FLOAT
+    assert "aia-ip-owner-profile-drawer" in FLOAT
+    assert "function workspaceVisible" in FLOAT
+    assert "state.activeTool" not in FLOAT
+    assert "proposal-open" not in FLOAT
+    assert "closeStaleOverlaysForIp" not in FLOAT
+    assert "document.querySelector('.profile-panel')" not in FLOAT
+    assert "actions.hidden = !visible" in FLOAT
+    assert "proposalButton.hidden = !latestProposal()" in FLOAT
+    assert "owner: 'web/profile-float.js'" in FLOAT
+    assert "independentDrawer: true" in FLOAT
+    assert ".profile-panel { display:none!important; }" in FLOAT_CSS
+
+
+def test_127_floating_profile_drawer_contains_confirmed_information_sections():
+    for section in ["基本资料", "经历与优势资料", "账号资料", "客户反馈", "个人介绍"]:
+        assert section in FLOAT
+    for field in ["姓名", "营销员编号", "所在城市", "营销服务部", "保险从业时间", "学历", "学校背景", "过往职业 / 工作经历", "荣誉", "长期身份", "原视频号昵称", "做自媒体目的", "账号运营状态", "当前卡点"]:
+        assert field in FLOAT
+    for feedback in ["大家怎么称呼我", "他们和我的关系", "他们眼中的我", "他们愿意找我聊什么", "他们觉得我更像哪种人", "他们怎么向别人介绍我"]:
+        assert feedback in FLOAT
+    assert "`${label} ×${count}`" in FLOAT
 
 
 def test_115_existing_nickname_advice_reuses_proposal_card_component():
