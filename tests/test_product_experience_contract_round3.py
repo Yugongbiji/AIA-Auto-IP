@@ -31,7 +31,7 @@ def test_goal_controls_recruitment_questions_and_whole_proposal():
         assert token in CORE
     recruitment_age_block = CORE.split("ages.key='recruitmentAges'", 1)[1].split("else{ages.key='customerAges'", 1)[0]
     assert "55 岁以上" not in recruitment_age_block
-    for output in ["proposal.clientPortrait=targetPortrait", "proposal.advantages=advantageItems", "proposal.contentMainline=", "proposal.secondaryContent=", "proposal.bios.xiaohongshu="]:
+    for output in ["proposal.clientPortrait=targetPortrait", "proposal.advantages=advantageItems", "proposal.contentMainline=", "proposal.secondaryContent=", "proposal.bios={xiaohongshu:"]:
         assert output in CORE
 
 
@@ -44,9 +44,10 @@ def test_canonical_proposal_is_applied_before_use_and_persisted():
     assert "UPDATE proposals SET proposal_json" in SCRIPT_SERVER
 
 
-def test_retired_content_planning_no_longer_controls_default_navigation():
-    assert "state.activeTool==='script'" in CORE
-    assert "selectTool('ip')" in CORE
+def test_core_no_longer_uses_content_plan_or_active_tool_as_output_owner():
+    assert "planningState.plans" not in CORE
+    assert "state.activeTool==='script'" not in CORE
+    assert "selectTool('ip')" not in CORE
 
 
 def test_profile_semantics_are_goal_aware_and_frontend_reconnected():
@@ -68,9 +69,10 @@ def test_customer_feedback_has_one_display_owner():
 def test_nickname_uses_peer_feedback_first_and_never_falls_back_to_unanchored_ai():
     anchors_block = NICK.split("function anchors", 1)[1].split("function pickAnchor", 1)[0]
     assert anchors_block.index("peerAnchors") < anchors_block.index("naturalNameAnchors")
-    assert "proposal.nicknameOptions=rankByMemory(controlled,p,a,existing).slice(0,5)" in NICK.replace(" ", "")
-    assert "proposal.nicknameNeedsIdentity=!a" in NICK.replace(" ", "")
-    assert "if(!anchor||!Array.isArray(rawOptions))return[]" in NICK.replace(" ", "")
+    compact=NICK.replace(" ", "")
+    assert "proposal.nicknameOptions=rankByMemory(controlled,p,a,existing).slice(0,5)" in compact
+    assert "proposal.nicknameNeedsIdentity=!a" in compact
+    assert "if(!anchor||!Array.isArray(rawOptions))return[]" in compact
 
 
 def test_content_branch_ranking_accumulates_evidence_and_goal_bonus():
@@ -110,6 +112,13 @@ def test_completion_and_clipboard_have_runtime_single_owners():
     assert "window.aiaClipboard" in V28
     assert "copyText = (text, button) => copyWithFeedback" in V28
     assert "window.aiaClipboard?.copyWithFeedback" in V10
+
+
+def test_compliance_ui_cannot_mutate_final_bio():
+    assert 'proposal.bios=' not in V10.replace(' ','')
+    assert 'textarea.value=' not in V10
+    assert 'sanitizeBioBlocks' not in V10
+    assert 'ownsBioText:false' in V10
 
 
 def test_loading_is_normalized_before_render_not_by_dom_observer():
