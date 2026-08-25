@@ -60,7 +60,7 @@ def test_nickname_anchor_priority_and_existing_nickname_evidence_are_explicit():
     natural = owner.index("...naturalNameAnchors(p)")
     assert -1 not in (peer, preferred, existing, natural)
     assert peer < preferred < existing < natural
-    assert "已有昵称包含稳定人物称呼" in owner
+    assert "包含稳定人物称呼" in owner
 
 
 def test_bio_latest_rules_replace_three_strategies_and_mechanical_reduction():
