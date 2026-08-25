@@ -179,7 +179,8 @@ def test_compliance_ui_does_not_generate_bios_and_has_two_columns():
     assert 'proposal.bios=' not in V10.replace(' ','')
     assert "['可以说',cfg.can" in V10 and "['不可以说',cfg.cannot" in V10 and '返回检查' not in V10
     assert "b.textContent='?'" in V10
-    assert 'position:absolute' in V10 and 'right:14px' in V10 and 'top:14px' in V10
+    assert "card.classList.add('aia-compliance-help-host')" in V10 and 'card.appendChild(b)' in V10
+    assert 'position:absolute!important' in V10 and 'right:16px' in V10 and 'top:16px' in V10
     assert 'appendThird' not in V10
     assert "hs[0].textContent='小红书简介 · 推荐版'" in V10
     assert "hs[1].textContent='视频号 / 抖音简介 · 推荐版'" in V10
