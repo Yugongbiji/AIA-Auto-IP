@@ -1,9 +1,10 @@
 // 产品规则 V27：资料标准化 / 自我介绍提取 / 客户反馈与个人介绍展示的唯一 Owner。
-// 昵称由 nickname-policy / V29 负责；悬浮按钮由 profile-float 负责。
+// 昵称由 nickname-policy / V29 负责；悬浮按钮由 profile-float 负责；问卷游标由问卷流程负责。
 (function () {
   'use strict';
   let semanticKey='';
   let semanticRunning=false;
+  const QUESTIONNAIRE_OWNED_FIELDS = new Set(['primaryGoal','customerGroups','customerAges','recruitmentGroups','recruitmentAges','insuranceYears','strengths','honors','education','schoolTier','overseas','contentTone','department']);
   function text(value) { return String(value ?? '').trim(); }
   function splitValues(value) { return text(value).split(/[｜|、,，;；/\n]+/).map((v) => v.trim()).filter(Boolean); }
   function uniq(values) { return [...new Set((values || []).filter(Boolean))]; }
@@ -38,7 +39,6 @@
     normalizeSignupProfile(profile);
     const intro = text(profile?.selfIntro); if (!intro) return profile;
     Object.entries(FACT_RULES).forEach(([field, rules]) => {
-      // 过往职业必须有明确职业/经历语境；单独出现“财务/法律/教育”等领域关键词不能升级为人物经历。
       const source = field === 'previousCareer' ? explicitCareerIntro(intro) : intro;
       if (!source) return;
       const found = rules.filter(([pattern]) => pattern.test(source)).map(([, label]) => label);
@@ -58,7 +58,11 @@
       if (!response.ok) return {};
       const payload = await response.json(); const updates = payload?.updates && typeof payload.updates === 'object' ? payload.updates : {};
       const applied = {};
-      Object.entries(updates).forEach(([key,value]) => { if (!text(profile[key]) && text(value)) { profile[key]=text(value); applied[key]=text(value); } });
+      Object.entries(updates).forEach(([key,value]) => {
+        // #132/#135：异步语义分析只能补辅助资料，绝不能替代用户问卷答案，更不能控制问卷游标。
+        if (QUESTIONNAIRE_OWNED_FIELDS.has(key)) return;
+        if (!text(profile[key]) && text(value)) { profile[key]=text(value); applied[key]=text(value); }
+      });
       if (Object.keys(applied).length) {
         window.aiaIpPolicy?.prepareProfileGoal?.(profile);
         (state.proposals||[]).forEach(entry=>window.aiaIpPolicy?.enforceProposal?.(entry?.proposal,profile));
@@ -66,8 +70,6 @@
           renderProfile();
           if (state.matched) Promise.resolve(persistMatchedProfile()).catch(()=>{});
           window.aiaScriptRecommendation?.reset?.();
-          const currentQuestion=questions?.[state.currentQuestion];
-          if(currentQuestion&&text(profile[currentQuestion.key])){state.currentQuestion+=1;setChips(null);presentQuestion();}
         }
       }
       return applied;
@@ -109,8 +111,8 @@
   if (!document.getElementById('product-rules-v27-style')) { const style = document.createElement('style'); style.id = 'product-rules-v27-style'; style.textContent = `.profile-group-full{grid-column:1/-1}.peer-feedback-card{display:block!important;padding-top:18px;border-top:1px solid #eee}.peer-feedback-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px}.peer-feedback-meta{font-size:12px;color:#8a7f83}.peer-feedback-section{margin:14px 0}.peer-feedback-section h4{margin:0 0 8px;font-size:13px;color:#5f5659}.peer-feedback-chips{display:flex;flex-wrap:wrap;gap:8px}.peer-feedback-chip{display:inline-flex;align-items:center;padding:7px 10px;border:1px solid #eadfe3;border-radius:999px;background:#fff7f9;color:#5f3d48;font-size:13px}.peer-feedback-quote-list{display:grid;gap:8px}.peer-feedback-quote-list p{margin:0;padding:10px 12px;border-radius:10px;background:#f8f7f7;line-height:1.65;color:#4f484a}.peer-feedback-more{margin-top:8px}`; document.head.appendChild(style); }
 
   if (typeof startWorkspace === 'function') { const base = startWorkspace; startWorkspace = function startWorkspaceV27(profile, ...rest) { semanticKey='';extractFactsFromIntro(profile); const result=base(profile, ...rest); queueMicrotask(()=>semanticEnrich(profile)); return result; }; }
-  if (typeof renderProfile === 'function') { const base = renderProfile; renderProfile = function renderProfileV27() { extractFactsFromIntro(state.profile || {}); const result = base(); requestAnimationFrame(() => { renderPeerFeedback(); ensureIntroLast(); }); queueMicrotask(()=>semanticEnrich(state.profile||{})); return result; }; }
+  if (typeof renderProfile === 'function') { const base = renderProfile; renderProfile = function renderProfileV27() { extractFactsFromIntro(state.profile || {}); const result = base(); requestAnimationFrame(() => { renderPeerFeedback(); ensureIntroLast(); }); return result; }; }
 
   normalizeSignupProfile(state.profile || {});
-  window.aiaProfileRulesV27 = Object.freeze({ normalizeSignupProfile, extractFactsFromIntro, semanticEnrich, renderPeerFeedback, ensureIntroLast, explicitCareerIntro, ownsNickname:false, ownsFloatingUi:false, ownsPeerFeedback:true });
+  window.aiaProfileRulesV27 = Object.freeze({ normalizeSignupProfile, extractFactsFromIntro, semanticEnrich, renderPeerFeedback, ensureIntroLast, explicitCareerIntro, ownsNickname:false, ownsFloatingUi:false, ownsPeerFeedback:true, ownsQuestionnaireCursor:false });
 })();
