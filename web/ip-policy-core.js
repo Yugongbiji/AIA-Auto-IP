@@ -176,10 +176,26 @@
     const normalize=value=>text(value).replace(/二孩|二宝/g,'').replace(/宝妈|妈妈/g,'妈妈').replace(/宝爸|爸爸/g,'爸爸').replace(/\s|，|、|｜/g,'');
     const x=normalize(a),y=normalize(b);return Boolean(x&&y&&(x===y||x.includes(y)||y.includes(x)));
   }
+  function bioSemanticFamily(value){
+    const v=text(value);
+    const groups=[[/财务|会计/,'财务'],[/法务|律师|法律/,'法律'],[/教师|老师|教培/,'教育'],[/健身|教练|运动康复/,'运动'],[/银行/,'银行'],[/工程师|工程/,'工程'],[/医生|护师|护士|医疗/,'医疗'],[/互联网|IT|程序员/,'互联网'],[/地产|房地产/,'地产'],[/销售/,'销售'],[/管理/,'管理']];
+    const hit=groups.find(([pattern])=>pattern.test(v));return hit?hit[1]:'';
+  }
+  function bioFactStrength(value){
+    const v=text(value);let score=0;
+    if(/\d+(?:\.\d+)?\s*年|\d+\+/.test(v))score+=6;
+    if(/职称|资格|证书|MDRT|COT|TOT|会员|讲师|冠军|前十|大使/i.test(v))score+=5;
+    if(/经理|总监|负责人|管理者/.test(v))score+=2;
+    if(/长期|多年/.test(v)&&!/\d/.test(v))score-=2;
+    score+=Math.min(3,Math.floor(v.length/8));
+    return score;
+  }
   function pushAsset(pool,asset){
     if(!asset?.value)return;
-    if(pool.some(item=>item.type===asset.type&&sameMeaning(item.value,asset.value)))return;
-    pool.push(asset);
+    const family=bioSemanticFamily(asset.value);
+    const idx=pool.findIndex(item=>item.type===asset.type&&item.subtype===asset.subtype&&(sameMeaning(item.value,asset.value)||(family&&family===bioSemanticFamily(item.value))));
+    if(idx<0){pool.push(asset);return;}
+    if(bioFactStrength(asset.value)>bioFactStrength(pool[idx].value))pool[idx]=asset;
   }
 
   const BIO_GENERIC_DOMAINS=/^(法律|教育|金融|医疗|健康|养老|育儿|科技|互联网|房地产|管理|市场|销售|财务常识|职场|创业经营)$/;
@@ -213,7 +229,14 @@
     return uniq(out);
   }
   function bioHonorFacts(profile){return uniq(split(profile?.honors).filter(v=>v&&!OMIT.test(v)));}
-  function bioInsuranceExperience(profile){const v=text(profile?.insuranceYears).replace(/年$/,'');return v?`${v}年保险从业经验`:'';}
+  function bioInsuranceExperience(profile){
+    const raw=text(profile?.insuranceYears);if(!raw)return '';
+    if(/^\d+(?:\.\d+)?$/.test(raw))return `${raw}年保险从业经验`;
+    if(/^\d+(?:\.\d+)?年多$/.test(raw))return `${raw.replace(/年多$/,'年+')}保险从业经验`;
+    if(/^\d+(?:\.\d+)?年\+$/.test(raw)||/^\d+(?:\.\d+)?年$/.test(raw))return `${raw}保险从业经验`;
+    if(/多年/.test(raw))return '多年保险行业经验';
+    return '保险从业';
+  }
   function bioTraitFacts(profile){
     const items=profile?.peerReviewSummary?.topTraits||profile?.peerReviewSummary?.topImpressions||[];
     const controlled=/^(靠谱|真诚|细致|有耐心|理性|务实|有温度|温暖|阳光|行动力强|长期主义)$/;
@@ -221,9 +244,9 @@
   }
   function bioServiceFacts(profile,platform){
     const evidence=['services','serviceAreas','serviceCapabilities','expertise','specialties'].flatMap(k=>split(profile?.[k])).join('｜');
+    if(!evidence)return [];
     const rules=[[/养老|退休/,'养老规划'],[/教育金|子女教育/,'子女教育'],[/财富|资产配置|传承/,'财富规划'],[/家庭保障|家庭保险/,'家庭保障'],[/重疾|医疗|健康保障/,'健康保障'],[/企业主|企业保障|团险/,'企业保障'],[/理赔/,'理赔协助'],[/保单检视|保单整理|保单分析/,'保单检视'],[/保障规划|保险规划|风险保障/,'保障规划']];
     let values=uniq(rules.filter(([p])=>p.test(evidence)).map(([,label])=>label));
-    if(inferPrimaryGoal(profile)===PRIMARY_GOALS.RECRUITMENT)values=uniq(['职业选择','转型成长',...values]);
     if(platform==='xhs')values=values.filter(safeXhs);
     return values;
   }
@@ -283,18 +306,20 @@
     const identityCore=assets.filter(a=>a.type==='identity'&&a.subtype!=='interest').map(a=>a.value);
     const identityInterest=assets.filter(a=>a.type==='identity'&&a.subtype==='interest').map(a=>a.value);
     const advantages=assets.filter(a=>a.type==='advantage').map(a=>a.value);
-    let values=assets.filter(a=>a.type==='value').map(a=>a.value);
-    if(!values.length){
-      values=inferPrimaryGoal(profile)===PRIMARY_GOALS.RECRUITMENT?['职业选择','转型成长','长期发展']:(platform==='xhs'?['家庭生活','长期规划','个人成长']:['家庭保障','养老规划','保险知识']);
-      if(platform==='xhs')values=values.filter(safeXhs);
-    }
+    const values=assets.filter(a=>a.type==='value').map(a=>a.value);
     let identity=packBioItems(identityCore);
     const interests=packBioItems(identityInterest);
     if(identity.length<3)identity=[...identity,...interests].slice(0,3);
     return {identity:rebalanceBioLines(identity),advantage:rebalanceBioLines(packBioItems(advantages)),value:rebalanceBioLines(packBioItems(values))};
   }
   function dedupeBioLines(lines){
-    const out=[];lines.map(text).filter(Boolean).forEach(line=>{if(!out.some(existing=>sameMeaning(existing,line)))out.push(line);});return out;
+    const out=[];
+    lines.map(text).filter(Boolean).forEach(line=>{
+      const family=bioSemanticFamily(line);const duplicate=out.findIndex(existing=>sameMeaning(existing,line)||(family&&family===bioSemanticFamily(existing)));
+      if(duplicate<0){out.push(line);return;}
+      if(bioFactStrength(line)>bioFactStrength(out[duplicate]))out[duplicate]=line;
+    });
+    return out;
   }
   function bioBody(profile,platform){
     const groups=dimensionLines(profile,platform);const values=[...groups.identity,...groups.advantage,...groups.value];
