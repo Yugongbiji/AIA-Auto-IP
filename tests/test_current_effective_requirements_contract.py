@@ -24,12 +24,16 @@ def test_composer_has_no_second_selection_source_or_hidden_click_submit():
     assert "confirmPlanningMulti(question)" in submit
 
 
-def test_xhs_emoji_cadence_matches_dedicated_rule_not_two_sentence_overreach():
+def test_xhs_emoji_density_uses_latest_v4_specialized_rule():
     contract = read("backend/xhs_formatting_contract.py")
-    rules = read("docs/脚本改写与小红书排版规则.md")
-    assert "每 2 至 3 句话配置 1 个" in rules
-    assert "emoji_free_run < 3" in contract
-    assert "every consecutive two sentences" not in contract
+    current_rules = read("rules/xhs-formatting-rules.md")
+    older_rules = read("docs/脚本改写与小红书排版规则.md")
+    assert "本文件补充并更新" in current_rules
+    assert "任何连续 2 个完整句子中，至少有 1 个表情" in current_rules
+    assert "每 2 至 3 句话配置 1 个" in older_rules
+    assert "def _strict_scan_emojis" in contract
+    assert "emoji_free_run < 2" in contract
+    assert "_cadenced_scan_emojis" not in contract
 
 
 def test_nickname_rules_keep_people_anchor_and_reject_mechanical_templates():
