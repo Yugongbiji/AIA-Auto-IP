@@ -22,6 +22,10 @@ def test_114_122_ip_conversation_forces_floating_profile_entry_visible():
     assert "requestAnimationFrame" in FLOAT
     assert "actions.style.display=visible?'flex':'none'" in FLOAT
     assert "aia-ip-conversation-active" in FLOAT
+    assert "function closeStaleOverlaysForIp" in FLOAT
+    assert "document.body.classList.remove('proposal-open')" in FLOAT
+    assert "if(tool==='ip')closeStaleOverlaysForIp()" in FLOAT
+    assert "if(state.activeTool==='ip')closeStaleOverlaysForIp()" in FLOAT
 
 
 def test_115_existing_nickname_advice_reuses_proposal_card_component():
