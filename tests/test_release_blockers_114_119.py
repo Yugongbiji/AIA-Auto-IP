@@ -22,8 +22,10 @@ def test_127_floating_ip_owner_is_isolated_from_legacy_panel_and_overlay_state()
     assert "aia-ip-owner-profile-drawer" in FLOAT
     assert "function workspaceVisible" in FLOAT
     assert "state.activeTool" not in FLOAT
-    assert "proposal-open" not in FLOAT
     assert "closeStaleOverlaysForIp" not in FLOAT
+    assert "document.body.classList" not in FLOAT
+    for legacy_overlay in ["proposal-screen", "content-plan-screen", "script-detail-screen"]:
+        assert legacy_overlay not in FLOAT
     assert "document.querySelector('.profile-panel')" not in FLOAT
     assert "actions.hidden = !visible" in FLOAT
     assert "proposalButton.hidden = !latestProposal()" in FLOAT
