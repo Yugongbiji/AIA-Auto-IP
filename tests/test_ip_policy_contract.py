@@ -66,8 +66,7 @@ def test_headline_103_is_one_slogan_owner_without_vertical_separator_and_is_reus
     assert 'XHS_BANNED.test(v)' in clean
     assert 'numbers.some' in clean and '0人脉' in clean and '擅长' in clean
     build=POLICY.split('function buildBios(profile,platform,headlineText)',1)[1].split('function enforceProposal',1)[0]
-    assert "...(slogan?[slogan]:[])" in build
-    assert build.index('bioBody(profile,platform)') < build.index('slogan') < build.index('complianceFooter(profile,platform)')
+    assert "lines:[...bioBody(profile,platform),...(slogan?[slogan]:[]),...complianceFooter(profile,platform)]" in build
     enforce=POLICY.split('function enforceProposal(proposal,profile)',1)[1].split('function canonicalizeHistory',1)[0]
     assert 'const slogan=headline(p,proposal?.headline)' in enforce
     assert 'proposal.headline=slogan' in enforce
