@@ -28,12 +28,12 @@ OUTPUT_SCHEMA = r"""
   "advantages":[{"emoji":"✨","title":"短标题","text":"真实证据说明"}],
   "nicknameOptions":[{"name":"昵称","angle":"侧重点","reason":"理由"}],
   "bios":{
-    "xiaohongshu":[{"label":"方案 A · 专业背书","focus":"侧重点","lines":["文案行"]},{"label":"方案 B · 人设记忆","focus":"侧重点","lines":["文案行"]},{"label":"方案 C · 价值服务","focus":"侧重点","lines":["文案行"]}],
-    "videoDouyin":[{"label":"方案 A · 专业背书","focus":"侧重点","lines":["文案行"]},{"label":"方案 B · 人设记忆","focus":"侧重点","lines":["文案行"]},{"label":"方案 C · 价值服务","focus":"侧重点","lines":["文案行"]}]
+    "xiaohongshu":[{"label":"小红书简介 · 推荐版","focus":"我是谁 + 我的优势 + 我能提供什么价值","lines":["正文素材行"]}],
+    "videoDouyin":[{"label":"视频号 / 抖音简介 · 推荐版","focus":"我是谁 + 我的优势 + 我能提供什么价值","lines":["正文素材行"]}]
   },
   "platformReminders":[]
 }
-资料不足时字段可少写或留空，但绝不能创造事实。前端 canonical policy 会对最终业务字段做确定性标准化。
+资料不足时字段可少写或留空，但绝不能创造事实。模型不得生成固定合规尾部；前端 canonical policy 会对最终业务字段做确定性标准化并追加固定声明。
 """
 
 
@@ -55,12 +55,7 @@ def generate(profile: dict) -> dict:
             {"role": "user", "content": "营销员资料如下：\n" + json.dumps(profile or {}, ensure_ascii=False, indent=2)},
         ],
     }
-    request = Request(
-        API_URL,
-        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
-        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-        method="POST",
-    )
+    request = Request(API_URL, data=json.dumps(payload, ensure_ascii=False).encode("utf-8"), headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}, method="POST")
     try:
         with urlopen(request, timeout=90) as response:
             body = json.loads(response.read().decode("utf-8"))
