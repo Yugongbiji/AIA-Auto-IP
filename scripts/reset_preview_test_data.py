@@ -7,6 +7,8 @@ Hard safety boundaries:
 - Keeps all nickname-related keys in saved_profiles, including approved presets/manual alternatives.
 - Clears generated/test conversation, proposal, planning, creative and script-activity history.
 - Creates a timestamped SQLite-consistent backup before mutation.
+- Preview does not need to be pre-seeded with the 57 approved nickname presets; the
+  finalizer imports and verifies those presets immediately after cleanup.
 """
 from __future__ import annotations
 
@@ -128,8 +130,9 @@ def main() -> int:
         if before["agents"] < 57:
             raise RuntimeError(f"安全拒绝：agents 只有 {before['agents']} 人，低于预期 57 人")
         if before["nickname_presets"] < 57:
-            raise RuntimeError(
-                f"安全拒绝：已批准 nicknamePreset 只有 {before['nickname_presets']} 人，低于预期 57 人"
+            print(
+                f"ℹ️ Preview 当前只有 {before['nickname_presets']} 个 approved nicknamePreset；"
+                "这是允许的。清场后 finalizer 会从仓库 57 人预设清单重新导入并校验。"
             )
         if not args.apply:
             print("只读预检通过；增加 --apply 才会执行清场。")
@@ -169,14 +172,14 @@ def main() -> int:
         if after["agents"] != before["agents"]:
             raise RuntimeError("清场后 agents 数量变化，立即人工检查备份")
         if after["nickname_presets"] != before["nickname_presets"]:
-            raise RuntimeError("清场后 nicknamePreset 数量变化，立即人工检查备份")
+            raise RuntimeError("清场过程改变了已有 nicknamePreset 数量，立即人工检查备份")
         dirty = {k: v for k, v in after.items() if k in HISTORY_TABLES and v != 0}
         if dirty:
             raise RuntimeError(f"清场后仍有测试历史：{dirty}")
 
         print("=== Preview 清场完成 ===")
         print(json.dumps(after, ensure_ascii=False, indent=2))
-        print("✅ 原始 agents 保留；昵称预设保留；测试历史归零。")
+        print("✅ 原始 agents 保留；现有昵称字段保留；测试历史归零。下一步由 finalizer 导入 57 人 approved nicknamePreset。")
         return 0
     finally:
         conn.close()
