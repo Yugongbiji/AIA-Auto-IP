@@ -88,7 +88,7 @@ def test_bio_latest_rules_replace_three_strategies_and_mechanical_reduction():
     assert "方案 C · 价值服务" not in core
     assert "只有 `complianceFooter` 有权追加" in baseline
     assert "function complianceFooter" in core
-    assert "执业证编号：${license||'000'}" in core
+    assert "执业证编号：${license||'待补充'}" in core
     assert "营销服务部：${department||'待补充'}" in core
 
 
