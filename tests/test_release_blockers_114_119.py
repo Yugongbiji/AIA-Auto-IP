@@ -3,6 +3,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CORE = (ROOT / "web" / "ip-policy-core.js").read_text(encoding="utf-8")
 V10 = (ROOT / "web" / "product-rules-v10.js").read_text(encoding="utf-8")
+V19 = (ROOT / "web" / "product-rules-v19.js").read_text(encoding="utf-8")
 FLOAT = (ROOT / "web" / "profile-float.js").read_text(encoding="utf-8")
 V29 = (ROOT / "web" / "product-rules-v29.js").read_text(encoding="utf-8")
 RULES = (ROOT / "rules" / "ip-headline-slogan-rules.md").read_text(encoding="utf-8")
@@ -48,3 +49,20 @@ def test_119_headline_rejects_mechanical_trait_label_templates():
     assert "bioTraitFacts(profile)" not in fallback
     assert "#119" in RULES
     assert "宝妈，靠谱是我的标签" in RULES
+
+
+def test_loaded_nickname_helpers_cannot_restore_single_character_name_slicing():
+    assert "name.slice(1)" not in V19
+    assert "name.slice(-1)" not in V19
+    assert "name.slice(1)" not in V29
+    assert "name.length===2" not in V29
+    assert "阿', '小" not in V19
+    assert "'哥', '姐', '老师', '总'" not in V19
+
+
+def test_visible_bio_ui_removes_retired_000_placeholder_and_old_multi_set_copy():
+    assert "content.querySelectorAll('.license-note')" in V10
+    assert "/000/.test" in V10
+    assert "三套选择" not in V10
+    assert "小红书简介 · 推荐版" in V10
+    assert "视频号 / 抖音简介 · 推荐版" in V10
