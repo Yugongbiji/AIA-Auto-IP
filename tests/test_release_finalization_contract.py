@@ -27,17 +27,20 @@ def test_preview_cleanup_is_sqlite_only_and_preserves_core_source_data():
     assert 'DELETE FROM "script_library"' not in RESET
     assert '"nickname" in normalized' in RESET
     assert 'nicknamePreset' in RESET
-    assert 'nickname_presets' in RESET
     assert 'def sqlite_backup' in RESET
     assert 'conn.backup(backup_conn)' in RESET
     assert 'sqlite_backup(conn, backup)' in RESET
+    assert 'before["agents"] < 57' in RESET
+    assert 'finalizer 会从仓库 57 人预设清单重新导入并校验' in RESET
 
 
 def test_one_command_finalizer_runs_gate_before_data_mutation_and_refuses_rds():
     assert 'DB_ENGINE' in FINALIZE and 'sqlite' in FINALIZE
     assert 'bash scripts/check-preview-local.sh' in FINALIZE
     assert FINALIZE.index('bash scripts/check-preview-local.sh') < FINALIZE.index('reset_preview_test_data.py --apply')
+    assert FINALIZE.index('reset_preview_test_data.py --apply') < FINALIZE.index('import_nickname_presets.py')
     assert 'systemctl stop "$SERVICE"' in FINALIZE
     assert 'systemctl start "$SERVICE"' in FINALIZE
     assert 'curl -fsS' in FINALIZE
+    assert 'import_nickname_presets.py' in FINALIZE
     assert 'DB_ENGINE=sqlite' in DEPLOY
