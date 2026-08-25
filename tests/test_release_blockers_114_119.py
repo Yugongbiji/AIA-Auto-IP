@@ -25,7 +25,10 @@ def test_114_122_ip_conversation_forces_floating_profile_entry_visible():
     assert "function closeStaleOverlaysForIp" in FLOAT
     assert "document.body.classList.remove('proposal-open')" in FLOAT
     assert "if(tool==='ip')closeStaleOverlaysForIp()" in FLOAT
-    assert "if(state.activeTool==='ip')closeStaleOverlaysForIp()" in FLOAT
+    # 启动完成后必须继续以最终 DOM 为准，不能重新依赖 state.activeTool。
+    assert "state.activeTool==='ip'" not in FLOAT
+    assert "const chat=document.getElementById('ip-chat-panel')" in FLOAT
+    assert "if(chat&&!chat.classList.contains('hidden'))closeStaleOverlaysForIp()" in FLOAT
 
 
 def test_115_existing_nickname_advice_reuses_proposal_card_component():
