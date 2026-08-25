@@ -1,4 +1,4 @@
-// 产品规则 V25：精简长期身份问题；Preview 专用清空测试入口。
+// 产品规则 V25：精简长期身份问题；Preview 专用测试会话隔离与清空入口。
 (function () {
   const lifeRoles = Array.isArray(questions) ? questions.find((item) => item.key === 'lifeRoles') : null;
   if (lifeRoles) {
@@ -8,6 +8,40 @@
 
   const isPreview = window.location.pathname === '/preview' || window.location.pathname.startsWith('/preview/');
   if (!isPreview) return;
+
+  // 121：Preview 验收必须以“本次明确输入的身份”为准。
+  // app.js 会在加载末尾异步恢复旧 SESSION_KEY；若用户同时手工输入新姓名/编号，旧请求可能后返回并覆盖新身份。
+  // Preview 不需要自动恢复旧测试账号，因此加载后立即废弃旧 session，并拦截仍在途的旧恢复结果。
+  let explicitIdentitySubmit = false;
+  let staleResumeMayReturn = true;
+  try { localStorage.removeItem(SESSION_KEY); } catch (_) {}
+
+  const identityForm = document.getElementById('lookup-form');
+  identityForm?.addEventListener('submit', () => {
+    explicitIdentitySubmit = true;
+    staleResumeMayReturn = false;
+    try { localStorage.removeItem(SESSION_KEY); } catch (_) {}
+  }, true);
+
+  document.getElementById('guest-start')?.addEventListener('click', () => {
+    explicitIdentitySubmit = true;
+    staleResumeMayReturn = false;
+    try { localStorage.removeItem(SESSION_KEY); } catch (_) {}
+  }, true);
+
+  if (typeof startWorkspace === 'function') {
+    const baseStartWorkspace = startWorkspace;
+    startWorkspace = function previewIdentityStartWorkspace(profile, matched) {
+      const identityVisible = !document.getElementById('identity-screen')?.classList.contains('hidden');
+      if (staleResumeMayReturn && !explicitIdentitySubmit && matched && identityVisible) {
+        staleResumeMayReturn = false;
+        return;
+      }
+      staleResumeMayReturn = false;
+      explicitIdentitySubmit = false;
+      return baseStartWorkspace.apply(this, arguments);
+    };
+  }
 
   function ensurePreviewResetButton() {
     const account = document.querySelector('.toolbar-account');
