@@ -62,11 +62,11 @@ def test_bio_visual_anchors_and_single_platform_recommendations_live_in_canonica
 
 
 def test_compliance_help_keeps_question_mark_in_card_top_right():
-    compact = COMPLIANCE_UI.replace(' ', '')
     assert "b.textContent='?'" in COMPLIANCE_UI
-    assert "heading.closest('section,article,.proposal-card,.proposal-block')" in COMPLIANCE_UI
-    assert "host.appendChild(b)" in compact
-    assert 'position:absolute' in COMPLIANCE_UI and 'right:14px' in COMPLIANCE_UI and 'top:14px' in COMPLIANCE_UI
+    assert "const card=heading.closest('.proposal-card,section,article')||heading.parentElement" in COMPLIANCE_UI
+    assert "card.classList.add('aia-compliance-help-host')" in COMPLIANCE_UI
+    assert 'card.appendChild(b)' in COMPLIANCE_UI
+    assert 'position:absolute!important' in COMPLIANCE_UI and 'right:16px' in COMPLIANCE_UI and 'top:16px' in COMPLIANCE_UI
     assert '查看昵称合规提示' in COMPLIANCE_UI
     assert '查看简介合规提示' in COMPLIANCE_UI
 
