@@ -115,3 +115,36 @@ def test_no_retired_dynamic_v33_revival():
     nav = read("web/script-recommendation-navigation-fix.js")
     assert "product-integration-v33.js" not in index
     assert "product-integration-v33.js" not in nav
+
+
+def test_field_schema_treats_purpose_as_raw_and_requires_person_anchor():
+    schema = read("rules/field-schema.md")
+    assert "`purpose` 只是历史/报名 raw source" in schema
+    assert "最终业务目标只有 `primaryGoal`" in schema
+    assert "没有可用称呼时不得生成不含人物主体" in schema
+    assert "打造个人品牌" in schema
+    assert "必须重新询问" in schema
+    assert "不希望填写" not in schema.split("学历 `education`")[1].split("|", 5)[0]
+
+
+def test_dialogue_rules_do_not_restore_retired_planning_or_old_loading_copy():
+    dialogue = read("rules/dialogue-style-rules.md")
+    assert "独立“内容规划问答”已撤销" in dialogue
+    assert "正在排版，请稍候…" in dialogue
+    assert "正在改写，请稍候…" in dialogue
+    assert "旧的“见证奇迹”" in dialogue
+
+
+def test_compliance_rule_does_not_regrant_nickname_brand_generation():
+    compliance = read("rules/compliance-rules.md")
+    assert "不会主动生成或推荐含“友邦 / AIA / 保险”" in compliance
+    assert "固定尾部只由 `web/ip-policy-core.js:complianceFooter()` 追加" in compliance
+    assert "7 天内最多修改 3 次，频繁修改也可能影响账号稳定" in compliance
+
+
+def test_content_goal_boundary_uses_canonical_primary_goal_only():
+    boundary = read("rules/content-goal-boundary-rules.md")
+    assert "最终只认标准化后的 `primaryGoal`" in boundary
+    assert "`purpose` 只是历史/报名原始来源" in boundary
+    assert "双目标/模糊目标不能直接进入方案" in boundary
+    assert "同时生成拓客与增员两条专业主线" not in boundary
