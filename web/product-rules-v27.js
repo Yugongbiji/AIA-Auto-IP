@@ -1,5 +1,5 @@
-// 产品规则 V27（资料兼容层）：只负责报名资料标准化、自我介绍语义提取、客户反馈/个人介绍展示。
-// 昵称推荐与审查由 nickname-policy / V29 负责；悬浮按钮由 profile-float 组件负责；本文件不得再修改这些业务输出。
+// 产品规则 V27：资料标准化 / 自我介绍提取 / 客户反馈与个人介绍展示的唯一 Owner。
+// 昵称由 nickname-policy / V29 负责；悬浮按钮由 profile-float 负责。
 (function () {
   'use strict';
   function text(value) { return String(value ?? '').trim(); }
@@ -35,6 +35,28 @@
     return profile;
   }
 
+  async function semanticEnrich(profile) {
+    normalizeSignupProfile(profile); extractFactsFromIntro(profile);
+    if (!text(profile?.selfIntro)) return {};
+    try {
+      const response = await fetch('/api/profile/analyze', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ profile }) });
+      if (!response.ok) return {};
+      const payload = await response.json(); const updates = payload?.updates && typeof payload.updates === 'object' ? payload.updates : {};
+      const applied = {};
+      Object.entries(updates).forEach(([key,value]) => { if (!text(profile[key]) && text(value)) { profile[key]=text(value); applied[key]=text(value); } });
+      if (Object.keys(applied).length) {
+        window.aiaIpPolicy?.prepareProfileGoal?.(profile);
+        (state.proposals||[]).forEach(entry=>window.aiaIpPolicy?.enforceProposal?.(entry?.proposal,profile));
+        if (state.profile === profile) {
+          renderProfile();
+          if (state.matched) Promise.resolve(persistMatchedProfile()).catch(()=>{});
+          window.aiaScriptRecommendation?.reset?.();
+        }
+      }
+      return applied;
+    } catch (_) { return {}; }
+  }
+
   function normalizeCountItems(items) {
     const map = new Map();
     (items || []).forEach((item) => { const label = text(item?.label ?? item); if (!label) return; const count = Math.max(1, Number(item?.count || 1) || 1); map.set(label, (map.get(label) || 0) + count); });
@@ -68,9 +90,9 @@
 
   if (!document.getElementById('product-rules-v27-style')) { const style = document.createElement('style'); style.id = 'product-rules-v27-style'; style.textContent = `.profile-group-full{grid-column:1/-1}.peer-feedback-card{display:block!important;padding-top:18px;border-top:1px solid #eee}.peer-feedback-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px}.peer-feedback-meta{font-size:12px;color:#8a7f83}.peer-feedback-section{margin:14px 0}.peer-feedback-section h4{margin:0 0 8px;font-size:13px;color:#5f5659}.peer-feedback-chips{display:flex;flex-wrap:wrap;gap:8px}.peer-feedback-chip{display:inline-flex;align-items:center;padding:7px 10px;border:1px solid #eadfe3;border-radius:999px;background:#fff7f9;color:#5f3d48;font-size:13px}.peer-feedback-quote-list{display:grid;gap:8px}.peer-feedback-quote-list p{margin:0;padding:10px 12px;border-radius:10px;background:#f8f7f7;line-height:1.65;color:#4f484a}.peer-feedback-more{margin-top:8px}`; document.head.appendChild(style); }
 
-  if (typeof startWorkspace === 'function') { const base = startWorkspace; startWorkspace = function startWorkspaceV27(profile, ...rest) { extractFactsFromIntro(profile); return base(profile, ...rest); }; }
+  if (typeof startWorkspace === 'function') { const base = startWorkspace; startWorkspace = function startWorkspaceV27(profile, ...rest) { extractFactsFromIntro(profile); const result=base(profile, ...rest); queueMicrotask(()=>semanticEnrich(profile)); return result; }; }
   if (typeof renderProfile === 'function') { const base = renderProfile; renderProfile = function renderProfileV27() { extractFactsFromIntro(state.profile || {}); const result = base(); requestAnimationFrame(() => { renderPeerFeedback(); ensureIntroLast(); }); return result; }; }
 
   normalizeSignupProfile(state.profile || {});
-  window.aiaProfileRulesV27 = Object.freeze({ normalizeSignupProfile, extractFactsFromIntro, renderPeerFeedback, ensureIntroLast, ownsNickname:false, ownsFloatingUi:false });
+  window.aiaProfileRulesV27 = Object.freeze({ normalizeSignupProfile, extractFactsFromIntro, semanticEnrich, renderPeerFeedback, ensureIntroLast, ownsNickname:false, ownsFloatingUi:false, ownsPeerFeedback:true });
 })();
