@@ -1,5 +1,5 @@
 // 产品规则 V10（兼容层）：只负责昵称/简介复制前的合规提醒 UI。
-// 简介内容、机构、执业编号、声明等业务数据统一由 ip-policy-core.js 生成；本文件不得再改 proposal.bios。
+// 简介业务数据由 ip-policy-core.js 生成；真实复制动作统一交给 window.aiaClipboard。
 (function(){
   'use strict';
   const seen={nickname:false,bio:false};
@@ -21,8 +21,12 @@
   const t=v=>String(v??'').trim();
 
   function close(node){node?.remove();document.body.classList.remove('copy-reminder-open');}
-  function copied(button){const old=button.textContent;button.textContent='已复制';setTimeout(()=>button.textContent=old,1200);}
-  function write(text,button){navigator.clipboard?.writeText(text).then(()=>copied(button)).catch(()=>button.textContent='请手动复制');}
+  async function write(text,button){
+    if(window.aiaClipboard?.copyWithFeedback)return window.aiaClipboard.copyWithFeedback(text,button);
+    if(typeof copyText==='function')return copyText(text,button);
+    window.aiaToast?.('复制失败，请重试','error');
+    return false;
+  }
 
   function simpleModal(title,lines,confirm,onConfirm){
     const back=document.createElement('div');back.className='copy-reminder-backdrop';back.setAttribute('role','dialog');back.setAttribute('aria-modal','true');
@@ -41,7 +45,7 @@
     const grid=document.createElement('div');grid.className='aia-compliance-grid';
     [['可以说',cfg.can,'aia-compliance-can'],['不可以说',cfg.cannot,'aia-compliance-cannot']].forEach(([title,items,cls])=>{const col=document.createElement('section');col.className=`aia-compliance-column ${cls}`;const hh=document.createElement('h4');hh.textContent=title;const ul=document.createElement('ul');items.forEach(x=>{const li=document.createElement('li');li.textContent=x;ul.appendChild(li);});col.append(hh,ul);grid.appendChild(col);});
     card.appendChild(grid);
-    const actions=document.createElement('div');actions.className='copy-reminder-actions';const ok=document.createElement('button');ok.type='button';ok.className='primary';ok.textContent=copyAfter?'我已了解，继续复制':'我知道了';ok.onclick=()=>{close(back);if(copyAfter){seen[kind]=true;write(text,button);}};actions.appendChild(ok);card.appendChild(actions);back.appendChild(card);document.body.appendChild(back);document.body.classList.add('copy-reminder-open');ok.focus();
+    const actions=document.createElement('div');actions.className='copy-reminder-actions';const ok=document.createElement('button');ok.type='button';ok.className='primary';ok.textContent=copyAfter?'我已了解，继续复制':'我知道了';ok.onclick=async()=>{close(back);if(copyAfter){seen[kind]=true;await write(text,button);}};actions.appendChild(ok);card.appendChild(actions);back.appendChild(card);document.body.appendChild(back);document.body.classList.add('copy-reminder-open');ok.focus();
   }
 
   function firstCopy(kind,text,button){simpleModal('复制前先提醒一下 📌',REMINDERS,'下一步：查看合规',()=>complianceModal(kind,text,button,true));}
@@ -52,7 +56,6 @@
     if(!heading)return;
     const existing=content.querySelector(`.aia-compliance-help[data-kind="${kind}"]`);if(existing)return;
     const b=document.createElement('button');b.type='button';b.className='aia-compliance-help';b.dataset.kind=kind;b.textContent='?';b.setAttribute('aria-label',kind==='nickname'?'查看昵称合规提示':'查看简介合规提示');b.title=b.getAttribute('aria-label');b.onclick=()=>complianceModal(kind,'',b,false);
-    // 81/82：只创建标题同行容器，绝不能给整个 proposal-card / bio-section 设置 flex。
     const row=document.createElement('div');row.className='aia-compliance-title-row';
     heading.parentNode.insertBefore(row,heading);row.append(heading,b);
   }
@@ -71,5 +74,5 @@
   if(!document.getElementById('compliance-v10-redesign-style')){
     const s=document.createElement('style');s.id='compliance-v10-redesign-style';s.textContent='.aia-compliance-source-hidden{display:none!important}.aia-compliance-title-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px}.aia-compliance-title-row>h2,.aia-compliance-title-row>h3,.aia-compliance-title-row>strong{margin:0!important}.aia-compliance-help{position:static!important;width:26px;height:26px;flex:0 0 26px;border-radius:50%;border:1px solid #d9c5cb;background:#fff7f9;color:#b20f3b;font-weight:800;cursor:pointer}.aia-compliance-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}.aia-compliance-column{padding:14px;border-radius:12px}.aia-compliance-can{background:#f4fbf7}.aia-compliance-cannot{background:#fff5f6}.aia-compliance-column h4{margin:0 0 8px}.aia-compliance-column ul{margin:0;padding-left:20px}@media(max-width:720px){.aia-compliance-grid{grid-template-columns:1fr}}';document.head.appendChild(s);
   }
-  window.aiaComplianceUiV10=Object.freeze({complianceModal,firstCopy});
+  window.aiaComplianceUiV10=Object.freeze({complianceModal,firstCopy,ownsClipboard:false});
 })();
