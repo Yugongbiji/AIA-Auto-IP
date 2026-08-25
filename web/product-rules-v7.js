@@ -1,9 +1,8 @@
 // 产品规则 V7：用户可见处理中提示说人话；小红书排版前清理脚本库结构标记。
+// 创作工具固定 loading 文案由 V22 唯一负责，本层不得改写“正在改写/正在排版”状态。
 (function () {
-  // 1) 用户可见的“处理中”提示：描述体验，不暴露内部实现术语。
+  // 1) 非创作固定状态的用户可见处理中提示：描述体验，不暴露内部实现术语。
   const friendlyProcessingCopy = new Map([
-    ['正在整理手机阅读节奏，并做初步风险检测。原文不会被改动。', '见证奇迹的时刻到啦！✨ 我正在努力排版，稍等一下哦～'],
-    ['正在保留原文事实、检查合规表达，并整理 3 篇不同角度的改写稿…', '收到啦！✍️ 我正在认真改写，马上给你三版～'],
     ['正在生成你的专属 IP 方案，稍等一下。', '✨ 正在把你的资料变成专属 IP 方案，很快就好～'],
     ['资料已整理完成，正在自动生成你的专属 IP 方案。', '资料齐啦 ✅ 接下来看看你的专属 IP 方案～'],
     ['正在理解你的补充…', '我在认真看你刚刚说的内容 👀'],
@@ -14,6 +13,7 @@
     if (!node || (!node.classList.contains('assistant') && !node.classList.contains('system'))) return;
     if (node.querySelector('textarea,.creative-result-card,.proposal-card,.bio-copy-block')) return;
     const text = (node.textContent || '').trim();
+    if (text === '正在改写，请稍候…' || text === '正在排版，请稍候…') return;
     const replacement = friendlyProcessingCopy.get(text);
     if (replacement) node.textContent = replacement;
   }
