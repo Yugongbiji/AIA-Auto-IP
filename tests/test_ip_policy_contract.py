@@ -135,6 +135,39 @@ def test_bio_emoji_is_unique_by_line_and_person_icon_is_retired():
     assert "'👤'" not in POLICY.split('const BIO_EMOJIS', 1)[1].split('function safeXhs', 1)[0]
 
 
+def test_bio_prefers_specific_quantified_fact_over_vague_same_family_summary():
+    assert 'function bioSemanticFamily(value)' in POLICY
+    assert 'function bioFactStrength(value)' in POLICY
+    assert "[/财务|会计/,'财务']" in POLICY
+    assert "if(/\\d+(?:\\.\\d+)?\\s*年|\\d+\\+/.test(v))score+=6" in POLICY
+    assert "if(/长期|多年/.test(v)&&!/\\d/.test(v))score-=2" in POLICY
+    assert 'bioFactStrength(asset.value)>bioFactStrength(pool[idx].value)' in POLICY
+
+
+def test_bio_preserves_time_precision_and_never_invents_vague_duration():
+    block = POLICY.split('function bioInsuranceExperience(profile)', 1)[1].split('function bioTraitFacts', 1)[0]
+    assert "replace(/年多$/,'年+')" in block
+    assert "return `${raw}保险从业经验`" in block
+    assert "if(/多年/.test(raw))return '多年保险行业经验'" in block
+    assert "return '保险从业'" in block
+    assert '长期保险行业经验' not in POLICY
+
+
+def test_bio_does_not_invent_default_value_lines_just_to_reach_three_lines():
+    service_block = POLICY.split('function bioServiceFacts(profile,platform)', 1)[1].split('function bioInterestFacts', 1)[0]
+    dimension_block = POLICY.split('function dimensionLines(profile,platform)', 1)[1].split('function dedupeBioLines', 1)[0]
+    assert "if(!evidence)return []" in service_block
+    assert "['职业选择','转型成长'" not in service_block
+    assert "['家庭保障','养老规划','保险知识']" not in dimension_block
+    assert "['家庭生活','长期规划','个人成长']" not in dimension_block
+
+
+def test_bio_platforms_share_same_evidence_pool_except_explicit_xhs_compliance_filter():
+    block = POLICY.split('function bioServiceFacts(profile,platform)', 1)[1].split('function bioInterestFacts', 1)[0]
+    assert "if(platform==='xhs')values=values.filter(safeXhs)" in block
+    assert "if(inferPrimaryGoal(profile)===PRIMARY_GOALS.RECRUITMENT)" not in block
+
+
 def test_missing_nickname_is_never_treated_as_keepable():
     assert 'const missing=' in V29
     assert '当前没有填写昵称' in V29
