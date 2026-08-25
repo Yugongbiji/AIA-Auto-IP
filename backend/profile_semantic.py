@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -23,6 +24,20 @@ def _goal(profile: dict) -> str:
     return ""
 
 
+def _explicit_career_context(value: str) -> bool:
+    """A career fact needs explicit work/identity context; a bare domain word is not enough."""
+    text = _clean(value)
+    if not text:
+        return False
+    if re.search(r"曾任|曾做|做过|从事|任职|工作|职业|以前|过去|原来|此前|本职", text):
+        return True
+    if re.search(r"\d+(?:\.\d+)?\s*年.{0,12}(?:经验|经历)", text):
+        return True
+    if re.search(r"我是.{0,10}(?:教师|老师|医生|护士|律师|法务|会计|审计|财务|税务|产品经理|程序员|工程师)", text):
+        return True
+    return False
+
+
 def _fallback(profile: dict) -> dict:
     """Conservative deterministic fallback: only explicit non-audience facts."""
     intro = _clean(profile.get("selfIntro"))
@@ -32,8 +47,9 @@ def _fallback(profile: dict) -> dict:
     rules = {
         "previousCareer": [
             ("教师", "教师"), ("老师", "教师"), ("律师", "律师"), ("医生", "医生"),
-            ("护士", "护士"), ("会计", "会计"), ("审计", "审计"), ("产品经理", "产品经理"),
-            ("程序员", "程序员"), ("创业", "创业/企业经营"),
+            ("护士", "护士"), ("会计", "会计"), ("审计", "审计"), ("财务", "财务"),
+            ("税务", "税务"), ("产品经理", "产品经理"), ("程序员", "程序员"),
+            ("工程师", "工程师"), ("创业", "创业/企业经营"),
         ],
         "lifeRoles": [
             ("宝妈", "宝妈"), ("孩子的妈妈", "宝妈"), ("宝爸", "宝爸"),
@@ -47,6 +63,8 @@ def _fallback(profile: dict) -> dict:
     }
     for field, pairs in rules.items():
         if _clean(profile.get(field)):
+            continue
+        if field == "previousCareer" and not _explicit_career_context(intro):
             continue
         values = []
         for needle, label in pairs:
@@ -91,7 +109,7 @@ def analyze(profile: dict) -> dict:
 - recruitment：recruitmentGroups/recruitmentAges 只表示希望吸引的准增员对象与年龄；
 不得把“我现在主要服务企业主”之类客户信息写成准增员对象，也不得反过来。
 
-其他字段含义：city=明确服务/所在城市；insuranceYears=明确保险从业年数；strengths=明确自述优势/性格；honors=明确荣誉；education=明确最高学历；schoolTier=明确985/211/QS等学校背景；overseas=明确留学经历；contentTone=明确希望账号呈现的表达气质；department=明确营销服务部；previousCareer=过往职业/行业；lifeRoles=家庭或生活身份；hobbies=明确兴趣爱好；services=明确可以提供或擅长的服务。
+其他字段含义：city=明确服务/所在城市；insuranceYears=明确保险从业年数；strengths=明确自述优势/性格；honors=明确荣誉；education=明确最高学历；schoolTier=明确985/211/QS等学校背景；overseas=明确留学经历；contentTone=明确希望账号呈现的表达气质；department=明确营销服务部；previousCareer=原文明说“曾任/做过/从事/工作/职业/XX年经验”等职业经历，单独出现“财务/法律/教育/医疗”等领域关键词不得写入；lifeRoles=家庭或生活身份；hobbies=明确兴趣爱好；services=明确可以提供或擅长的服务。
 
 多项内容用“｜”连接。不要把营销话术改写成新事实。
 只输出合法 JSON：{"updates":{"字段":"值"},"evidence":{"字段":"对应的原文短语"}}。"""
@@ -128,6 +146,8 @@ def analyze(profile: dict) -> dict:
             continue
         proof = _clean(evidence.get(key))
         if not proof or proof not in intro:
+            continue
+        if key == "previousCareer" and not _explicit_career_context(proof):
             continue
         updates[key] = value
         safe_evidence[key] = proof
