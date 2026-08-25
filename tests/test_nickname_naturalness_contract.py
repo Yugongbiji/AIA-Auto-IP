@@ -156,3 +156,12 @@ def test_114_stranger_memory_priority_beats_plain_anchor_when_evidence_exists():
     assert "真实称呼是素材，不是最终答案" in prompt
     assert "DeepSeek 不拥有首选排序权" in prompt
     assert "裸称呼/本名才允许成为首选" in prompt
+
+
+def test_approved_preset_reads_primary_then_alternatives_and_keeps_legacy_candidates_fallback():
+    owner = read("web/nickname-policy-v1.js")
+    assert "Array.isArray(preset.alternatives)?preset.alternatives" in owner
+    assert "Array.isArray(preset.candidates)?preset.candidates" in owner
+    assert "const names=uniq([t(preset.primary),...alternatives.map(t)])" in owner
+    assert "if(kind==='preset')score+=100" in owner
+    assert "const allowAi=p.nicknamePreset?.allowAiFallback!==false" in owner
