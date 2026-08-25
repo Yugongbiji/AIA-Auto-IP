@@ -48,11 +48,14 @@ def test_collection_recommendations_use_book_title_marks():
     assert "block('合集推荐',collectionNames(values),'strategy-collection-chip')" in compact
 
 
-def test_bio_visual_anchors_live_in_canonical_owner():
-    for emoji in ['👤', '🏅', '💬', '✨', '🧭']:
+def test_bio_visual_anchors_and_single_platform_recommendations_live_in_canonical_owner():
+    for emoji in ['👤', '🏅', '🧭']:
         assert emoji in CORE
-    assert 'function bioBody(profile,platform,variant)' in CORE
+    assert 'function bioBody(profile,platform)' in CORE
     assert 'function complianceFooter(profile,platform)' in CORE
+    assert "小红书简介 · 推荐版" in CORE
+    assert "视频号 / 抖音简介 · 推荐版" in CORE
+    assert "方案 A · 专业背书" not in CORE
     assert 'proposal.bios.xiaohongshu=buildBios' in CORE.replace(' ', '')
     assert 'proposal.bios.videoDouyin=buildBios' in CORE.replace(' ', '')
 
