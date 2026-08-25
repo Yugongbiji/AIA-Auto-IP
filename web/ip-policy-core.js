@@ -303,12 +303,14 @@
       const merged=`${lines[i-1]}｜${lines[i]}`;
       if(charWeight(merged)<=BIO_ABSOLUTE_MAX){lines[i-1]=merged;lines.splice(i,1);}
     }
-    return lines.flatMap(line=>{
+    const packed=lines.flatMap(line=>{
       if(charWeight(line)<=BIO_ABSOLUTE_MAX)return [line];
       const parts=split(line),out=[];let acc='';
       parts.forEach(part=>{const next=acc?`${acc}｜${part}`:part;if(acc&&charWeight(next)>BIO_ABSOLUTE_MAX){out.push(acc);acc=part;}else acc=next;});
       if(acc)out.push(acc);return out;
-    }).slice(0,maxLines);
+    });
+    // 116：极短资产若没有同维度真实信息可合并，不允许独占一整行。
+    return packed.filter(line=>charWeight(line)>=BIO_PREFERRED_MIN).slice(0,maxLines);
   }
   function rebalanceBioLines(lines){
     const out=[...lines];
@@ -357,8 +359,10 @@
   }
   function buildBios(profile,platform,headlineText){
     const label=platform==='xhs'?'小红书简介 · 推荐版':'视频号 / 抖音简介 · 推荐版';
-    const slogan=text(headlineText);
-    return [{label,focus:'我是谁 + 我的优势 + 我能提供什么价值',lines:[...bioBody(profile,platform),...(slogan?[slogan]:[]),...complianceFooter(profile,platform)]}];
+    const slogan=text(headlineText);const body=bioBody(profile,platform);
+    // 117：简介中的总结句也是可见正文行，使用下一枚不重复 Emoji；canonical headline 文本本身保持不变。
+    const sloganLine=slogan?emojiLine(BIO_EMOJIS[body.length % BIO_EMOJIS.length],slogan):'';
+    return [{label,focus:'我是谁 + 我的优势 + 我能提供什么价值',lines:[...body,...(sloganLine?[sloganLine]:[]),...complianceFooter(profile,platform)]}];
   }
 
   function enforceProposal(proposal,profile){
