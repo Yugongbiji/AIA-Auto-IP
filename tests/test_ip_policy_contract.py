@@ -71,11 +71,15 @@ def test_headline_does_not_use_person_name_anchor():
         assert forbidden not in block
 
 
-def test_bio_has_single_compliance_footer_owner_and_correct_video_order():
+def test_bio_has_single_compliance_footer_owner_and_exact_fixed_copy():
     assert 'function complianceFooter(profile,platform)' in POLICY
-    assert 'const out=[VIDEO_DISCLAIMER]' in POLICY
+    assert "const VIDEO_DISCLAIMER='本账号上所陈述或表达的内容仅为我个人意见，并不代表友邦人寿的意见';" in POLICY
+    assert "const XHS_DISCLAIMER='本账号所述内容为个人意见，不代表任何官方意见。';" in POLICY
     footer = POLICY.split('function complianceFooter(profile,platform)', 1)[1].split('function buildBios', 1)[0]
     assert footer.index('VIDEO_DISCLAIMER') < footer.index('营销服务部') < footer.index('执业证编号')
+    assert "return [VIDEO_DISCLAIMER,`营销服务部：${department||'待补充'}`,`执业证编号：${license||'待补充'}`]" in footer
+    assert "if(platform==='xhs') return [XHS_DISCLAIMER]" in footer
+    assert "'000'" not in footer
     assert 'agentId' not in footer
     assert 'agent_id' not in footer
     for source in [V5, V6, V10, V12, V13, V16, V19, V24, V27, V29]:
@@ -86,9 +90,9 @@ def test_bio_outputs_one_recommendation_per_platform_and_three_semantic_dimensio
     assert "小红书简介 · 推荐版" in POLICY
     assert "视频号 / 抖音简介 · 推荐版" in POLICY
     assert "return [{label,focus:'我是谁 + 我的优势 + 我能提供什么价值'" in POLICY
-    assert "groups.identity.forEach" in POLICY
-    assert "groups.advantage.forEach" in POLICY
-    assert "groups.value.forEach" in POLICY
+    assert "groups.identity" in POLICY
+    assert "groups.advantage" in POLICY
+    assert "groups.value" in POLICY
     assert "方案 A · 专业背书" not in POLICY
     assert "方案 B · 人设记忆" not in POLICY
     assert "方案 C · 价值服务" not in POLICY
@@ -99,18 +103,36 @@ def test_bio_uses_strict_career_evidence_and_does_not_upgrade_generic_law_keywor
     assert 'BIO_GENERIC_DOMAINS' in POLICY
     assert '法律|教育|金融|医疗' in POLICY
     assert 'BIO_CAREER_SIGNAL' in POLICY
-    assert "资料只有“法律”" not in POLICY  # rule prose belongs in docs, not runtime copy
     assert '曾从事${job}' not in POLICY.split('const XHS_BANNED', 1)[1]
     assert '客户比较常提到我' not in POLICY
 
 
-def test_bio_high_density_packing_keeps_same_dimension_together():
-    assert 'function packBioItems(items,maxWeight=22,maxLines=3)' in POLICY
+def test_bio_layout_has_12_20_preferred_range_and_25_absolute_cap():
+    assert 'const BIO_PREFERRED_MIN=12;' in POLICY
+    assert 'const BIO_PREFERRED_MAX=20;' in POLICY
+    assert 'const BIO_ABSOLUTE_MAX=25;' in POLICY
+    assert 'charWeight(candidate)>BIO_PREFERRED_MAX' in POLICY
+    assert 'charWeight(merged)<=BIO_ABSOLUTE_MAX' in POLICY
+    assert 'charWeight(line)<=BIO_ABSOLUTE_MAX' in POLICY
+    assert 'function rebalanceBioLines(lines)' in POLICY
+
+
+def test_bio_short_assets_are_merged_instead_of_forced_to_standalone_lines():
+    assert 'function packBioItems(items,maxLines=3)' in POLICY
     assert "`${current}｜${item}`" in POLICY
+    assert 'if(charWeight(lines[i])>=BIO_PREFERRED_MIN)continue' in POLICY
     assert "type:'identity'" in POLICY
     assert "type:'advantage'" in POLICY
     assert "type:'value'" in POLICY
     assert 'services.slice(0,4)' not in POLICY
+
+
+def test_bio_emoji_is_unique_by_line_and_person_icon_is_retired():
+    assert 'const BIO_EMOJIS=Object.freeze' in POLICY
+    bio_block = POLICY.split('function bioBody(profile,platform)', 1)[1].split('function explicitLicense', 1)[0]
+    assert 'BIO_EMOJIS[index % BIO_EMOJIS.length]' in bio_block
+    assert "emojiLine('👤'" not in bio_block
+    assert "'👤'" not in POLICY.split('const BIO_EMOJIS', 1)[1].split('function safeXhs', 1)[0]
 
 
 def test_missing_nickname_is_never_treated_as_keepable():
