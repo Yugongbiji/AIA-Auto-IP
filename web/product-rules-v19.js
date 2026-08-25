@@ -15,13 +15,10 @@
   function naturalNameAddresses(profile) {
     const name = clean(profile?.name); const result = [];
     if (!name) return result;
+    // #104：没有真实称呼证据时，不从二字姓名截单字，也不机械生成“阿X/小X/X哥/X姐/X老师/X总”。
+    if (name.length >= 3) result.push(name.slice(-2));
     result.push(name);
-    if (name.length >= 2) {
-      const given = name.slice(1), last = name.slice(-1);
-      if (given) result.push(given);
-      ['', '阿', '小'].forEach((prefix) => ['', '哥', '姐', '老师', '总'].forEach((suffix) => result.push(`${prefix}${last}${suffix}`)));
-    }
-    return [...new Set(result.filter(Boolean))];
+    return [...new Set(result.filter((item) => item && item.length >= 2))];
   }
   function preferredAddress(profile) {
     const peers = peerNicknameCandidates(profile);
