@@ -1,6 +1,7 @@
 # 产品规则 Owner 清单
 
 > 这是 `rules/product-change-governance.md` 的配套强制清单。任何开发者修改核心产品逻辑前必须先查本表；如果需要新增 Owner，先更新本表再改代码。
+> 当前产品需求事实源优先读取最新 `docs/product/CURRENT_EFFECTIVE_REQUIREMENTS_LEDGER_*.md`，再读取对应专项规则；旧 Baseline 只保留未被后续总账覆盖的维度。
 
 ## 当前唯一 Owner
 
@@ -12,9 +13,9 @@
 | 保险主线 | `web/ip-policy-core.js` | 从受控保险业务主题或增员主题生成 | 生活兴趣不得写入主线；旧 Vxx 不得改写 |
 | 内容支线最终结果 | `web/ip-policy-core.js` | 使用 `rankIpContentBranches()` 候选排序后选唯一最终支线 | 排序模块只能提供候选，不得直接写 proposal |
 | 内容支线候选/排序 | `web/product-rules-v14.js` | 汇总真实证据、多来源累计、目标加权、未知方向进入统一评分 | 不得直接写 `proposal.secondaryContent` |
-| 推荐昵称 | `web/nickname-policy-v1.js` | 客户高频真实称呼优先；受控生成；必须有且仅有一个人物称呼 | V19/V27/V29/AI 原始昵称不得改 `nicknameOptions` |
+| 推荐昵称 | `web/nickname-policy-v1.js` | 客户高频真实称呼优先；受控人物资产生成；必须有且仅有一个人物称呼；AI 只作受控兜底 | V19/V27/V29/AI 原始昵称不得改 `nicknameOptions`；不得恢复城市/学历/荣誉机械拼接 |
 | 原昵称审查 | `web/product-rules-v29.js` | 谨慎评价现有昵称、展示理由 | 不得生成推荐昵称；不得渲染客户反馈 |
-| 推荐简介正文 | `web/ip-policy-core.js` | 从真实人物资产生成专业背书 / 人设记忆 / 价值服务三种简介 | 旧 Vxx、AI 原始简介不得追加或替换正文 |
+| 推荐简介正文 | `web/ip-policy-core.js` | 从真实人物资产池选择最强信息，生成专业背书 / 人设记忆 / 价值服务三种简介并自动删减重复 | 旧 Vxx、AI 原始简介不得追加或替换正文 |
 | 简介合规尾部 | `web/ip-policy-core.js` | 固定声明、营销服务部、执业证编号；唯一输出点 | AI、V10、V16 等不得再次追加；营销员编号不得当执业证编号 |
 | Canonical IP 方案持久化 | `web/ip-policy-core.js` + `script_server.py:/api/proposal/canonical` | Core 先标准化；服务器只保存同版本 canonical JSON | Python 后端不得复制一套业务规则重新计算方案 |
 | 复制前合规弹窗 | `web/product-rules-v10.js` | UI 展示“可以说/不可以说”、首次复制流程 | 不得生成简介业务数据；不得自己写 Clipboard |
@@ -23,11 +24,13 @@
 | 资料标准化 / 自我介绍提取 / 客户反馈展示 | `web/product-rules-v27.js` | 归一报名字段、目标感知语义提取、展示个人介绍与结构化客户反馈 | 不得改昵称、简介、内容方向或悬浮入口 |
 | 悬浮入口 | `web/profile-float.js` + `web/profile-float.css` | 纯图标、显示范围、展开/收起、拖动、打开方案 | 不得重写 `renderProfile` 的业务内容，不得显示版本号/文字标签 |
 | 内容方向 UI | `web/product-rules-v20.js` | 读取 core 的 `contentMainline/secondaryContent` 并展示、跳转推荐脚本 | 不得重新推断主线/支线 |
-| 推荐脚本数据/去重/脚本库分页 | `web/script-recommendation-v1.js` + 后端推荐服务 | 推荐、去重、无 IP 完整库、L1/L2 筛选、真实分页、详情打开 | UI 增强层不得重新生成推荐数据 |
+| 推荐脚本数据/去重/脚本库分页/行为记录 | `web/script-recommendation-v1.js` + 后端推荐服务 | 推荐、去重、无 IP 完整库、L1/L2 筛选、真实分页、详情打开，以及曝光/详情/改写/排版 handoff activity | UI 增强层不得重新生成推荐数据 |
 | 推荐脚本“换一批/今日日期/详情清理” | `web/product-rules-v21.js` | 纯展示交互 | 不得改变推荐业务归类 |
 | 脚本详情上一篇/下一篇 | `web/product-rules-v17.js` | 记录当前浏览列表并调用 `aiaScriptRecommendation.openDetail()` | 不得监听整个 body，不得依赖退役推荐对象 |
 | 智能改写表达风格 | `web/product-rules-v11.js` + `backend/script_persona_rules.py` | 根据账号表达风格做题材适配、格式异常重试 | 其他 IP 规则不得把生活标签当脚本风格 |
-| 小红书确定性排版围栏 | `backend/xhs_formatting_contract.py` | 保证原文保护后的两句 Emoji 密度、修复孤立标点/括号行 | 不得改原文字词或事实 |
+| 小红书确定性排版围栏 | `backend/xhs_formatting_contract.py` | 保留原文字词、修复孤立标点/括号行，并按专项规则维持 2–3 句话约 1 个 Emoji、最多连续 3 句无提示表情的节奏 | 不得改原文字词或事实；不得自行收紧成“每连续两句强制一个 Emoji” |
+| 通用多选 Composer 提交 | `web/composer-submit-v2.js` + app.js 的 `state.multiSelection/planningState.multiSelection` | 业务状态唯一真源，发送直接调用业务提交；桌面 Enter、触屏不主动唤键盘 | `interaction-v2.js` 等视觉层不得维护第二套 Set、不得隐藏按钮 `.click()` 模拟提交 |
+| Composer / 自动跟随 / 视口 / 错误态 UI | `web/interaction-v2.js` | 只读取业务选择状态渲染标签；自动滚动、键盘视口、错误重试 UI | 不得拥有业务提交状态，不得再次创建隐藏确认提交链 |
 | Preview API / 会话隔离 | `web/api-routing-v1.js` + `web/product-rules-v16.js` | Preview API 路由、短时只读补充、localStorage 环境隔离 | Preview 不得长时间依赖正式站，也不得读取正式会话缓存 |
 | Preview 清空测试 | `web/product-rules-v25.js` | 仅 Preview 清本地会话 | 正式环境不得展示 |
 
@@ -57,13 +60,15 @@
 
 ## 修改流程硬门禁
 
-1. 查 `CURRENT_PRODUCT_RULES_BASELINE` 判断当前有效需求。
-2. 查本 Owner 清单确认唯一 Owner。
-3. 搜索同一字段/函数/DOM 区块是否还有第二写入点。
-4. 有重复 Owner 时先收回旧写权限，再修改唯一 Owner。
-5. 修改同时补 contract/regression test。
-6. Preview 前检查真实 `index.html` 加载链和运行时动态注入，确认 SUPERSEDED 层没有复活。
-7. 检查 canonical 结果是在**下游使用前**标准化，而不是只在 render 后改 DOM。
-8. 只有 Owner 契约 + 影响范围回归通过，才进入统一 Preview。
+1. 查最新 `CURRENT_EFFECTIVE_REQUIREMENTS_LEDGER` 判断当前有效需求和版本关系。
+2. 若总账委托专项规则负责细节，再查对应专项规则；旧 Baseline 只补充未被后续覆盖的维度。
+3. 查本 Owner 清单确认唯一 Owner。
+4. 搜索同一字段/函数/DOM 区块是否还有第二写入点。
+5. 有重复 Owner 时先收回旧写权限，再修改唯一 Owner。
+6. 修改同时补 contract/regression test。
+7. Preview 前检查真实 `index.html` 加载链和运行时动态注入，确认 SUPERSEDED 层没有复活。
+8. 检查 canonical 结果是在**下游使用前**标准化，而不是只在 render 后改 DOM。
+9. 检查测试本身没有继续验证已经 SUPERSEDED 的需求。
+10. 只有 Owner 契约 + 影响范围回归通过，才进入统一 Preview。
 
 **禁止通过“再加一个最后加载脚本”解决冲突。**如果必须依靠加载顺序才能保证业务正确，就视为治理失败，不进入 Preview。
