@@ -2,7 +2,8 @@
 // 视频号/抖音简介的合规尾部已迁移到 ip-policy-core.js，禁止在这里再次改 proposal.bios。
 (function () {
   'use strict';
-  const PROFILE_CACHE_KEY = 'aia-auto-ip-profile-cache-v1';
+  const ENV_SCOPE = window.location.pathname === '/preview' || window.location.pathname.startsWith('/preview/') ? 'preview' : 'production';
+  const PROFILE_CACHE_KEY = `aia-auto-ip-profile-cache-v1:${ENV_SCOPE}`;
 
   function readCache() {
     try { return JSON.parse(localStorage.getItem(PROFILE_CACHE_KEY) || 'null'); }
@@ -48,5 +49,5 @@
     };
   }
 
-  window.aiaProfileCacheV16 = Object.freeze({ readCache, writeCache, mergeMissingFromCache, ownsBio:false });
+  window.aiaProfileCacheV16 = Object.freeze({ readCache, writeCache, mergeMissingFromCache, key: PROFILE_CACHE_KEY, environment: ENV_SCOPE, ownsBio:false });
 })();
