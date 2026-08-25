@@ -32,8 +32,8 @@
   if (styleQuestion) {
     styleQuestion.label = '账号表达风格';
     styleQuestion.ask = '你希望自己的内容说起话来是什么感觉？可以选 1～2 个最像你的风格，也可以自己补充。这个选择会影响后续的脚本改写风格。';
-    // 恢复 2026-08-20 已确认的完整风格词库，不再缩减。
-    styleQuestion.chips = ['专业理性', '亲和温暖', '风趣幽默', '干练直接', '生活化真诚', '观点鲜明', '沉稳可信', '轻松有梗'];
+    // 恢复 2026-08-20 已确认的完整风格词库；“犀利直接”按当前最新验收要求新增，不再缩减。
+    styleQuestion.chips = ['专业理性', '亲和温暖', '风趣幽默', '干练直接', '犀利直接', '生活化真诚', '观点鲜明', '沉稳可信', '轻松有梗'];
     styleQuestion.multiple = true;
     styleQuestion.maxSelections = 2;
     styleQuestion.collectIfMissing = true;
@@ -68,6 +68,24 @@
       }
       return baseToggleMultiOption(value);
     };
+  }
+
+  // 自定义补充也遵守同一上限，避免通过“添加/回车”绕过最多 2 个的规则。
+  const quickReplies = document.getElementById('quick-replies');
+  if (quickReplies) {
+    quickReplies.addEventListener('click', (event) => {
+      const question = questions?.[state.currentQuestion];
+      if (question?.key !== 'contentTone' || state.multiSelection.size < 2) return;
+      const button = event.target.closest('button');
+      if (!button || button.textContent.trim() !== '添加') return;
+      event.preventDefault(); event.stopImmediatePropagation(); selectionLimitMessage();
+    }, true);
+    quickReplies.addEventListener('keydown', (event) => {
+      const question = questions?.[state.currentQuestion];
+      if (question?.key !== 'contentTone' || state.multiSelection.size < 2 || event.key !== 'Enter') return;
+      if (!event.target.closest('.custom-multi-input')) return;
+      event.preventDefault(); event.stopImmediatePropagation(); selectionLimitMessage();
+    }, true);
   }
 
   window.aiaProductRulesV13 = Object.freeze({
