@@ -1,5 +1,5 @@
 // 产品规则 V14：内容支线候选识别与业务价值排序。
-// 只提供“候选与排序能力”；最终内容支线由 ip-policy-core.js 唯一写入方案。
+// 只提供候选与排序；最终 secondaryContent 由 ip-policy-core.js 唯一写入。
 (function () {
   'use strict';
   function insertBeforeDepartment(question) {
@@ -29,25 +29,41 @@
     [/摄影/, '摄影'], [/户外|露营|徒步/, '户外'], [/跑步/, '跑步'], [/读书|阅读/, '读书'],
     [/美食|烹饪|做饭/, '美食'], [/宠物|猫|狗/, '宠物'], [/影视|电影|追剧/, '影视娱乐'],
   ];
+  const RECRUITMENT_BONUS = Object.freeze({ '职场成长':8, '创业经营':6, '科技职场':5, '个人成长':5, '法律常识':2 });
+  const CUSTOMER_BONUS = Object.freeze({ '育儿':6, '升学教育':5, '健康养生':5, '家庭照护':5, '财务常识':4, '创业经营':3 });
 
-  function splitValues(value) { return String(value || '').split(/[｜|、,，;；/\n]+/).map((item) => item.trim()).filter(Boolean); }
+  function text(v){return String(v??'').trim();}
+  function splitValues(value) { return text(value).split(/[｜|、,，;；/\n]+/).map((item) => item.trim()).filter(Boolean); }
   function matches(value) { const found=[]; RULES.forEach(([pattern,direction])=>{ if(pattern.test(value) && !found.includes(direction)) found.push(direction); }); return found; }
+  function unknownDirection(value) {
+    const cleaned=text(value).replace(/^(喜欢|爱好|长期|经常|擅长|从事|做过)/,'').trim();
+    if (!cleaned || cleaned.length > 12 || /保险|友邦|AIA|客户|服务/.test(cleaned)) return '';
+    return cleaned;
+  }
   function collectCandidates(profile = {}) {
     const candidates = new Map();
     function add(direction, source, evidence, strength) {
       if (!direction) return;
-      const current = candidates.get(direction) || { direction, sources: [], evidence: [], evidenceStrength: 0 };
+      const current = candidates.get(direction) || { direction, sources: [], evidence: [], evidenceStrength: 0, evidenceScore:0 };
       if (!current.sources.includes(source)) current.sources.push(source);
-      if (evidence && !current.evidence.includes(evidence)) current.evidence.push(evidence);
+      if (evidence && !current.evidence.includes(evidence)) { current.evidence.push(evidence); current.evidenceScore += strength || 0; }
       current.evidenceStrength = Math.max(current.evidenceStrength, strength || 0);
       candidates.set(direction, current);
     }
-    [['previousCareer','过往职业/经历',8],['lifeRoles','家庭与生活身份',8],['hobbies','个人爱好',4]].forEach(([key,source,strength]) => splitValues(profile[key]).forEach(value => matches(value).forEach(direction => add(direction,source,value,strength))));
+    [['previousCareer','过往职业/经历',8],['lifeRoles','家庭与生活身份',8],['hobbies','个人爱好',4]].forEach(([key,source,strength]) => splitValues(profile[key]).forEach(value => {
+      const mapped=matches(value); if(mapped.length)mapped.forEach(direction => add(direction,source,value,strength)); else { const unknown=unknownDirection(value); if(unknown)add(unknown,source,value,strength); }
+    }));
     const legacy=[profile.selfIntro,profile.strengths,profile.services,profile.expertise,profile.specialties,profile.contentPreferences].filter(Boolean).join('｜');
     matches(legacy).forEach(direction=>add(direction,'已有个人资料',legacy,5));
     const peer=[...(profile.peerReviewSummary?.topTopics||[]),...(profile.peerReviewSummary?.topRoles||[])].map(x=>String(x?.label??x)).join('｜');
     matches(peer).forEach(direction=>add(direction,'客户反馈',peer,6));
-    return [...candidates.values()].map(candidate=>({...candidate,baseScore:BASE_SCORES[candidate.direction]||50,score:(BASE_SCORES[candidate.direction]||50)+candidate.evidenceStrength})).sort((a,b)=>b.score-a.score||b.baseScore-a.baseScore||b.evidenceStrength-a.evidenceStrength);
+    const goal=String(profile.primaryGoal||''); const bonusMap=goal==='recruitment'?RECRUITMENT_BONUS:CUSTOMER_BONUS;
+    return [...candidates.values()].map(candidate=>{
+      const baseScore=BASE_SCORES[candidate.direction]||50;
+      const multiSourceBonus=Math.max(0,candidate.sources.length-1)*3;
+      const goalBonus=bonusMap[candidate.direction]||0;
+      return {...candidate,baseScore,goalBonus,multiSourceBonus,score:baseScore+Math.min(candidate.evidenceScore,18)+multiSourceBonus+goalBonus};
+    }).sort((a,b)=>b.score-a.score||b.sources.length-a.sources.length||b.evidenceStrength-a.evidenceStrength||a.direction.localeCompare(b.direction,'zh-CN'));
   }
 
   window.rankIpContentBranches = collectCandidates;
