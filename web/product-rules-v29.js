@@ -6,7 +6,7 @@
   const uniq=values=>[...new Set((values||[]).filter(Boolean))];
   const missing=value=>/^(无|没有|暂无|未填|未填写|未设置|未提供|不知道|不详|NA|N\/A|null|none)$/i.test(text(value));
 
-  function knownAddresses(profile){const items=[];(profile?.peerReviewSummary?.topNicknames||[]).forEach(item=>{const label=text(item?.label);if(label&&!missing(label))items.push(label);});const preferred=text(profile?.preferredName);if(preferred&&!missing(preferred))items.push(preferred);const name=text(profile?.name);if(name){if(name.length===2)items.push(name.slice(1));if(name.length>=3)items.push(name.slice(-2));items.push(name);}return uniq(items).filter(Boolean);}
+  function knownAddresses(profile){const items=[];(profile?.peerReviewSummary?.topNicknames||[]).forEach(item=>{const label=text(item?.label);if(label&&!missing(label))items.push(label);});const preferred=text(profile?.preferredName);if(preferred&&!missing(preferred))items.push(preferred);const name=text(profile?.name);if(name){if(name.length>=3)items.push(name.slice(-2));items.push(name);}return uniq(items).filter(Boolean);}
   function evaluateNickname(name,profile){
     const value=text(name),issues=[],strengths=[];if(!value||missing(value))return{name:value,issues:['当前没有填写昵称'],strengths:[],hasPersonAnchor:false,missing:true};
     if(value.length<=10)strengths.push('长度比较利落，容易记');else if(value.length>14)issues.push('昵称偏长，不容易一次记住');
@@ -14,7 +14,7 @@
     if(/[©®™]|https?:\/\/|www\.|微信|vx|V信|电话|手机号/i.test(value))issues.push('包含联系方式、链接或导流信息');
     const matched=knownAddresses(profile).filter(address=>address&&value.includes(address));
     const distinct=uniq(matched.filter(a=>a.length>1));if(distinct.length>1)issues.push('一个昵称里出现了两个称呼主体，读起来像把两个名字拼在一起');
-    const hasPersonAnchor=distinct.length===1||matched.length===1;if(hasPersonAnchor)strengths.push('有稳定的人物称呼，人物识别度较好');
+    const hasPersonAnchor=distinct.length===1;if(hasPersonAnchor)strengths.push('有稳定的人物称呼，人物识别度较好');
     return{name:value,issues,strengths,hasPersonAnchor,missing:false};
   }
   function auditExistingNicknames(profile){window.aiaProfileRulesV27?.normalizeSignupProfile?.(profile);const rawVideo=text(profile?.videoNickname),rawXhs=text(profile?.xiaohongshuNickname);const video=missing(rawVideo)?'':rawVideo,xhs=missing(rawXhs)?'':rawXhs;const candidates=uniq([video,xhs]).filter(Boolean).map(name=>evaluateNickname(name,profile));const same=!!(video&&xhs&&video===xhs);const good=candidates.filter(item=>!item.issues.length&&item.hasPersonAnchor);return{video,xhs,same,candidates,preferred:good[0]?.name||''};}
