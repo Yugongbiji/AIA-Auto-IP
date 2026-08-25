@@ -37,7 +37,7 @@ systemctl stop "$SERVICE"
 restart_on_exit=1
 trap 'if [[ "${restart_on_exit:-0}" == 1 ]]; then systemctl start "$SERVICE" || true; fi' EXIT
 "$PREVIEW_DIR/.venv/bin/python" scripts/reset_preview_test_data.py --apply
-"$PREVIEW_DIR/.venv/bin/python" scripts/import_nickname_presets.py
+PYTHONPATH="$PREVIEW_DIR" "$PREVIEW_DIR/.venv/bin/python" scripts/import_nickname_presets.py
 
 log "6/7 重启 Preview 并检查本机/反代健康"
 systemctl start "$SERVICE"
