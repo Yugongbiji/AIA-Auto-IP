@@ -32,7 +32,7 @@
     const list=document.createElement('div'); list.className='strategy-chip-list';
     (values.length?values:['暂未确定']).forEach(value=>list.appendChild(chip(value,cls))); wrap.appendChild(list); return wrap;
   }
-  function collectionNames(values){return values.map(v=>COLLECTION_NAMES[v]||String(v).slice(0,5));}
+  function collectionNames(values){return values.map(v=>{const name=COLLECTION_NAMES[v]||String(v).slice(0,5);return /^《.*》$/.test(name)?name:`《${name}》`;});}
   function renderLine(title, values, kind, source='') {
     const card=document.createElement('article'); card.className=`ip-strategy-line ip-strategy-${kind}`;
     const h=document.createElement('h3'); h.textContent=title; card.appendChild(h);
