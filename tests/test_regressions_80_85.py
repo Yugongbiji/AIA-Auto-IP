@@ -80,12 +80,14 @@ def test_proposal_layout_contract_remains_vertical_for_nickname_and_sections():
 
 
 def test_floating_profile_entry_is_dom_driven_and_still_owned():
-    assert 'ip-floating-profile-button' in FLOAT
-    assert 'profileButton.innerHTML' in FLOAT
-    assert "state.activeTool==='ip'" not in FLOAT
+    assert 'aia-ip-owner-profile-button' in FLOAT
+    assert "owner: 'web/profile-float.js'" in FLOAT
+    assert "state.activeTool" not in FLOAT
     assert "!chat.classList.contains('hidden')" in FLOAT
-    assert 'syncVisibility' in FLOAT
-    assert 'ownsProfileData:false' in FLOAT
+    assert 'function sync()' in FLOAT
+    assert 'actions.hidden = !visible' in FLOAT
+    assert 'ownsProfileData: false' in FLOAT
+    assert 'independentDrawer: true' in FLOAT
 
 
 def test_script_detail_paging_resets_scroll_to_top():
