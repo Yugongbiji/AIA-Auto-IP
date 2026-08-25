@@ -49,8 +49,9 @@ def test_collection_recommendations_use_book_title_marks():
 
 
 def test_bio_visual_anchors_and_single_platform_recommendations_live_in_canonical_owner():
-    for emoji in ['👤', '🏅', '🧭']:
-        assert emoji in CORE
+    assert 'const BIO_EMOJIS=Object.freeze' in CORE
+    emoji_block = CORE.split('const BIO_EMOJIS', 1)[1].split('function safeXhs', 1)[0]
+    assert "'👤'" not in emoji_block
     assert 'function bioBody(profile,platform)' in CORE
     assert 'function complianceFooter(profile,platform)' in CORE
     assert "小红书简介 · 推荐版" in CORE
