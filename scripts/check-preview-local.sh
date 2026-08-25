@@ -8,7 +8,7 @@ log(){ printf '\n[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"; }
 fail(){ echo "❌ $*" >&2; exit 1; }
 warn(){ echo "⚠️ $*" >&2; }
 
-log "1/4 检查项目 Python 虚拟环境与 IP / Preview 回归测试"
+log "1/5 检查项目 Python 环境、核心契约与第三轮回归"
 PY="$ROOT/.venv/bin/python"
 if [[ ! -x "$PY" ]]; then
   fail "未找到 $PY。请先按 Preview 部署流程创建项目 .venv。"
@@ -20,9 +20,23 @@ fi
   tests/test_ip_policy_contract.py \
   tests/test_preview_ui_stability_contract.py \
   tests/test_regressions_80_85.py \
+  tests/test_product_experience_contract_round3.py \
+  tests/backend/test_xhs_formatting_contract.py \
+  tests/backend/test_script_persona_rules.py \
   -q
 
-log "2/4 检查 index.html 实际加载的 JavaScript 文件与可用语法门禁"
+log "2/5 检查 Python 关键运行文件语法"
+"$PY" -m py_compile \
+  script_server.py \
+  server.py \
+  backend/profile_semantic.py \
+  backend/script_api.py \
+  backend/script_persona_rules.py \
+  backend/xhs_formatting_contract.py
+
+echo "✅ Python 关键运行文件语法通过"
+
+log "3/5 检查 index.html 实际加载的 JavaScript 文件与可用语法门禁"
 mapfile -t JS_FILES < <(grep -oE '<script src="[^"]+"' web/index.html | sed -E 's/.*src="([^"]+)"/\1/' | grep -E '\.js$')
 [[ ${#JS_FILES[@]} -gt 0 ]] || fail "index.html 没有解析到任何 JS 文件。"
 for rel in "${JS_FILES[@]}"; do
@@ -43,14 +57,13 @@ else
   echo "✅ ${#JS_FILES[@]} 个实际加载 JS 文件均存在；JS 解析级门禁留给具备 Node 的本地/self-hosted QA。"
 fi
 
-log "3/4 禁止复活扫描：核心业务只能由唯一规则源拥有"
+log "4/5 禁止旧 Owner / 死链 / 全页面观察器复活"
 for retired in \
   product-integration-v30.js product-integration-v31.js product-integration-v33.js \
   product-rules-v15.js product-rules-v23.js product-rules-v26.js; do
   if grep -q "$retired" web/index.html; then fail "已停用脚本重新进入 index 加载链：$retired"; fi
 done
 
-# 80-85：静态 index 不够。所有当前实际加载脚本也不得在运行时重新注入退役业务层。
 for rel in "${JS_FILES[@]}"; do
   file="web/$rel"
   for retired in product-integration-v30.js product-integration-v31.js product-integration-v33.js; do
@@ -70,12 +83,29 @@ for file in "${LEGACY[@]}"; do
   if grep -q 'proposal\.contentMainline=' <<<"$compact"; then fail "旧层重新获得内容主线写权限：$file"; fi
 done
 
+if grep -q 'window\.scriptRecommendationV1' web/product-rules-v17.js; then
+  fail "脚本详情分页重新依赖退役推荐对象"
+fi
+if tr -d '[:space:]' < web/product-rules-v17.js | grep -q 'observe(document.body'; then
+  fail "V17 重新监听整个 document.body，存在 79 同类性能风险"
+fi
+if grep -q 'navigator\.clipboard' web/product-rules-v10.js; then
+  fail "V10 重新获得 Clipboard 写权限"
+fi
+if grep -q 'renderStructuredFeedback' web/product-rules-v29.js; then
+  fail "V29 重新获得客户反馈展示权限"
+fi
+
 grep -q 'window.aiaIpPolicy' web/ip-policy-core.js || fail "ip-policy-core.js 未导出唯一 IP policy"
 grep -q 'function complianceFooter' web/ip-policy-core.js || fail "合规尾部唯一 owner 缺失"
 grep -q 'rankIpContentBranches' web/ip-policy-core.js || fail "内容支线唯一排序入口缺失"
-echo "✅ 禁止复活扫描通过（含运行时动态加载检查）"
+grep -q '/api/proposal/canonical' web/ip-policy-core.js || fail "canonical 方案持久化调用缺失"
+grep -q 'path == "/api/proposal/canonical"' script_server.py || fail "canonical 方案服务器保存入口缺失"
+grep -q 'script-library-pagination' web/script-recommendation-v1.js || fail "无 IP 脚本库真实分页缺失"
+grep -q 'aia-auto-ip-session:preview' web/api-routing-v1.js || fail "Preview 本地会话隔离缺失"
+echo "✅ Owner / 死链 / 性能 / 环境隔离门禁通过"
 
-log "4/4 检查当前 Git 状态"
+log "5/5 检查当前 Git 状态"
 echo "branch: $(git branch --show-current)"
 echo "commit: $(git rev-parse --short HEAD)"
 if [[ -n "$(git status --porcelain)" ]]; then
