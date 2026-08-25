@@ -103,9 +103,7 @@
       replies.querySelectorAll('.custom-multi-input,.multi-confirm,.custom-selected').forEach((node) => node.remove());
       replies.querySelectorAll('button').forEach((button) => {
         const value = String(button.textContent || '').trim();
-        if (!value) return;
-        button.dataset.v3Option = value;
-        button.addEventListener('pointerdown', (event) => event.preventDefault(), { once:false });
+        if (value) button.dataset.v3Option = value;
       });
       renderTray();
       syncOptionButtons();
