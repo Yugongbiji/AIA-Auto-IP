@@ -1,6 +1,7 @@
 // 昵称受控生成：唯一 Owner。
 // 最新规则：客户/身边人真实高频称呼优先；最终昵称必须且只能包含一个人物称呼主体；
 // 禁止随意截取姓名单字造昵称；过往职业只进入简介、不进入推荐昵称；候选必须通过中文口语自然度检查。
+// #111：已有特色原昵称优先；否则优先“人物锚点 + 当前仍成立的鲜明兴趣/特点”，单独本名/称呼仅作稳妥备选。
 (function(){
   'use strict';
   const BANNED=/保险|友邦|\bAIA\b|金融|理财|贷款|股票|基金|医疗/i;
@@ -52,9 +53,24 @@
   function regionAsset(p){const city=t(p.city);return city&&!missing(city)&&city.length<=8?city:'';}
   function neutralTopic(p){
     const secondary=Array.isArray(p.secondaryContent)?t(p.secondaryContent[0]):t(p.secondaryContent);
-    // #107：不再用“生活/成长”等万能尾缀批量生产同质昵称，只保留有明确内容辨识度的方向。
     const map={'育儿':'育儿','创业经营':'创业','读书':'读书','旅行':'旅行','跑步':'跑步','骑行':'骑行','摄影':'摄影','户外':'户外','运动健身':'运动'};
     return map[secondary]||'';
+  }
+  function distinctiveOptions(profile,anchor){
+    // #111：只取当前仍成立、由本人资料明确支持的兴趣/生活特点；绝不读取过往职业来制造昵称。
+    const s=[profile.selfIntro,profile.interests,profile.hobbies,profile.lifeRoles,Array.isArray(profile.secondaryContent)?profile.secondaryContent.join(' '):profile.secondaryContent].map(t).join(' ');
+    const out=[];
+    const add=(name,reason)=>{if(name&&!out.some(x=>x.name===name))out.push({name,angle:'突出记忆点',reason});};
+    if(/八块腹肌/.test(s)){add(`八块腹肌${anchor}`,'本人资料明确的持续健身特点具有强记忆点，比单独本名更有辨识度');add(`${anchor}练起来`,'本人长期健身且有训练内容时，可用更有网感的自然表达');}
+    if(/手帐/.test(s))add(`手帐里的${anchor}`,'本人长期手帐兴趣/内容资产可形成稳定记忆点');
+    if(/攀岩/.test(s))add(`爱攀岩的${anchor}`,'本人持续攀岩兴趣可形成鲜明生活记忆点');
+    if(/滑雪/.test(s))add(`爱滑雪的${anchor}`,'本人持续滑雪兴趣可形成鲜明生活记忆点');
+    if(/网球/.test(s))add(`网球搭子${anchor}`,'本人持续网球兴趣可形成自然、有网感的生活记忆点');
+    if(/羽毛球/.test(s))add(`羽球搭子${anchor}`,'本人持续羽毛球兴趣可形成自然、有网感的生活记忆点');
+    if(/足球/.test(s))add(`足球迷${anchor}`,'本人持续足球兴趣可形成稳定记忆点');
+    if(/读书|阅读/.test(s))add(`爱读书的${anchor}`,'本人持续阅读兴趣可形成稳定生活记忆点');
+    if(/插花/.test(s))add(`爱插花的${anchor}`,'本人持续插花兴趣可形成鲜明生活记忆点');
+    return out.slice(0,2);
   }
   function existingNickname(profile,anchor){
     const values=[profile.videoNickname,profile.xiaohongshuNickname].map(t).filter(v=>v&&!missing(v)&&!BANNED.test(v));
@@ -74,12 +90,9 @@
   function awkward(name,profile,anchor,{existing=false}={}){
     const n=t(name).replace(/\s+/g,'');
     if(!n)return true;
-    // #106：同一人物主体不能用“全名 + 真实称呼”重复表达，如“王一的一一世界”。
     const full=t(profile.name).replace(/\s+/g,'');
     if(full&&anchor&&full!==anchor&&n.includes(full)&&n.includes(anchor))return true;
-    // 动作句更像标题而不是昵称，例如“yana打网球”。
     if(new RegExp(`^${anchor}(打|跑|去|做|学|玩|吃|喝|逛)`).test(n))return true;
-    // #107：已有昵称可保留成熟表达；新生成候选不批量使用万能模板。
     if(!existing&&GENERIC_SUFFIXES.some(s=>n===`${anchor}${s}`))return true;
     return false;
   }
@@ -89,8 +102,11 @@
     const add=(name,angle,reason,opts={})=>{name=safeName(name,a);if(name&&!mechanical(name,profile,a)&&!awkward(name,profile,a,opts)&&!candidates.some(x=>x.name===name))candidates.push({name,angle,reason});};
 
     const existing=existingNickname(profile,a);
-    if(existing)add(existing,'优先保留','已有昵称自然、合规且包含稳定人物称呼时，优先保护已有用户记忆',{existing:true});
-    add(a,'突出人物','优先使用客户/身边人真实称呼；没有真实称呼时再使用本人明确称呼或本名兜底');
+    if(existing)add(existing,'优先保留','已有昵称自然、合规、有特色且包含稳定人物称呼时，优先保护已有用户记忆',{existing:true});
+    // #111：没有成熟原昵称时，先尝试有证据的当前兴趣/特点型昵称，再给纯人物称呼兜底。
+    const distinctive=distinctiveOptions(profile,a);
+    distinctive.forEach(item=>add(item.name,item.angle,item.reason));
+    add(a,'突出人物','优先使用客户/身边人真实称呼；纯称呼/本名是稳妥备选，但有真实鲜明特点时不默认作为首选');
 
     // #108：过往职业只用于简介/IP 定位，不再作为推荐昵称路线，避免把历史职业误写成当前身份。
     const family=familyIdentity(profile);if(family)add(`${family}${a}`,'突出身份','真实且当前持续存在的家庭/生活身份可形成稳定人物记忆，只在本人资料有明确证据时使用');
@@ -124,5 +140,5 @@
     return proposal;
   }
   if(typeof renderProposal==='function'){const base=renderProposal;renderProposal=function(proposal,version){enforce(proposal,state.profile||{});return base(proposal,version);};}
-  window.aiaNicknamePolicyV1=Object.freeze({controlledOptions,enforce,BANNED,anchors,pickAnchor,aiFallbackOptions,naturalNameAnchors,awkward});
+  window.aiaNicknamePolicyV1=Object.freeze({controlledOptions,enforce,BANNED,anchors,pickAnchor,aiFallbackOptions,naturalNameAnchors,awkward,distinctiveOptions});
 })();
