@@ -24,6 +24,7 @@ fi
   tests/test_regressions_80_85.py \
   tests/test_product_experience_contract_round3.py \
   tests/test_current_effective_requirements_contract.py \
+  tests/test_release_blockers_114_119.py \
   tests/backend/test_xhs_formatting_contract.py \
   tests/backend/test_script_persona_rules.py \
   -q
