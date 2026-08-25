@@ -1,5 +1,7 @@
 // 产品规则 V17：脚本详情支持上一篇 / 下一篇，按当前推荐或脚本库列表顺序浏览。
+// 只负责详情页浏览 UI；不得监听整个 document.body，也不得依赖已退役推荐对象。
 (function () {
+  'use strict';
   const originalFetch = window.fetch.bind(window);
   let browseItems = [];
   let currentIndex = -1;
@@ -92,16 +94,18 @@
   function openRelative(step) {
     const targetIndex = currentIndex + step;
     const target = browseItems[targetIndex];
-    if (!target || !window.scriptRecommendationV1?.openDetail) return;
+    if (!target || !window.aiaScriptRecommendation?.openDetail) return;
     currentIndex = targetIndex;
-    window.scriptRecommendationV1.openDetail(target.id, target.direction);
+    window.aiaScriptRecommendation.openDetail(target.id, target.direction);
   }
 
-  const observer = new MutationObserver(() => {
-    const screen = document.getElementById('script-detail-screen');
-    if (screen && !screen.classList.contains('hidden')) syncButtons();
-  });
-  observer.observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
+  const detailScreen = document.getElementById('script-detail-screen');
+  if (detailScreen) {
+    new MutationObserver(() => { if (!detailScreen.classList.contains('hidden')) syncButtons(); })
+      .observe(detailScreen, { attributes: true, attributeFilter: ['class'] });
+  }
   ensureButtons();
   syncButtons();
+
+  window.aiaScriptDetailPagingV17 = Object.freeze({ syncButtons, ownsDetailData:false });
 })();
