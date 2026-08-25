@@ -6,11 +6,12 @@
 .aia-ip-owner-drawer[hidden],
 .aia-ip-owner-button[hidden] { display:none!important; }
 
+/* 固定在 composer 上方的安全区，不遮挡输入框/发送按钮；不再依赖拖动。 */
 .aia-ip-owner-actions {
   position:fixed;
   z-index:1200;
   right:20px;
-  bottom:24px;
+  bottom:104px;
   display:flex;
   flex-direction:column;
   gap:9px;
@@ -59,9 +60,9 @@
   position:fixed;
   z-index:1199;
   right:82px;
-  bottom:24px;
+  bottom:104px;
   width:min(560px,calc(100vw - 120px));
-  max-height:min(78dvh,760px);
+  max-height:min(72dvh,700px);
   overflow:auto;
   border:1px solid #eadde1;
   border-radius:18px;
@@ -118,14 +119,18 @@
 .aia-ip-owner-drawer-hint { margin:10px 16px 15px; padding-top:10px; border-top:1px solid #eee9eb; color:#7a7278; font-size:11px; }
 
 @media (max-width:720px) {
-  .aia-ip-owner-actions { right:12px; bottom:16px; gap:7px; }
+  .aia-ip-owner-actions {
+    right:12px;
+    bottom:calc(88px + env(safe-area-inset-bottom, 0px));
+    gap:7px;
+  }
   .aia-ip-owner-button { width:46px; min-width:46px; height:46px; min-height:46px; }
   .aia-ip-owner-tooltip { display:none; }
   .aia-ip-owner-drawer {
     right:10px;
-    bottom:72px;
+    bottom:calc(148px + env(safe-area-inset-bottom, 0px));
     width:calc(100vw - 20px);
-    max-height:72dvh;
+    max-height:64dvh;
     border-radius:15px;
   }
   .aia-ip-owner-drawer-body { padding:11px 11px 2px; }
