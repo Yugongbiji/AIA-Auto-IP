@@ -2,6 +2,8 @@
 // 昵称由 nickname-policy / V29 负责；悬浮按钮由 profile-float 负责。
 (function () {
   'use strict';
+  let semanticKey='';
+  let semanticRunning=false;
   function text(value) { return String(value ?? '').trim(); }
   function splitValues(value) { return text(value).split(/[｜|、,，;；/\n]+/).map((v) => v.trim()).filter(Boolean); }
   function uniq(values) { return [...new Set((values || []).filter(Boolean))]; }
@@ -35,9 +37,12 @@
     return profile;
   }
 
-  async function semanticEnrich(profile) {
+  function currentSemanticKey(profile){return `${text(profile?.primaryGoal)}|${text(profile?.selfIntro)}`;}
+  async function semanticEnrich(profile,force=false) {
     normalizeSignupProfile(profile); extractFactsFromIntro(profile);
-    if (!text(profile?.selfIntro)) return {};
+    const key=currentSemanticKey(profile);
+    if (!text(profile?.selfIntro) || semanticRunning || (!force && key===semanticKey)) return {};
+    semanticKey=key; semanticRunning=true;
     try {
       const response = await fetch('/api/profile/analyze', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ profile }) });
       if (!response.ok) return {};
@@ -51,10 +56,13 @@
           renderProfile();
           if (state.matched) Promise.resolve(persistMatchedProfile()).catch(()=>{});
           window.aiaScriptRecommendation?.reset?.();
+          const currentQuestion=questions?.[state.currentQuestion];
+          if(currentQuestion&&text(profile[currentQuestion.key])){state.currentQuestion+=1;setChips(null);presentQuestion();}
         }
       }
       return applied;
     } catch (_) { return {}; }
+    finally { semanticRunning=false; }
   }
 
   function normalizeCountItems(items) {
@@ -90,8 +98,8 @@
 
   if (!document.getElementById('product-rules-v27-style')) { const style = document.createElement('style'); style.id = 'product-rules-v27-style'; style.textContent = `.profile-group-full{grid-column:1/-1}.peer-feedback-card{display:block!important;padding-top:18px;border-top:1px solid #eee}.peer-feedback-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px}.peer-feedback-meta{font-size:12px;color:#8a7f83}.peer-feedback-section{margin:14px 0}.peer-feedback-section h4{margin:0 0 8px;font-size:13px;color:#5f5659}.peer-feedback-chips{display:flex;flex-wrap:wrap;gap:8px}.peer-feedback-chip{display:inline-flex;align-items:center;padding:7px 10px;border:1px solid #eadfe3;border-radius:999px;background:#fff7f9;color:#5f3d48;font-size:13px}.peer-feedback-quote-list{display:grid;gap:8px}.peer-feedback-quote-list p{margin:0;padding:10px 12px;border-radius:10px;background:#f8f7f7;line-height:1.65;color:#4f484a}.peer-feedback-more{margin-top:8px}`; document.head.appendChild(style); }
 
-  if (typeof startWorkspace === 'function') { const base = startWorkspace; startWorkspace = function startWorkspaceV27(profile, ...rest) { extractFactsFromIntro(profile); const result=base(profile, ...rest); queueMicrotask(()=>semanticEnrich(profile)); return result; }; }
-  if (typeof renderProfile === 'function') { const base = renderProfile; renderProfile = function renderProfileV27() { extractFactsFromIntro(state.profile || {}); const result = base(); requestAnimationFrame(() => { renderPeerFeedback(); ensureIntroLast(); }); return result; }; }
+  if (typeof startWorkspace === 'function') { const base = startWorkspace; startWorkspace = function startWorkspaceV27(profile, ...rest) { semanticKey='';extractFactsFromIntro(profile); const result=base(profile, ...rest); queueMicrotask(()=>semanticEnrich(profile)); return result; }; }
+  if (typeof renderProfile === 'function') { const base = renderProfile; renderProfile = function renderProfileV27() { extractFactsFromIntro(state.profile || {}); const result = base(); requestAnimationFrame(() => { renderPeerFeedback(); ensureIntroLast(); }); queueMicrotask(()=>semanticEnrich(state.profile||{})); return result; }; }
 
   normalizeSignupProfile(state.profile || {});
   window.aiaProfileRulesV27 = Object.freeze({ normalizeSignupProfile, extractFactsFromIntro, semanticEnrich, renderPeerFeedback, ensureIntroLast, ownsNickname:false, ownsFloatingUi:false, ownsPeerFeedback:true });
