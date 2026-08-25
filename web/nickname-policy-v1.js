@@ -98,7 +98,8 @@
   function approvedPresetOptions(profile){
     const preset=profile?.nicknamePreset;
     if(!preset||t(preset.status)!=='approved')return [];
-    const names=uniq([t(preset.primary),...(Array.isArray(preset.candidates)?preset.candidates.map(t):[])]).filter(name=>name&&!BANNED.test(name)&&hasChinese(name)&&name.length<=18);
+    const alternatives=Array.isArray(preset.alternatives)?preset.alternatives:(Array.isArray(preset.candidates)?preset.candidates:[]);
+    const names=uniq([t(preset.primary),...alternatives.map(t)]).filter(name=>name&&!BANNED.test(name)&&hasChinese(name)&&name.length<=18);
     return names.map((name,index)=>({
       name,
       angle:index===0?'人工确认首选':'人工确认备选',
