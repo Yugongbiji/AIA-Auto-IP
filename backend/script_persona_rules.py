@@ -1,8 +1,10 @@
-"""Script rewrite persona contract: make account tone explicit and add format resilience."""
+"""Creative runtime contracts: account tone, format retry, and XHS deterministic layout."""
 from __future__ import annotations
 
 import sys
 import time
+
+from backend import xhs_formatting_contract
 
 
 FORMAT_FAILURE_MARKERS = ("改写格式不完整", "没有返回", "改写稿不完整")
@@ -66,6 +68,7 @@ def _call_with_format_retry(original, prepared, ip_plan, source, revision):
 
 
 def install(core_module) -> None:
+    xhs_formatting_contract.install(core_module)
     if getattr(core_module.deepseek_script_rewrite, "__aia_persona_contract__", False):
         return
     original = core_module.deepseek_script_rewrite
