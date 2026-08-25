@@ -86,8 +86,10 @@ def test_109_simple_person_name_routes_are_capped_and_not_filled_with_aliases():
     owner = read("web/nickname-policy-v1.js")
     rules = read("rules/nickname-naturalness-rules-20260825.md")
     assert "纯姓名、真实称呼及其极简变体合计最多 **2 个**" in rules
-    assert "这里只生成一个核心人物称呼型候选" in owner
-    assert "已有好昵称最多再占一个名额" in owner
+    assert "const existing=existingNickname(profile,a);" in owner
+    assert "if(existing)add(existing,'优先保留'" in owner
+    assert "add(a,'突出人物'" in owner
+    assert owner.count("add(a,'突出人物'") == 1
     assert "郭局 / 东哥 / 郭老师 / 郭旭东" in rules
     assert "宁可只推荐 2–3 个" in rules
 
