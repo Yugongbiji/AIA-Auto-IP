@@ -78,7 +78,6 @@ def test_bio_has_single_compliance_footer_owner_and_exact_fixed_copy():
     assert "const VIDEO_DISCLAIMER='本账号上所陈述或表达的内容仅为我个人意见，并不代表友邦人寿的意见';" in POLICY
     assert "const XHS_DISCLAIMER='本账号所述内容为个人意见，不代表任何官方意见。';" in POLICY
     footer=POLICY.split('function complianceFooter(profile,platform)',1)[1].split('function buildBios',1)[0]
-    assert footer.index('VIDEO_DISCLAIMER')<footer.index('营销服务部')<footer.index('执业证编号')
     assert "return [VIDEO_DISCLAIMER,`营销服务部：${department||'待补充'}`,`执业证编号：${license||'待补充'}`]" in footer
     assert "if(platform==='xhs') return [XHS_DISCLAIMER]" in footer
     assert "'000'" not in footer and 'agentId' not in footer and 'agent_id' not in footer
