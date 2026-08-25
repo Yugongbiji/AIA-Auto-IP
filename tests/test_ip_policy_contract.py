@@ -159,10 +159,14 @@ def test_missing_nickname_is_never_treated_as_keepable():
 
 
 def test_floating_buttons_are_icons_only_and_visibility_has_one_page_truth_source():
-    assert '<svg aria-hidden="true"' in FLOAT and 'profileButton.innerHTML' in FLOAT and 'proposalButton.innerHTML' in FLOAT
-    assert '最新 IP 方案 · V' not in FLOAT and "querySelector('span:last-child')" not in FLOAT and "state.activeTool==='ip'" not in FLOAT
-    assert 'isIpConversationVisible' in FLOAT and 'ownsProfileData:false' in FLOAT
-    assert 'floatingUiStartWorkspace' in FLOAT and 'queueMicrotask(syncVisibility)' in FLOAT and 'requestAnimationFrame(syncVisibility)' in FLOAT
+    assert 'aia-ip-owner-profile-button' in FLOAT and 'aia-ip-owner-proposal-button' in FLOAT
+    assert "makeButton(IDS.profileButton, '我的 IP 资料'" in FLOAT and "makeButton(IDS.proposalButton, 'IP 方案'" in FLOAT
+    assert '最新 IP 方案 · V' not in FLOAT and "querySelector('span:last-child')" not in FLOAT and 'state.activeTool' not in FLOAT
+    assert 'function workspaceVisible()' in FLOAT and 'function sync()' in FLOAT
+    assert 'actions.hidden = !visible' in FLOAT and 'proposalButton.hidden = !latestProposal()' in FLOAT
+    assert "owner: 'web/profile-float.js'" in FLOAT and 'ownsProfileData: false' in FLOAT and 'independentDrawer: true' in FLOAT
+    assert 'floatingOwnerStartWorkspace' in FLOAT and 'queueMicrotask(sync)' in FLOAT
+    assert "document.querySelector('.profile-panel')" not in FLOAT
 
 
 def test_existing_nickname_audit_reuses_proposal_card_component():
