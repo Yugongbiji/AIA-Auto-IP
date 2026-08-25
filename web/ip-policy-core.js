@@ -177,60 +177,101 @@
     if(pool.some(item=>item.type===asset.type&&sameMeaning(item.value,asset.value)))return;
     pool.push(asset);
   }
-  function bioAssets(profile){
-    const pool=[];const job=career(profile),family=familyIdentity(profile),city=text(profile?.city),ps=proofs(profile),traits=feedback(profile),services=serviceLabels(profile);
-    if(job)pushAsset(pool,{type:'career',value:job,score:100,source:'真实职业/经历'});
-    if(family)pushAsset(pool,{type:'family',value:family,score:95,source:'家庭/生活身份'});
-    ps.forEach((value,index)=>pushAsset(pool,{type:'proof',value,score:90-index*4,source:'学历/年限/荣誉'}));
-    if(services.length)pushAsset(pool,{type:'service',value:services.slice(0,4).join('｜'),items:services.slice(0,4),score:84,source:'真实服务'});
-    traits.forEach((value,index)=>pushAsset(pool,{type:'feedback',value,score:74-index*3,source:'多人客户反馈'}));
-    if(city&&!OMIT.test(city))pushAsset(pool,{type:'region',value:city,score:58,source:'所在城市'});
-    const interests=uniq([...split(profile?.hobbies),...secondaryTopics(profile).topics]).filter(v=>SECONDARY_ONLY.includes(v)||v.length<=10).slice(0,2);
-    if(interests.length)pushAsset(pool,{type:'interest',value:interests.join('、'),items:interests,score:50,source:'真实兴趣/内容支线'});
+
+  // 简介使用比 headline 更严格的职业证据边界：泛领域词不能升级为职业经历。
+  const BIO_GENERIC_DOMAINS=/^(法律|教育|金融|医疗|健康|养老|育儿|科技|互联网|房地产|管理|市场|销售|财务常识|职场|创业经营)$/;
+  const BIO_CAREER_SIGNAL=/法务|律师|教师|老师|医生|工程师|HR|人力资源|财务|会计|银行|记者|主持人|程序员|创业者|企业管理|管理者|教练|精算师|工作经验|从业经验|从业经历|工作经历/;
+  function normalizeBioCareer(value){
+    let v=text(value).replace(/^曾经?从事过?/,'').replace(/^做保险(之前|前)[，,]?/,'').trim();
+    if(!v||OMIT.test(v)||BIO_GENERIC_DOMAINS.test(v))return '';
+    if(!BIO_CAREER_SIGNAL.test(v))return '';
+    v=v.replace(/(工作经验|从业经验|从业经历|工作经历){2,}$/,'工作经验');
+    if(/\d+\s*年/.test(v)&&/法务/.test(v)&&!/经验|经历/.test(v))v=`${v}工作经验`;
+    else if(/\d+\s*年/.test(v)&&/法律相关工作/.test(v)&&!/经验|经历/.test(v))v=`${v}经验`;
+    else if(!/经验|经历/.test(v)&&/法务/.test(v))v=`${v}工作经验`;
+    return v;
+  }
+  function bioCareerFacts(profile){
+    const explicit=split(profile?.previousCareer).map(normalizeBioCareer).filter(Boolean);
+    // 个人介绍只有出现明确职业/工作语义时才提取，单独出现“法律”等领域词不构成职业证据。
+    const intro=text(profile?.selfIntro);const derived=[];
+    const patterns=[
+      /(\d+\s*年[^，。；\n]{0,12}(?:企业)?法务(?:工作)?(?:经验|经历)?)/,
+      /(\d+\s*年[^，。；\n]{0,12}法律相关工作(?:经验|经历)?)/,
+      /(?:曾任|曾做|从事|工作于|任职于)[^，。；\n]{0,16}(法务|律师|教师|老师|医生|工程师|HR|人力资源|财务|会计|银行从业者|记者|主持人|程序员|企业管理者)/
+    ];
+    patterns.forEach(pattern=>{const m=intro.match(pattern);if(m){const n=normalizeBioCareer(m[1]||m[0]);if(n)derived.push(n);}});
+    return uniq([...explicit,...derived]);
+  }
+  function bioEducationFacts(profile){
+    const raw=[profile?.schoolTier,profile?.education,profile?.overseas].map(text).join(' ');const out=[];
+    if(/博士/.test(raw))out.push('博士'); else if(/硕士/.test(raw))out.push('硕士'); else if(/本科/.test(raw))out.push('本科'); else if(/大专/.test(raw))out.push('大专');
+    if(/QS\s*前?\s*50/i.test(raw))out.push('QS前50'); else if(/QS\s*前?\s*100/i.test(raw))out.push('QS前100');
+    if(/985/.test(raw))out.push('985'); if(/211/.test(raw))out.push('211'); if(/留学|海归|海外/.test(raw))out.push('海外学习经历');
+    return uniq(out);
+  }
+  function bioHonorFacts(profile){return uniq(split(profile?.honors).filter(v=>v&&!OMIT.test(v)));}
+  function bioInsuranceExperience(profile){const v=text(profile?.insuranceYears).replace(/年$/,'');return v?`${v}年保险从业经验`:'';}
+  function bioTraitFacts(profile){
+    const items=profile?.peerReviewSummary?.topTraits||profile?.peerReviewSummary?.topImpressions||[];
+    const controlled=/^(靠谱|真诚|细致|有耐心|理性|务实|有温度|温暖|阳光|行动力强|长期主义)$/;
+    return uniq(items.filter(i=>Number(i?.count||1)>=2).map(i=>text(i?.label??i)).filter(v=>controlled.test(v)));
+  }
+  function bioServiceFacts(profile,platform){
+    const evidence=['services','serviceAreas','serviceCapabilities','expertise','specialties'].flatMap(k=>split(profile?.[k])).join('｜');
+    const rules=[[/养老|退休/,'养老规划'],[/教育金|子女教育/,'子女教育'],[/财富|资产配置|传承/,'财富规划'],[/家庭保障|家庭保险/,'家庭保障'],[/重疾|医疗|健康保障/,'健康保障'],[/企业主|企业保障|团险/,'企业保障'],[/理赔/,'理赔协助'],[/保单检视|保单整理|保单分析/,'保单检视'],[/保障规划|保险规划|风险保障/,'保障规划']];
+    let values=uniq(rules.filter(([p])=>p.test(evidence)).map(([,label])=>label));
+    if(inferPrimaryGoal(profile)===PRIMARY_GOALS.RECRUITMENT)values=uniq(['职业选择','转型成长',...values]);
+    if(platform==='xhs')values=values.filter(safeXhs);
+    return values;
+  }
+  function bioInterestFacts(profile){return uniq([...split(profile?.hobbies),...secondaryTopics(profile).topics]).filter(v=>v&&!OMIT.test(v));}
+  function bioAssets(profile,platform='video'){
+    const pool=[];const family=familyIdentity(profile);const careers=bioCareerFacts(profile);const education=bioEducationFacts(profile);const insurance=bioInsuranceExperience(profile);const honors=bioHonorFacts(profile);const traits=bioTraitFacts(profile);const services=bioServiceFacts(profile,platform);const interests=bioInterestFacts(profile);
+    if(family)pushAsset(pool,{type:'identity',subtype:'family',value:family,score:100,source:'家庭/生活身份'});
+    careers.forEach((value,index)=>pushAsset(pool,{type:'identity',subtype:'career',value,score:98-index,source:'明确职业/经历'}));
+    education.forEach((value,index)=>pushAsset(pool,{type:'advantage',subtype:'education',value,score:94-index,source:'明确学历'}));
+    if(insurance)pushAsset(pool,{type:'advantage',subtype:'insurance',value:insurance,score:92,source:'保险从业年限'});
+    honors.forEach((value,index)=>pushAsset(pool,{type:'advantage',subtype:'honor',value,score:90-index,source:'真实荣誉'}));
+    traits.forEach((value,index)=>pushAsset(pool,{type:'advantage',subtype:'trait',value,score:82-index,source:'多人客户反馈'}));
+    services.forEach((value,index)=>pushAsset(pool,{type:'value',subtype:'service',value,score:88-index,source:'真实服务/内容价值'}));
+    interests.forEach((value,index)=>pushAsset(pool,{type:'identity',subtype:'interest',value,score:55-index,source:'真实兴趣'}));
     return pool.sort((a,b)=>b.score-a.score);
   }
-  function identitySentence(profile){
-    const family=familyIdentity(profile),job=career(profile);
-    if(family&&job&&!sameMeaning(family,job))return `${family}，曾从事${job}`;
-    return family || (job?`曾从事${job}`:'');
+  function charWeight(value){return [...text(value)].reduce((n,ch)=>n+(/[\u0000-\u00ff]/.test(ch)?0.6:1),0);}
+  function packBioItems(items,maxWeight=22,maxLines=3){
+    const clean=uniq(items.map(text).filter(Boolean));const lines=[];let current='';
+    clean.forEach(item=>{
+      const candidate=current?`${current}｜${item}`:item;
+      if(current&&charWeight(candidate)>maxWeight){lines.push(current);current=item;}else current=candidate;
+    });
+    if(current)lines.push(current);
+    return lines.slice(0,maxLines);
   }
-  function proofSentence(assets){
-    const values=assets.filter(a=>a.type==='proof').slice(0,2).map(a=>a.value);
-    return values.length?`专业经历里，比较有代表性的是${values.join('、')}`:'';
-  }
-  function feedbackSentence(assets){const values=assets.filter(a=>a.type==='feedback').slice(0,2).map(a=>a.value);return values.length?`客户比较常提到我${values.join('、')}`:'';}
-  function serviceSentence(assets){const asset=assets.find(a=>a.type==='service');return asset?.items?.length?asset.items.join('｜'):'';}
-  function interestSentence(assets){const asset=assets.find(a=>a.type==='interest');return asset?.items?.length?`生活里也会分享${asset.items.slice(0,2).join('、')}`:'';}
-  function regionSentence(assets){const asset=assets.find(a=>a.type==='region');return asset?`在${asset.value}生活和工作`:'';}
-  function mainBioLine(profile,platform){
-    const recruitment=inferPrimaryGoal(profile)===PRIMARY_GOALS.RECRUITMENT;
-    if(recruitment)return platform==='xhs'?'分享职业选择、成长与长期主义相关内容':'分享职业选择、转型成长与团队真实经验';
-    return platform==='xhs'?'分享家庭保障、养老准备与长期规划相关内容':'分享保险、家庭保障、养老与长期规划相关内容';
+  function dimensionLines(profile,platform){
+    const assets=bioAssets(profile,platform);
+    const identityCore=assets.filter(a=>a.type==='identity'&&a.subtype!=='interest').map(a=>a.value);
+    const identityInterest=assets.filter(a=>a.type==='identity'&&a.subtype==='interest').map(a=>a.value);
+    const advantages=assets.filter(a=>a.type==='advantage').map(a=>a.value);
+    let values=assets.filter(a=>a.type==='value').map(a=>a.value);
+    if(!values.length){
+      values=inferPrimaryGoal(profile)===PRIMARY_GOALS.RECRUITMENT?['职业选择','转型成长','长期发展']:(platform==='xhs'?['家庭保障','养老规划','长期规划']:['家庭保障','养老规划','保险知识']);
+      if(platform==='xhs')values=values.filter(safeXhs);
+    }
+    const identity=[...packBioItems(identityCore),...packBioItems(identityInterest)].slice(0,3);
+    return {identity,advantage:packBioItems(advantages),value:packBioItems(values)};
   }
   function dedupeBioLines(lines){
-    const out=[];
-    lines.map(text).filter(Boolean).forEach(line=>{if(!out.some(existing=>sameMeaning(existing,line)))out.push(line);});
-    return out;
+    const out=[];lines.map(text).filter(Boolean).forEach(line=>{if(!out.some(existing=>sameMeaning(existing,line)))out.push(line);});return out;
   }
-  function bioBody(profile,platform,variant){
-    const assets=bioAssets(profile),identity=identitySentence(profile),main=mainBioLine(profile,platform),proof=proofSentence(assets),feedbackText=feedbackSentence(assets),service=serviceSentence(assets),interest=interestSentence(assets),region=regionSentence(assets);
-    let raw=[];
-    if(variant==='memory'){
-      raw=[emojiLine('👤',identity||region),feedbackText?emojiLine('✨',feedbackText):'',emojiLine('💬',main),interest?emojiLine('🌿',interest):'',proof?emojiLine('🏅',proof):''];
-    }else if(variant==='service'){
-      raw=[emojiLine('👤',identity||region),emojiLine('💬',main),service?emojiLine('🧭',service):'',proof?emojiLine('🏅',proof):'',feedbackText?emojiLine('✨',feedbackText):''];
-    }else{
-      raw=[emojiLine('👤',identity||region),proof?emojiLine('🏅',proof):'',emojiLine('💬',main),service?emojiLine('🧭',service):'',feedbackText?emojiLine('✨',feedbackText):''];
-    }
+  function bioBody(profile,platform){
+    const groups=dimensionLines(profile,platform);const raw=[];
+    groups.identity.forEach(v=>raw.push(emojiLine('👤',v)));
+    groups.advantage.forEach(v=>raw.push(emojiLine('🏅',v)));
+    groups.value.forEach(v=>raw.push(emojiLine('🧭',v)));
     let lines=dedupeBioLines(raw);
-    // 地域和兴趣是次级资产，只在更强资产不足或记忆型策略中补充，不为“丰富”机械凑行。
-    if(lines.length<4&&region&&!(identity||'').includes(region))lines.push(emojiLine('📍',region));
-    if(lines.length<4&&interest&&variant!=='service')lines.push(emojiLine('🌿',interest));
-    lines=dedupeBioLines(lines).slice(0,5);
     if(platform==='xhs')lines=lines.filter(safeXhs);
-    // 平台过滤后也必须保留主价值表达；如小红书敏感词过滤掉某行，使用合规的价值表达补位。
-    if(platform==='xhs'&&!lines.some(line=>/分享|记录|聊/.test(line))){const safeMain='💬 分享家庭成长、养老准备与长期规划中的实用经验';if(safeXhs(safeMain))lines.push(safeMain);}
-    return dedupeBioLines(lines).slice(0,5);
+    return lines;
   }
   function explicitLicense(profile){return text(profile?.licenseNumber||profile?.practiceLicense||profile?.licenseNo||profile?.['执业证编号']||profile?.['执业编号']);}
   function complianceFooter(profile,platform){
@@ -241,8 +282,8 @@
     return out;
   }
   function buildBios(profile,platform){
-    const defs=[['方案 A · 专业背书','proof'],['方案 B · 人设记忆','memory'],['方案 C · 价值服务','service']];
-    return defs.map(([label,variant])=>({label,focus:variant==='proof'?'我是谁 + 为什么值得相信':variant==='memory'?'让别人先记住这个人':'我能给你带来什么',lines:[...bioBody(profile,platform,variant),...complianceFooter(profile,platform)]}));
+    const label=platform==='xhs'?'小红书简介 · 推荐版':'视频号 / 抖音简介 · 推荐版';
+    return [{label,focus:'我是谁 + 我的优势 + 我能提供什么价值',lines:[...bioBody(profile,platform),...complianceFooter(profile,platform)]}];
   }
 
   function enforceProposal(proposal,profile){
@@ -310,5 +351,5 @@
     };
   }
 
-  window.aiaIpPolicy=Object.freeze({PRIMARY_GOALS,CUSTOMER_MAINLINES,RECRUITMENT_MAINLINES,SECONDARY_ONLY,normalizeGoalValue,inferPrimaryGoal,needsGoalClarification,applyPrimaryGoal,goalQuestion,syncGoalDependentQuestions,normalizedMainlines,secondaryTopics,headline,subheadline,targetPortrait,advantageItems,bioAssets,bioBody,complianceFooter,buildBios,enforceProposal,canonicalizeHistory,persistCanonical,prepareProfileGoal});
+  window.aiaIpPolicy=Object.freeze({PRIMARY_GOALS,CUSTOMER_MAINLINES,RECRUITMENT_MAINLINES,SECONDARY_ONLY,normalizeGoalValue,inferPrimaryGoal,needsGoalClarification,applyPrimaryGoal,goalQuestion,syncGoalDependentQuestions,normalizedMainlines,secondaryTopics,headline,subheadline,targetPortrait,advantageItems,bioAssets,bioCareerFacts,bioBody,complianceFooter,buildBios,enforceProposal,canonicalizeHistory,persistCanonical,prepareProfileGoal});
 })();
