@@ -4,6 +4,7 @@
 // #111：已有特色原昵称优先；否则优先“人物锚点 + 当前仍成立的鲜明兴趣/特点”，单独本名/称呼仅作稳妥备选。
 // #112：有明确证据且自然的记忆点修饰语可排在裸称呼前；#113：中文可记忆/可搜索优先，降级全英文并过滤特殊符号/Emoji。
 // #114：真实称呼是人物锚点，不是默认首选；候选必须按陌生人记忆点做确定性评分，只要有高分特色候选，裸姓名/裸称呼不得排第一。
+// 人工验收预设昵称：nicknamePreset.status=approved 时优先于临时生成；allowAiFallback=true 时仍保留 DeepSeek 补充/修改路径。
 (function(){
   'use strict';
   const BANNED=/保险|友邦|\bAIA\b|金融|理财|贷款|股票|基金|医疗/i;
@@ -94,6 +95,17 @@
   }
   function fullEnglish(name){const n=normalizeSearchable(name);return !!n&&/[A-Za-z]/.test(n)&&!/\u4e00-\u9fa5/.test('')&&/^[A-Za-z0-9]+$/.test(n)&&!/[^A-Za-z0-9]/.test(n)&&!/^[0-9]+$/.test(n)&&!/[\u4e00-\u9fa5]/.test(n);}
   function hasChinese(name){return /[\u4e00-\u9fa5]/.test(t(name));}
+  function approvedPresetOptions(profile){
+    const preset=profile?.nicknamePreset;
+    if(!preset||t(preset.status)!=='approved')return [];
+    const names=uniq([t(preset.primary),...(Array.isArray(preset.candidates)?preset.candidates.map(t):[])]).filter(name=>name&&!BANNED.test(name)&&hasChinese(name)&&name.length<=18);
+    return names.map((name,index)=>({
+      name,
+      angle:index===0?'人工确认首选':'人工确认备选',
+      reason:'已由产品负责人基于真实资料人工验收确认；优先于临时生成，仍保留 AI 补充路径',
+      memoryKind:'preset'
+    }));
+  }
   function existingNickname(profile,anchor){
     const values=[profile.videoNickname,profile.xiaohongshuNickname].map(t).filter(v=>v&&!missing(v)&&!BANNED.test(v));
     for(const raw of values){
@@ -126,14 +138,15 @@
     return false;
   }
   function memoryScore(item,profile,anchor,existing){
-    // #114 Nickname Memory Score：真实称呼负责锚定人物，首选排序由陌生人记忆点决定。
+    // #114 Nickname Memory Score：真实称呼负责锚定人物，首选排序由陌生人记忆点决定；人工确认预设拥有最高确定性优先级。
     let score=0;
     const name=t(item?.name),kind=t(item?.memoryKind);
+    if(kind==='preset')score+=100;
     if(existing&&name===existing)score+=3;
     if(kind==='distinctive')score+=3;
     if(kind==='descriptor')score+=2;
     const peer=(profile.peerReviewSummary?.topNicknames||[]).some(x=>t(x?.label)===anchor&&Number(x?.count||1)>=2);
-    if(peer&&name.includes(anchor))score+=2;
+    if(peer&&anchor&&name.includes(anchor))score+=2;
     if(name===anchor||name===t(profile.name))score+=0;
     if(/\d{3,}$/.test(name))score-=2;
     if(fullEnglish(name))score-=3;
@@ -144,8 +157,11 @@
     return candidates.map((item,index)=>({...item,memoryScore:memoryScore(item,profile,anchor,existing),_order:index})).sort((a,b)=>b.memoryScore-a.memoryScore||a._order-b._order).map(({_order,...item})=>item);
   }
   function controlledOptions(profile){
-    const a=pickAnchor(profile);if(!a)return [];
+    const preset=approvedPresetOptions(profile);
+    const a=pickAnchor(profile);
+    if(!a)return preset.slice(0,5);
     const candidates=[];
+    preset.forEach(item=>{if(!candidates.some(x=>x.name===item.name))candidates.push(item);});
     const add=(name,angle,reason,opts={})=>{name=safeName(name,a);if(name&&!mechanical(name,profile,a)&&!awkward(name,profile,a,opts)&&!candidates.some(x=>x.name===name))candidates.push({name,angle,reason,memoryKind:t(opts.memoryKind)});};
 
     const existing=existingNickname(profile,a);
@@ -179,14 +195,15 @@
     if(!proposal)return proposal;
     const p=profile||{},raw=Array.isArray(proposal.nicknameOptions)?proposal.nicknameOptions:[];
     const a=pickAnchor(p),controlled=controlledOptions(p);
-    if(a&&controlled.length<3){
+    const allowAi=p.nicknamePreset?.allowAiFallback!==false;
+    if(allowAi&&a&&controlled.length<3){
       aiFallbackOptions(raw,p,a).forEach(item=>{if(controlled.length<5&&!controlled.some(x=>x.name===item.name))controlled.push(item);});
     }
     const existing=existingNickname(p,a);
     proposal.nicknameOptions=rankByMemory(controlled,p,a,existing).slice(0,5);
-    proposal.nicknameNeedsIdentity=!a;
+    proposal.nicknameNeedsIdentity=!a&&!approvedPresetOptions(p).length;
     return proposal;
   }
   if(typeof renderProposal==='function'){const base=renderProposal;renderProposal=function(proposal,version){enforce(proposal,state.profile||{});return base(proposal,version);};}
-  window.aiaNicknamePolicyV1=Object.freeze({controlledOptions,enforce,BANNED,anchors,pickAnchor,aiFallbackOptions,naturalNameAnchors,awkward,distinctiveOptions,memorablePeerDescriptor,descriptorOptions,normalizeSearchable,fullEnglish,memoryScore,rankByMemory});
+  window.aiaNicknamePolicyV1=Object.freeze({controlledOptions,enforce,BANNED,anchors,pickAnchor,aiFallbackOptions,naturalNameAnchors,awkward,distinctiveOptions,memorablePeerDescriptor,descriptorOptions,normalizeSearchable,fullEnglish,memoryScore,rankByMemory,approvedPresetOptions});
 })();
