@@ -73,6 +73,10 @@ for rel in "${JS_FILES[@]}"; do
   for retired in product-integration-v30.js product-integration-v31.js product-integration-v33.js; do
     if grep -q "$retired" "$file"; then fail "当前加载脚本在运行时引用退役层：$file -> $retired"; fi
   done
+  compact="$(tr -d '[:space:]' < "$file")"
+  if grep -q 'observe(document.body' <<<"$compact"; then
+    fail "当前加载脚本监听整个 document.body，存在全页面 Observer 性能回归：$file"
+  fi
 done
 
 LEGACY=(
@@ -89,9 +93,6 @@ done
 
 if grep -q 'window\.scriptRecommendationV1' web/product-rules-v17.js; then
   fail "脚本详情分页重新依赖退役推荐对象"
-fi
-if tr -d '[:space:]' < web/product-rules-v17.js | grep -q 'observe(document.body'; then
-  fail "V17 重新监听整个 document.body，存在 79 同类性能风险"
 fi
 if grep -q 'navigator\.clipboard' web/product-rules-v10.js; then
   fail "V10 重新获得 Clipboard 写权限"
