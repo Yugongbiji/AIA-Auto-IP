@@ -2,10 +2,16 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CORE = (ROOT / "web" / "ip-policy-core.js").read_text(encoding="utf-8")
+V6 = (ROOT / "web" / "product-rules-v6.js").read_text(encoding="utf-8")
+V7 = (ROOT / "web" / "product-rules-v7.js").read_text(encoding="utf-8")
 V10 = (ROOT / "web" / "product-rules-v10.js").read_text(encoding="utf-8")
 V19 = (ROOT / "web" / "product-rules-v19.js").read_text(encoding="utf-8")
+V22 = (ROOT / "web" / "product-rules-v22.js").read_text(encoding="utf-8")
+V25 = (ROOT / "web" / "product-rules-v25.js").read_text(encoding="utf-8")
+V27 = (ROOT / "web" / "product-rules-v27.js").read_text(encoding="utf-8")
 FLOAT = (ROOT / "web" / "profile-float.js").read_text(encoding="utf-8")
 V29 = (ROOT / "web" / "product-rules-v29.js").read_text(encoding="utf-8")
+SEMANTIC = (ROOT / "backend" / "profile_semantic.py").read_text(encoding="utf-8")
 RULES = (ROOT / "rules" / "ip-headline-slogan-rules.md").read_text(encoding="utf-8")
 
 
@@ -66,3 +72,27 @@ def test_visible_bio_ui_removes_retired_000_placeholder_and_old_multi_set_copy()
     assert "三套选择" not in V10
     assert "小红书简介 · 推荐版" in V10
     assert "视频号 / 抖音简介 · 推荐版" in V10
+
+
+def test_fixed_creative_loading_copy_cannot_be_rewritten_by_legacy_layers():
+    assert "xhs:'正在排版，请稍候…'" in V22
+    assert "script:'正在改写，请稍候…'" in V22
+    assert "FIXED_CREATIVE_STATUS" in V6
+    assert "FIXED_CREATIVE_STATUS.has(text)" in V6
+    assert "见证奇迹的时刻到啦" not in V7
+    assert "收到啦！✍️ 我正在认真改写" not in V7
+    assert "text === '正在排版，请稍候…'" in V7
+
+
+def test_preview_helper_cannot_restore_full_document_observer():
+    assert "observe(document.body" not in V25.replace(" ", "")
+    assert "ensurePreviewResetButton();" in V25
+
+
+def test_generic_intro_keywords_cannot_upgrade_to_previous_career():
+    assert "function explicitCareerIntro" in V27
+    assert "field === 'previousCareer' ? explicitCareerIntro(intro) : intro" in V27
+    assert "单独出现“财务/法律/教育”等领域关键词不能升级为人物经历" in V27
+    assert "def _explicit_career_context" in SEMANTIC
+    assert 'key == "previousCareer" and not _explicit_career_context(proof)' in SEMANTIC
+    assert "单独出现“财务/法律/教育/医疗”等领域关键词不得写入" in SEMANTIC
