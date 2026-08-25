@@ -47,6 +47,11 @@
   function closeProfileDetail() {
     panel.classList.remove('profile-floating-detail-open'); panel.setAttribute('aria-expanded','false'); profileButton.setAttribute('aria-expanded','false');
   }
+  function closeStaleOverlaysForIp() {
+    // 122/126：进入或切回 IP 对话必须是干净页面。历史兼容层若提前留下 proposal-open，不能继续压住悬浮入口或展示旧方案 DOM。
+    ['proposal-screen','content-plan-screen','script-detail-screen'].forEach((id)=>document.getElementById(id)?.classList.add('hidden'));
+    document.body.classList.remove('proposal-open');
+  }
   function ensureCloseButton() {
     const title=panel.querySelector('.profile-title'); if(!title||title.querySelector('.profile-floating-close'))return;
     const close=document.createElement('button'); close.type='button'; close.className='profile-floating-close'; close.setAttribute('aria-label','关闭我的资料'); close.title='关闭'; close.textContent='×'; close.addEventListener('click',(event)=>{event.preventDefault();event.stopPropagation();closeProfileDetail();}); title.appendChild(close);
@@ -84,12 +89,14 @@
 
   // 只在既有渲染完成后同步 UI，不拥有资料渲染。
   if (typeof renderProfile==='function') { const base=renderProfile; renderProfile=function floatingUiRenderProfile(){const result=base.apply(this,arguments);ensureConversationHint();ensureCloseButton();settleVisibility();return result;}; }
-  if (typeof selectTool==='function') { const base=selectTool; selectTool=function floatingUiSelectTool(tool){const result=base(tool);settleVisibility();return result;}; }
+  if (typeof selectTool==='function') { const base=selectTool; selectTool=function floatingUiSelectTool(tool){if(tool==='ip')closeStaleOverlaysForIp();const result=base(tool);settleVisibility();return result;}; }
   if (typeof refreshProposalButton==='function') { const base=refreshProposalButton; refreshProposalButton=function floatingUiRefreshProposalButton(){const result=base.apply(this,arguments);syncProposalButton();return result;}; }
   if (typeof startWorkspace==='function') {
     const base=startWorkspace;
     startWorkspace=function floatingUiStartWorkspace(){
+      closeStaleOverlaysForIp();
       const result=base.apply(this,arguments);
+      if(state.activeTool==='ip')closeStaleOverlaysForIp();
       settleVisibility();
       return result;
     };
@@ -108,5 +115,5 @@
   const visibilityObserver = new MutationObserver(()=>queueMicrotask(settleVisibility));
   visibilityNodes.forEach((node)=>visibilityObserver.observe(node,{attributes:true,attributeFilter:['class']}));
 
-  window.aiaFloatingUi=Object.freeze({syncVisibility:settleVisibility,closeProfileDetail,ownsProfileData:false});
+  window.aiaFloatingUi=Object.freeze({syncVisibility:settleVisibility,closeProfileDetail,closeStaleOverlaysForIp,ownsProfileData:false});
 })();
