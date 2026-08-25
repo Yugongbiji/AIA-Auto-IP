@@ -58,7 +58,7 @@ def test_107_generic_suffixes_are_not_default_generated_routes():
 
 def test_existing_good_nickname_can_survive_generic_template_gate():
     owner = read("web/nickname-policy-v1.js")
-    assert "{existing:true}" in owner
+    assert "{existing:true" in owner
     assert "if(!existing&&GENERIC_SUFFIXES.some" in owner
 
 
@@ -66,7 +66,7 @@ def test_nickname_reason_is_deterministic_owner_copy_not_free_deepseek_copy():
     owner = read("web/nickname-policy-v1.js")
     rules = read("rules/nickname-naturalness-rules-20260825.md")
     assert "优先保护已有用户记忆" in owner
-    assert "优先使用客户/身边人真实称呼" in owner
+    assert "优先使用客户/身边人真实称呼作为人物锚点" in owner
     assert "不得让 DeepSeek 每次自由编写不同风格的保留理由" in rules
 
 
@@ -117,7 +117,7 @@ def test_112_memorable_supported_descriptor_ranks_before_bare_anchor():
     assert "descriptorOptions(profile,a).forEach" in owner
     assert owner.index("descriptorOptions(profile,a).forEach") < owner.index("add(a,'突出人物'")
     assert "有证据的鲜明修饰语可以优先于裸称呼" in prompt
-    assert "靠谱的XX" in rules
+    assert "靠谱 / 专业 / 真诚" in rules
 
 
 def test_113_full_english_symbols_and_emoji_are_deprioritized_or_filtered():
@@ -136,3 +136,23 @@ def test_113_full_english_symbols_and_emoji_are_deprioritized_or_filtered():
     assert "全英文昵称原则上不作为首选" in prompt
     assert "特殊符号" in prompt
     assert "Emoji" in prompt
+
+
+def test_114_stranger_memory_priority_beats_plain_anchor_when_evidence_exists():
+    owner = read("web/nickname-policy-v1.js")
+    rules = read("rules/nickname-naturalness-rules-20260825.md")
+    prompt = read("prompts/ip-persona-prompt.md")
+    assert "#114 陌生人记忆点优先" in rules
+    assert "真实称呼是人物锚点，不是默认首选" in rules
+    assert "Nickname Memory Score" in rules
+    assert "function memoryScore" in owner
+    assert "function rankByMemory" in owner
+    assert "memoryKind:'distinctive'" in owner
+    assert "memoryKind:'descriptor'" in owner
+    assert "return rankByMemory(candidates,profile,a,existing).slice(0,5);" in owner
+    assert "proposal.nicknameOptions=rankByMemory(controlled,p,a,existing).slice(0,5);" in owner
+    assert "纪录片迷" in owner
+    assert "手帐控" in owner
+    assert "真实称呼是素材，不是最终答案" in prompt
+    assert "DeepSeek 不拥有首选排序权" in prompt
+    assert "裸称呼/本名才允许成为首选" in prompt
