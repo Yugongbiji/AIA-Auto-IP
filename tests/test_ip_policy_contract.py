@@ -86,9 +86,10 @@ def test_bio_uses_real_assets_and_not_hobby_tag_wall():
     for source in ['previousCareer', 'selfIntro', 'insuranceYears', 'honors', 'peerReviewSummary', 'services']:
         assert source in POLICY
     bio_block = POLICY.split('function bioBody(profile,platform,variant)', 1)[1].split('function explicitLicense', 1)[0]
-    assert 'hobbies' not in bio_block
-    assert '客户常提到：' in bio_block
-    assert "ss.join('｜')" in bio_block
+    assert 'profile?.hobbies' not in bio_block
+    assert 'feedbackSentence(assets)' in bio_block
+    assert '客户比较常提到我' in POLICY
+    assert "asset.items.join('｜')" in POLICY
 
 
 def test_missing_nickname_is_never_treated_as_keepable():
@@ -128,5 +129,6 @@ def test_clipboard_success_has_one_owner():
     assert 'copyStateObserver' not in V22
     assert 'ownsClipboard:false' in V22
     assert 'writeClipboard' in V28
-    assert "button.textContent = '复制成功'" in V28
-    assert "show('复制成功')" in V28
+    assert "successLabel='复制成功'" in V28
+    assert 'button.textContent=successLabel' in V28
+    assert 'show(successLabel)' in V28
