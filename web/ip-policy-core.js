@@ -1,5 +1,5 @@
 // IP Policy Core — IP 核心业务规则的唯一 owner。
-// 负责：最终目标、内容主线/支线、一句话定位、简介主体、合规尾部。
+// 负责：最终目标、目标人群语义、方案定位/画像/优势、内容主线/支线、简介主体与合规尾部。
 // 其他 Vxx 文件只能做 UI/兼容/数据标准化，不得重复写这些输出。
 (function () {
   'use strict';
@@ -11,7 +11,7 @@
   const PRIMARY_GOALS = Object.freeze({ CUSTOMER: 'customer_acquisition', RECRUITMENT: 'recruitment' });
   const CUSTOMER_MAINLINES = Object.freeze(['家庭保障','重疾保障','医疗保障','养老规划','财富规划','教育规划','保险知识']);
   const RECRUITMENT_MAINLINES = Object.freeze(['增员与职业发展']);
-  const SECONDARY_ONLY = Object.freeze(['育儿','升学教育','健康养生','创业经营','财务常识','职场成长','法律常识','科技职场','高尔夫','网球','骑行','滑雪','运动健身','旅行','汽车','摄影','户外','跑步','读书','美食','宠物','影视娱乐','智能家居','家居改造','生活日常']);
+  const SECONDARY_ONLY = Object.freeze(['育儿','升学教育','健康养生','家庭照护','创业经营','财务常识','职场成长','法律常识','科技职场','高尔夫','网球','骑行','滑雪','运动健身','旅行','汽车','摄影','户外','跑步','读书','美食','宠物','影视娱乐','智能家居','家居改造','生活日常']);
 
   function normalizeGoalValue(value) {
     const raw = text(value);
@@ -35,6 +35,7 @@
     const normalized = normalizeGoalValue(goal);
     if (!profile || !normalized) return false;
     profile.primaryGoal = normalized;
+    syncGoalDependentQuestions(profile);
     return true;
   }
   function goalQuestion() {
@@ -58,12 +59,25 @@
     if (!q) { q = goalQuestion(); const agentIndex=questions.findIndex(item=>item.key==='agentId'); questions.splice(agentIndex>=0?agentIndex+1:0,0,q); }
     else Object.assign(q, goalQuestion());
   }
+  function findAudienceQuestion(kind) {
+    return questions.find(q => q.__aiaAudienceKind === kind) || questions.find(q => kind==='groups' ? ['customerGroups','recruitmentGroups'].includes(q.key) : ['customerAges','recruitmentAges'].includes(q.key));
+  }
+  function syncGoalDependentQuestions(profile) {
+    if (!Array.isArray(questions)) return;
+    const goal=inferPrimaryGoal(profile||{});
+    if (goal) profile.primaryGoal=goal;
+    const groups=findAudienceQuestion('groups'); const ages=findAudienceQuestion('ages');
+    if(groups){groups.__aiaAudienceKind='groups';if(goal===PRIMARY_GOALS.RECRUITMENT){groups.key='recruitmentGroups';groups.label='准增员对象';groups.ask='你更希望吸引哪些类型的准增员对象？可多选，也可以自行补充。';groups.chips=['职场白领','自由职业者','创业者/企业主','专业人士','宝爸宝妈','年轻职场人'];}else{groups.key='customerGroups';groups.label='服务人群';groups.ask='你最希望服务哪些人群？可多选；也可以自行输入补充。';groups.chips=['企业主','职场白领','宝爸宝妈','都市银发','自由职业者','新市民'];}}
+    if(ages){ages.__aiaAudienceKind='ages';if(goal===PRIMARY_GOALS.RECRUITMENT){ages.key='recruitmentAges';ages.label='准增员年龄段';ages.ask='你更希望吸引的准增员对象主要处在哪些年龄段？可多选。';ages.chips=['22–30 岁','30–40 岁','40–50 岁'];}else{ages.key='customerAges';ages.label='客户年龄段';ages.ask='你的目标客户主要处在哪些年龄段？可多选。';ages.chips=['25–35 岁','35–45 岁','45–55 岁','55 岁以上'];}}
+    if(typeof labels!=='undefined'){labels.recruitmentGroups='准增员对象';labels.recruitmentAges='准增员年龄段';labels.customerGroups='服务人群';labels.customerAges='客户年龄段';}
+  }
 
   function prepareProfileGoal(profile) {
     if (!profile || typeof profile !== 'object') return profile;
     const normalized = inferPrimaryGoal(profile);
     if (normalized) profile.primaryGoal = normalized;
     else delete profile.primaryGoal;
+    syncGoalDependentQuestions(profile);
     return profile;
   }
 
@@ -77,7 +91,7 @@
 
   function secondaryTopics(profile) {
     const ranked = typeof window.rankIpContentBranches === 'function' ? window.rankIpContentBranches(profile || {}) : [];
-    const valid = ranked.filter(item => SECONDARY_ONLY.includes(text(item?.direction)));
+    const valid = ranked.filter(item => SECONDARY_ONLY.includes(text(item?.direction)) || (!CUSTOMER_MAINLINES.includes(text(item?.direction))&&!RECRUITMENT_MAINLINES.includes(text(item?.direction))));
     const best = valid[0];
     if (best) return { topics:[best.direction], source:(best.sources||[]).join(' + '), ranking:valid };
     const raw=[profile?.hobbies,profile?.lifeRoles,profile?.previousCareer,profile?.selfIntro,profile?.contentPreferences].map(text).join(' ');
@@ -87,20 +101,20 @@
 
   function familyIdentity(profile) {
     const s=[profile?.lifeRoles,profile?.familyIdentity,profile?.selfIntro].map(text).join(' ');
-    for (const item of ['二孩宝妈','二宝妈妈','二孩妈妈','二孩宝爸','二宝爸','二孩爸爸','宝妈','宝爸']) if (s.includes(item)) return item;
+    for (const item of ['二孩宝妈','二宝妈妈','二孩妈妈','二孩宝爸','二宝爸','二孩爸爸','宝妈','妈妈','宝爸','爸爸']) if (s.includes(item)) return item;
     return '';
   }
   function career(profile) {
     const direct=split(profile?.previousCareer)[0]; if (direct) return direct;
     const s=text(profile?.selfIntro);
-    for (const item of ['环保工程师','工程师','教师','医生','律师','HR','财务','银行从业者','创业者','会计','记者','主持人','程序员']) if (s.includes(item)) return item;
+    for (const item of ['环保工程师','工程师','教师','老师','医生','律师','HR','财务','银行从业者','创业者','会计','记者','主持人','程序员']) if (s.includes(item)) return item;
     return '';
   }
   function proofs(profile) {
     const out=[]; const edu=[profile?.schoolTier,profile?.education,profile?.overseas].map(text).join(' ');
     if (/博士/.test(edu)) out.push('博士背景'); else if (/硕士/.test(edu)) out.push('硕士背景'); else if (/985/.test(edu)) out.push('985高校背景'); else if (/211/.test(edu)) out.push('211高校背景'); else if (/QS\s*前?\s*100/i.test(edu)) out.push('QS前100高校背景');
     if (text(profile?.insuranceYears)) out.push(`${text(profile.insuranceYears).replace(/年$/,'')}年从业经历`);
-    const honor=split(profile?.honors).find(v=>/MDRT|COT|TOT|五星/i.test(v)); if(honor) out.push(honor);
+    const honors=split(profile?.honors).filter(v=>/MDRT|COT|TOT|五星/i.test(v)); if(honors[0]) out.push(honors[0]);
     return uniq(out).slice(0,2);
   }
   function feedback(profile) {
@@ -126,31 +140,50 @@
     if (proof) return `带着${proof}的专业底色，讲清家庭保障与长期规划`;
     return '围绕家庭保障与长期规划，分享真实、实用、听得懂的内容';
   }
+  function subheadline(profile){return inferPrimaryGoal(profile)===PRIMARY_GOALS.RECRUITMENT?'用真实经历建立信任，持续吸引适合长期发展的同行者':'保险是主内容，真实经历与生活身份帮助建立长期信任';}
+  function targetPortrait(profile){
+    const recruitment=inferPrimaryGoal(profile)===PRIMARY_GOALS.RECRUITMENT;
+    const groups=split(recruitment?profile?.recruitmentGroups:profile?.customerGroups);const ages=split(recruitment?profile?.recruitmentAges:profile?.customerAges);
+    const title=recruitment?'🎯 准增员对象':'🎯 目标客户画像';
+    const subject=groups.length?groups.join('、'):(recruitment?'尚未明确具体准增员对象':'尚未明确具体服务人群');
+    const age=ages.length?`，重点年龄段：${ages.join('、')}`:'';
+    return {title,text:`${subject}${age}`};
+  }
+  function advantageItems(profile){
+    const out=[];const add=(emoji,title,value)=>{if(value&&!out.some(x=>x.title===title&&x.text===value))out.push({emoji,title,text:value});};
+    const job=career(profile),family=familyIdentity(profile),ps=proofs(profile),traits=feedback(profile),services=serviceLabels(profile);
+    add('🧩','真实经历',job?`有${job}相关经历，可形成差异化表达`:'');
+    add('👤','生活身份',family?`${family}是长期真实身份，可提供生活化视角`:'');
+    if(ps.length)add('🏅','专业背书',ps.join('｜'));
+    if(traits.length)add('💬','他人评价',`多人反馈提到：${traits.join('、')}`);
+    if(services.length)add('🧭','真实服务',services.join('｜'));
+    if(!out.length)add('✨','真实表达','优先围绕已确认资料持续补充，不凭空创造优势');
+    return out.slice(0,4);
+  }
+  function proposalTags(profile,branch){const goal=inferPrimaryGoal(profile)===PRIMARY_GOALS.RECRUITMENT?'增员':'拓客';return uniq([goal,...(branch?.topics||[]),career(profile)||familyIdentity(profile)]).slice(0,3);}
 
   const XHS_BANNED=/保险|金融|理财|贷款|股票|基金|医疗|护理|教育|玄学|友邦|\bAIA\b|微信|手机号|电话|QQ|二维码|私信|稳赚|无风险|财富自由/i;
   const VIDEO_DISCLAIMER='本账号上所陈述或表达的内容仅为我个人意见，并不代表友邦人寿的意见';
   const XHS_DISCLAIMER='本账号所述内容为个人意见，不代表任何官方意见。';
   function safeXhs(v){return text(v)&&!XHS_BANNED.test(text(v));}
   function identityLine(profile){const family=familyIdentity(profile),job=career(profile);if(family&&job)return `${family}，曾从事${job}`;return family || (job?`曾从事${job}`:'');}
+  function interestLine(profile){const values=uniq([split(profile?.hobbies)[0],secondaryTopics(profile).topics[0]]).filter(Boolean).slice(0,2);return values.length?`也会分享${values.join('、')}中的真实生活经验`:'';}
   function mainBioLine(profile,platform){const recruitment=inferPrimaryGoal(profile)===PRIMARY_GOALS.RECRUITMENT;if(recruitment)return platform==='xhs'?'分享职业选择、成长与长期主义相关内容':'分享职业选择、转型成长与团队真实经验';return platform==='xhs'?'分享家庭保障、养老准备与长期规划相关内容':'分享保险、家庭保障、养老与长期规划相关内容';}
   function emojiLine(emoji,value){const v=text(value);return v?`${emoji} ${v}`:'';}
   function bioBody(profile,platform,variant){
-    const id=identityLine(profile), ps=proofs(profile), fs=feedback(profile), ss=serviceLabels(profile), main=mainBioLine(profile,platform); let lines=[];
-    if(variant==='memory') lines=[emojiLine('👤',id),emojiLine('💬',main),fs.length?emojiLine('✨',`客户常提到：${fs.join('、')}`):'',ps[0]?emojiLine('🏅',ps[0]):''];
-    else if(variant==='service') lines=[emojiLine('👤',id),emojiLine('💬',main),ss.length?emojiLine('🧭',ss.join('｜')):'',ps[0]?emojiLine('🏅',ps[0]):''];
-    else lines=[emojiLine('👤',id),ps.length?emojiLine('🏅',ps.join('｜')):'',emojiLine('💬',main),fs.length?emojiLine('✨',`客户常提到：${fs.join('、')}`):''];
+    const id=identityLine(profile), ps=proofs(profile), fs=feedback(profile), ss=serviceLabels(profile), main=mainBioLine(profile,platform), interest=interestLine(profile); let lines=[];
+    if(variant==='memory') lines=[emojiLine('👤',id),fs.length?emojiLine('✨',`客户常提到：${fs.join('、')}`):'',interest?emojiLine('🌿',interest):'',ps[0]?emojiLine('🏅',ps[0]):'',emojiLine('💬',main)];
+    else if(variant==='service') lines=[emojiLine('👤',id),emojiLine('💬',main),ss.length?emojiLine('🧭',ss.join('｜')):'',ps[0]?emojiLine('🏅',ps[0]):'',fs.length?emojiLine('✨',`客户常提到：${fs.join('、')}`):''];
+    else lines=[emojiLine('👤',id),ps.length?emojiLine('🏅',ps.join('｜')):'',emojiLine('💬',main),fs.length?emojiLine('✨',`客户常提到：${fs.join('、')}`):'',interest?emojiLine('🌿',interest):''];
     lines=uniq(lines.map(text).filter(Boolean));
     if(platform==='xhs') lines=lines.filter(safeXhs);
-    return lines;
+    return lines.slice(0,5);
   }
-  function explicitLicense(profile){
-    const direct=text(profile?.licenseNumber||profile?.practiceLicense||profile?.licenseNo||profile?.['执业证编号']||profile?.['执业编号']);
-    return direct;
-  }
+  function explicitLicense(profile){return text(profile?.licenseNumber||profile?.practiceLicense||profile?.licenseNo||profile?.['执业证编号']||profile?.['执业编号']);}
   function complianceFooter(profile,platform){
     if(platform==='xhs') return [XHS_DISCLAIMER];
     const out=[VIDEO_DISCLAIMER];
-    const department=text(profile?.department); if(department) out.push(`营销服务部：${department}`); else out.push('营销服务部：待补充');
+    const department=text(profile?.department); out.push(`营销服务部：${department||'待补充'}`);
     const license=explicitLicense(profile); out.push(`执业证编号：${license||'000'}`);
     return out;
   }
@@ -161,23 +194,27 @@
 
   function enforceProposal(proposal,profile){
     if(!proposal)return proposal;
-    const branch=secondaryTopics(profile||{});
-    proposal.headline=headline(profile||{});
-    proposal.primaryGoal=inferPrimaryGoal(profile||{});
-    proposal.contentMainline=normalizedMainlines(profile||{},proposal);
-    proposal.secondaryContent=branch.topics;
-    proposal.secondaryContentSource=branch.source;
-    proposal.secondaryContentRanking=branch.ranking;
-    proposal.bios=proposal.bios||{};
-    proposal.bios.xiaohongshu=buildBios(profile||{},'xhs');
-    proposal.bios.videoDouyin=buildBios(profile||{},'video');
+    const p=profile||{};prepareProfileGoal(p);const branch=secondaryTopics(p);
+    proposal.headline=headline(p);proposal.subheadline=subheadline(p);proposal.primaryGoal=inferPrimaryGoal(p);
+    proposal.clientPortrait=targetPortrait(p);proposal.advantages=advantageItems(p);proposal.tags=proposalTags(p,branch);
+    proposal.contentMainline=normalizedMainlines(p,proposal);proposal.secondaryContent=branch.topics;proposal.secondaryContentSource=branch.source;proposal.secondaryContentRanking=branch.ranking;
+    proposal.bios=proposal.bios||{};proposal.bios.xiaohongshu=buildBios(p,'xhs');proposal.bios.videoDouyin=buildBios(p,'video');
+    if(window.aiaNicknamePolicyV1?.enforce)window.aiaNicknamePolicyV1.enforce(proposal,p);
     return proposal;
   }
+  function canonicalizeHistory(proposals,profile){return (proposals||[]).map(entry=>{if(entry?.proposal)enforceProposal(entry.proposal,profile||{});return entry;});}
 
-  installGoalGate();
-  if (typeof startWorkspace==='function') { const base=startWorkspace; startWorkspace=function ipPolicyStartWorkspace(profile,...rest){prepareProfileGoal(profile);installGoalGate();return base(profile,...rest);}; }
-  if (typeof presentQuestion==='function') { const base=presentQuestion; presentQuestion=function ipPolicyPresentQuestion(...args){installGoalGate();return base.apply(this,args);}; }
+  installGoalGate();syncGoalDependentQuestions(state?.profile||{});
+  const toneQuestion=Array.isArray(questions)?questions.find(q=>q.key==='contentTone'):null;if(toneQuestion)toneQuestion.multiple=true;
+  if(typeof toggleMultiOption==='function'){const base=toggleMultiOption;toggleMultiOption=function ipPolicyToggle(value){const q=questions[state.currentQuestion];if(q?.key==='contentTone'&&!state.multiSelection.has(value)&&state.multiSelection.size>=2)return;return base(value);};}
+  if (typeof startWorkspace==='function') { const base=startWorkspace; startWorkspace=function ipPolicyStartWorkspace(profile,matched,history=[],proposals=[],...rest){prepareProfileGoal(profile);installGoalGate();canonicalizeHistory(proposals,profile);return base(profile,matched,history,proposals,...rest);}; }
+  if (typeof presentQuestion==='function') { const base=presentQuestion; presentQuestion=function ipPolicyPresentQuestion(...args){installGoalGate();prepareProfileGoal(state.profile||{});return base.apply(this,args);}; }
   if (typeof renderProposal==='function') { const base=renderProposal; renderProposal=function ipPolicyRenderProposal(proposal,version){enforceProposal(proposal,state.profile||{});return base.call(this,proposal,version);}; }
 
-  window.aiaIpPolicy=Object.freeze({PRIMARY_GOALS,CUSTOMER_MAINLINES,RECRUITMENT_MAINLINES,SECONDARY_ONLY,normalizeGoalValue,inferPrimaryGoal,needsGoalClarification,applyPrimaryGoal,goalQuestion,normalizedMainlines,secondaryTopics,headline,bioBody,complianceFooter,buildBios,enforceProposal,prepareProfileGoal});
+  // Canonicalize /api/generate before app.js stores or downstream modules read it.
+  const policyFetch=window.fetch.bind(window);let lastGenerated=null;
+  window.fetch=async function ipPolicyFetch(input,init){const response=await policyFetch(input,init);const url=typeof input==='string'?input:(input?.url||'');if(!/\/api\/generate(?:\?|$)/.test(url)||!response.ok)return response;try{const payload=await response.clone().json();if(payload?.proposal){enforceProposal(payload.proposal,state.profile||{});lastGenerated={version:payload.version||state.version||1,proposal:payload.proposal,model:payload.model||''};return new Response(JSON.stringify(payload),{status:response.status,statusText:response.statusText,headers:{'Content-Type':'application/json'}});}}catch(_){}return response;};
+  if(typeof generateProposal==='function'){const base=generateProposal;generateProposal=async function ipPolicyGenerateProposal(...args){lastGenerated=null;const result=await base.apply(this,args);if(!state.matched&&lastGenerated){state.proposals=[lastGenerated];state.version=Number(lastGenerated.version||1)+1;if(typeof refreshProposalButton==='function')refreshProposalButton();if(typeof updateWorkspaceHeadings==='function')updateWorkspaceHeadings();window.aiaScriptRecommendation?.reset?.();}else if(state.proposals?.[0]?.proposal){enforceProposal(state.proposals[0].proposal,state.profile||{});window.aiaScriptRecommendation?.reset?.();}return result;};}
+
+  window.aiaIpPolicy=Object.freeze({PRIMARY_GOALS,CUSTOMER_MAINLINES,RECRUITMENT_MAINLINES,SECONDARY_ONLY,normalizeGoalValue,inferPrimaryGoal,needsGoalClarification,applyPrimaryGoal,goalQuestion,syncGoalDependentQuestions,normalizedMainlines,secondaryTopics,headline,subheadline,targetPortrait,advantageItems,bioBody,complianceFooter,buildBios,enforceProposal,canonicalizeHistory,prepareProfileGoal});
 })();
