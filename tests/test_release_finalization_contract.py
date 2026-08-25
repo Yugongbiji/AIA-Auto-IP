@@ -28,7 +28,10 @@ def test_preview_cleanup_is_sqlite_only_and_preserves_core_source_data():
     assert '"nickname" in normalized' in RESET
     assert 'nicknamePreset' in RESET
     assert 'nickname_presets' in RESET
-    assert 'shutil.copy2(DB_PATH, backup)' in RESET
+    assert 'function sqlite_backup' not in RESET  # Python helper is declared with def, never shell/source magic.
+    assert 'def sqlite_backup' in RESET
+    assert 'conn.backup(backup_conn)' in RESET
+    assert 'sqlite_backup(conn, backup)' in RESET
 
 
 def test_one_command_finalizer_runs_gate_before_data_mutation_and_refuses_rds():
