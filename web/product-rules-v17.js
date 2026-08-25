@@ -91,12 +91,20 @@
     next.disabled = !hasCurrent || currentIndex === browseItems.length - 1;
   }
 
+  function resetDetailScroll() {
+    const detailScreen = document.getElementById('script-detail-screen');
+    if (!detailScreen) return;
+    detailScreen.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }
+
   function openRelative(step) {
     const targetIndex = currentIndex + step;
     const target = browseItems[targetIndex];
     if (!target || !window.aiaScriptRecommendation?.openDetail) return;
     currentIndex = targetIndex;
-    window.aiaScriptRecommendation.openDetail(target.id, target.direction);
+    resetDetailScroll();
+    const result = window.aiaScriptRecommendation.openDetail(target.id, target.direction);
+    Promise.resolve(result).finally(() => requestAnimationFrame(resetDetailScroll));
   }
 
   const detailScreen = document.getElementById('script-detail-screen');
@@ -107,5 +115,5 @@
   ensureButtons();
   syncButtons();
 
-  window.aiaScriptDetailPagingV17 = Object.freeze({ syncButtons, ownsDetailData:false });
+  window.aiaScriptDetailPagingV17 = Object.freeze({ syncButtons, resetDetailScroll, ownsDetailData:false });
 })();
