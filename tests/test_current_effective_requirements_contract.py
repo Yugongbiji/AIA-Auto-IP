@@ -63,32 +63,57 @@ def test_nickname_anchor_priority_and_existing_nickname_evidence_are_explicit():
     assert "已有昵称包含稳定人物称呼" in owner
 
 
-def test_bio_uses_asset_pool_three_strategies_and_keeps_footer_single_owner():
+def test_bio_latest_rules_replace_three_strategies_and_mechanical_reduction():
     core = read("web/ip-policy-core.js")
     bio_rules = read("docs/简介受控词库与模板-V1-20260824.md")
+    ledger = read("docs/product/CURRENT_EFFECTIVE_REQUIREMENTS_LEDGER_20260825.md")
     baseline = read("docs/product/CURRENT_PRODUCT_RULES_BASELINE_20260824.md")
-    assert "人物资产与证据等级" in bio_rules
-    assert "三种固定生成策略" in bio_rules
-    assert "function bioAssets" in core
-    assert "function identitySentence" in core
-    assert "function proofSentence" in core
-    assert "function feedbackSentence" in core
-    assert "function serviceSentence" in core
-    assert "function dedupeBioLines" in core
-    assert "['方案 A · 专业背书','proof']" in core
-    assert "['方案 B · 人设记忆','memory']" in core
-    assert "['方案 C · 价值服务','service']" in core
+
+    assert "三个维度均可根据真实资料丰富程度使用 **1–3 行**" in bio_rules
+    assert "小红书简介：1 套最终推荐版" in bio_rules
+    assert "视频号 / 抖音简介：1 套共用最终推荐版" in bio_rules
+    assert "取消机械减法" in bio_rules
+    assert "每一行必须保持同一语义维度" in bio_rules
+    assert "硕士学历”优先精简为“硕士" in bio_rules
+
+    assert "同一平台固定生成三套简介" in ledger
+    assert "机械减法" in ledger
+    assert "function bioCareerFacts" in core
+    assert "function packBioItems" in core
+    assert "function dimensionLines" in core
+    assert "小红书简介 · 推荐版" in core
+    assert "视频号 / 抖音简介 · 推荐版" in core
+    assert "方案 A · 专业背书" not in core
+    assert "方案 B · 人设记忆" not in core
+    assert "方案 C · 价值服务" not in core
     assert "只有 `complianceFooter` 有权追加" in baseline
     assert "function complianceFooter" in core
     assert "执业证编号：${license||'000'}" in core
     assert "营销服务部：${department||'待补充'}" in core
 
 
-def test_bio_does_not_use_interest_or_region_as_primary_filler():
+def test_bio_fact_boundary_and_customer_feedback_are_not_ai_explanations():
     core = read("web/ip-policy-core.js")
-    assert "地域和兴趣是次级资产" in core
-    assert "if(lines.length<4&&region" in core
-    assert "if(lines.length<4&&interest" in core
+    bio_rules = read("docs/简介受控词库与模板-V1-20260824.md")
+    assert "BIO_GENERIC_DOMAINS" in core
+    assert "^(法律|教育|金融|医疗" in core
+    assert "bioCareerFacts" in core
+    assert "客户比较常提到我" not in core
+    assert "客户高频评价" not in core
+    assert "只呈现结论，不解释证据来源" in bio_rules
+    assert "资料只有“法律”" in bio_rules
+    assert "6年企业法务工作经验" in bio_rules
+
+
+def test_bio_keeps_high_information_density_without_old_numeric_caps():
+    core = read("web/ip-policy-core.js")
+    rules = read("docs/简介受控词库与模板-V1-20260824.md")
+    assert "单位空间信息量越高越好" in rules
+    assert "function charWeight" in core
+    assert "maxLines=3" in core
+    assert "services.slice(0,4)" not in core
+    assert "interests.join('、'),items:interests" not in core
+    assert "return uniq(out).slice(0,3)" not in core.split("function bioEducationFacts", 1)[1].split("function bioHonorFacts", 1)[0]
 
 
 def test_customer_feedback_latest_requirement_supersedes_single_summary():
