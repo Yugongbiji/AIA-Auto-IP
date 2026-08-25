@@ -54,8 +54,24 @@ def test_lifestyle_topics_can_only_be_secondary():
 
 
 def test_headline_does_not_use_person_name_anchor():
-    block=POLICY.split('function headline(profile)',1)[1].split('const XHS_BANNED',1)[0]
-    for forbidden in ['preferredName','topNicknames','profile?.name']: assert forbidden not in block
+    block=POLICY.split('function headline(profile',1)[1].split('function subheadline',1)[0]
+    assert 'cleanHeadlineCandidate' in POLICY and 'headlineFallback' in POLICY
+    assert 'preferredName' not in block and 'profile?.name' not in block
+
+
+def test_headline_103_is_one_slogan_owner_without_vertical_separator_and_is_reused_in_bios():
+    assert "function headline(profile,candidate='')" in POLICY
+    clean=POLICY.split('function cleanHeadlineCandidate',1)[1].split('function headlineFallback',1)[0]
+    assert "replace(/[｜|]+/g,'，')" in clean
+    assert 'XHS_BANNED.test(v)' in clean
+    assert 'numbers.some' in clean and '0人脉' in clean and '擅长' in clean
+    build=POLICY.split('function buildBios(profile,platform,headlineText)',1)[1].split('function enforceProposal',1)[0]
+    assert "...(slogan?[slogan]:[])" in build
+    assert build.index('bioBody(profile,platform)') < build.index('slogan') < build.index('complianceFooter(profile,platform)')
+    enforce=POLICY.split('function enforceProposal(proposal,profile)',1)[1].split('function canonicalizeHistory',1)[0]
+    assert 'const slogan=headline(p,proposal?.headline)' in enforce
+    assert 'proposal.headline=slogan' in enforce
+    assert "buildBios(p,'xhs',slogan)" in enforce and "buildBios(p,'video',slogan)" in enforce
 
 
 def test_bio_has_single_compliance_footer_owner_and_exact_fixed_copy():
@@ -133,8 +149,8 @@ def test_bio_102_platform_difference_is_only_explicit_xhs_compliance_and_footer(
     assert "if(platform==='xhs')lines=lines.filter" in body_block and 'safeXhs' in body_block
     for forbidden in ['slice(0,2)','slice(0,3)','platform===\'xhs\'?2','platform===\'xhs\'?3']:
         assert forbidden not in body_block
-    assert "proposal.bios.xiaohongshu=buildBios(p,'xhs')" in POLICY
-    assert "proposal.bios.videoDouyin=buildBios(p,'video')" in POLICY
+    assert "proposal.bios.xiaohongshu=buildBios(p,'xhs',slogan)" in POLICY
+    assert "proposal.bios.videoDouyin=buildBios(p,'video',slogan)" in POLICY
 
 
 def test_missing_nickname_is_never_treated_as_keepable():
