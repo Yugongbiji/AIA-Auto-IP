@@ -203,18 +203,59 @@
     return proposal;
   }
   function canonicalizeHistory(proposals,profile){return (proposals||[]).map(entry=>{if(entry?.proposal)enforceProposal(entry.proposal,profile||{});return entry;});}
+  async function persistCanonical(entry){
+    if(!state.matched||!entry?.proposal||!entry?.version||!state.profile?.agentId)return false;
+    try{const r=await policyFetch('/api/proposal/canonical',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agentId:state.profile.agentId,version:entry.version,proposal:entry.proposal})});return r.ok;}catch(_){return false;}
+  }
 
   installGoalGate();syncGoalDependentQuestions(state?.profile||{});
   const toneQuestion=Array.isArray(questions)?questions.find(q=>q.key==='contentTone'):null;if(toneQuestion)toneQuestion.multiple=true;
   if(typeof toggleMultiOption==='function'){const base=toggleMultiOption;toggleMultiOption=function ipPolicyToggle(value){const q=questions[state.currentQuestion];if(q?.key==='contentTone'&&!state.multiSelection.has(value)&&state.multiSelection.size>=2)return;return base(value);};}
-  if (typeof startWorkspace==='function') { const base=startWorkspace; startWorkspace=function ipPolicyStartWorkspace(profile,matched,history=[],proposals=[],...rest){prepareProfileGoal(profile);installGoalGate();canonicalizeHistory(proposals,profile);return base(profile,matched,history,proposals,...rest);}; }
+  if (typeof startWorkspace==='function') {
+    const base=startWorkspace;
+    startWorkspace=function ipPolicyStartWorkspace(profile,matched,history=[],proposals=[],...rest){
+      prepareProfileGoal(profile);installGoalGate();canonicalizeHistory(proposals,profile);
+      const result=base(profile,matched,history,proposals,...rest);
+      // 独立“内容规划”已退役，历史 contentPlans 不得再决定默认落到脚本改写。
+      if(!state.requestedTool&&state.activeTool==='script'&&typeof selectTool==='function')selectTool('ip');
+      proposals.forEach(entry=>persistCanonical(entry));
+      return result;
+    };
+  }
   if (typeof presentQuestion==='function') { const base=presentQuestion; presentQuestion=function ipPolicyPresentQuestion(...args){installGoalGate();prepareProfileGoal(state.profile||{});return base.apply(this,args);}; }
-  if (typeof renderProposal==='function') { const base=renderProposal; renderProposal=function ipPolicyRenderProposal(proposal,version){enforceProposal(proposal,state.profile||{});return base.call(this,proposal,version);}; }
+  if (typeof renderProposal==='function') { const base=renderProposal; renderProposal=function ipPolicyRenderProposal(proposal,version){enforceProposal(proposal,state.profile||{});const result=base.call(this,proposal,version);const entry=state.proposals?.find(x=>Number(x?.version)===Number(version));if(entry)persistCanonical(entry);return result;}; }
 
   // Canonicalize /api/generate before app.js stores or downstream modules read it.
   const policyFetch=window.fetch.bind(window);let lastGenerated=null;
-  window.fetch=async function ipPolicyFetch(input,init){const response=await policyFetch(input,init);const url=typeof input==='string'?input:(input?.url||'');if(!/\/api\/generate(?:\?|$)/.test(url)||!response.ok)return response;try{const payload=await response.clone().json();if(payload?.proposal){enforceProposal(payload.proposal,state.profile||{});lastGenerated={version:payload.version||state.version||1,proposal:payload.proposal,model:payload.model||''};return new Response(JSON.stringify(payload),{status:response.status,statusText:response.statusText,headers:{'Content-Type':'application/json'}});}}catch(_){}return response;};
-  if(typeof generateProposal==='function'){const base=generateProposal;generateProposal=async function ipPolicyGenerateProposal(...args){lastGenerated=null;const result=await base.apply(this,args);if(!state.matched&&lastGenerated){state.proposals=[lastGenerated];state.version=Number(lastGenerated.version||1)+1;if(typeof refreshProposalButton==='function')refreshProposalButton();if(typeof updateWorkspaceHeadings==='function')updateWorkspaceHeadings();window.aiaScriptRecommendation?.reset?.();}else if(state.proposals?.[0]?.proposal){enforceProposal(state.proposals[0].proposal,state.profile||{});window.aiaScriptRecommendation?.reset?.();}return result;};}
+  window.fetch=async function ipPolicyFetch(input,init){
+    const response=await policyFetch(input,init);const url=typeof input==='string'?input:(input?.url||'');
+    if(!/\/api\/generate(?:\?|$)/.test(url)||!response.ok)return response;
+    try{
+      const payload=await response.clone().json();
+      if(payload?.proposal){
+        enforceProposal(payload.proposal,state.profile||{});
+        lastGenerated={version:payload.version||state.version||1,proposal:payload.proposal,model:payload.model||''};
+        if(state.matched&&payload.version)persistCanonical(lastGenerated);
+        return new Response(JSON.stringify(payload),{status:response.status,statusText:response.statusText,headers:{'Content-Type':'application/json'}});
+      }
+    }catch(_){}
+    return response;
+  };
+  if(typeof generateProposal==='function'){
+    const base=generateProposal;
+    generateProposal=async function ipPolicyGenerateProposal(...args){
+      lastGenerated=null;const result=await base.apply(this,args);
+      if(!state.matched&&lastGenerated){
+        state.proposals=[lastGenerated];state.version=Number(lastGenerated.version||1)+1;
+        if(typeof refreshProposalButton==='function')refreshProposalButton();
+        if(typeof updateWorkspaceHeadings==='function')updateWorkspaceHeadings();
+        window.aiaScriptRecommendation?.reset?.();
+      }else if(state.proposals?.[0]?.proposal){
+        enforceProposal(state.proposals[0].proposal,state.profile||{});persistCanonical(state.proposals[0]);window.aiaScriptRecommendation?.reset?.();
+      }
+      return result;
+    };
+  }
 
-  window.aiaIpPolicy=Object.freeze({PRIMARY_GOALS,CUSTOMER_MAINLINES,RECRUITMENT_MAINLINES,SECONDARY_ONLY,normalizeGoalValue,inferPrimaryGoal,needsGoalClarification,applyPrimaryGoal,goalQuestion,syncGoalDependentQuestions,normalizedMainlines,secondaryTopics,headline,subheadline,targetPortrait,advantageItems,bioBody,complianceFooter,buildBios,enforceProposal,canonicalizeHistory,prepareProfileGoal});
+  window.aiaIpPolicy=Object.freeze({PRIMARY_GOALS,CUSTOMER_MAINLINES,RECRUITMENT_MAINLINES,SECONDARY_ONLY,normalizeGoalValue,inferPrimaryGoal,needsGoalClarification,applyPrimaryGoal,goalQuestion,syncGoalDependentQuestions,normalizedMainlines,secondaryTopics,headline,subheadline,targetPortrait,advantageItems,bioBody,complianceFooter,buildBios,enforceProposal,canonicalizeHistory,persistCanonical,prepareProfileGoal});
 })();
