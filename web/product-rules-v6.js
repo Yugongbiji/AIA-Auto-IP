@@ -3,6 +3,7 @@
 (function () {
   'use strict';
   const hasEmoji = (text) => /[\u2600-\u27BF]|[\u{1F000}-\u{1FAFF}]/u.test(String(text || ''));
+  const FIXED_CREATIVE_STATUS = new Set(['正在改写，请稍候…', '正在排版，请稍候…']);
   const dialogueEmojiRules = [
     [/资料|信息|填写|补充/, '📋'],
     [/生成|方案|结果|完成/, '✨'],
@@ -17,6 +18,8 @@
     if (!node.classList.contains('assistant') && !node.classList.contains('system')) return;
     if (node.querySelector('textarea,.creative-result,.proposal-card,.bio-copy-block')) return;
     const text = node.textContent?.trim() || '';
+    // 创作工具固定 loading 文案由 V22 唯一负责；V6 不得再加 Emoji 或改写。
+    if (FIXED_CREATIVE_STATUS.has(text)) return;
     if (!text || hasEmoji(text)) return;
     let emoji = '';
     for (const [pattern, value] of dialogueEmojiRules) { if (pattern.test(text)) { emoji = value; break; } }
@@ -32,5 +35,5 @@
     new MutationObserver(decorateAll).observe(root, { childList: true, subtree: false });
     decorateAll();
   });
-  window.aiaDialogueDecorationV6 = Object.freeze({ ownsNickname:false, ownsBio:false });
+  window.aiaDialogueDecorationV6 = Object.freeze({ ownsNickname:false, ownsBio:false, ownsCreativeStatus:false });
 })();
