@@ -65,6 +65,8 @@
     if(hs[0])hs[0].textContent='小红书简介 · 推荐版';
     if(hs[1])hs[1].textContent='视频号 / 抖音简介 · 推荐版';
     cols.forEach(col=>[...col.querySelectorAll('.bio-copy-block')].slice(1).forEach(node=>node.remove()));
+    // 最高规则已废弃 000 占位；旧 app.js 生成的说明不得进入最终可见 UI。
+    content.querySelectorAll('.license-note').forEach(node=>{if(/000/.test(t(node.textContent)))node.remove();});
   }
   function enhance(content,proposal){normalizeBioRecommendationUi(content);content.querySelector('.ip-compliance-fold')?.remove();content.querySelectorAll('.compliance-card,.platform-reminders').forEach(n=>n.classList.add('aia-compliance-source-hidden'));help(content,'nickname');help(content,'bio');content.querySelectorAll('.nickname-option').forEach(r=>bind(r.querySelector('.copy-button'),'nickname',r.querySelector('strong')?.textContent?.trim()||''));content.querySelectorAll('.bio-copy-block').forEach(b=>bind(b.querySelector('.copy-button'),'bio',b.querySelector('textarea')?.value||''));}
 
