@@ -135,6 +135,7 @@
   function cleanHeadlineCandidate(profile,value){
     let v=text(value).replace(/[｜|]+/g,'，').replace(/，{2,}/g,'，').replace(/^，+|，+$/g,'');
     if(!v||XHS_BANNED.test(v)||/专家|导师|顾问|权威|顶级|第一|唯一|稳赚|无风险/.test(v))return '';
+    if(/是我的标签|是我的专业底色|做一个让人记得住的人/.test(v))return '';
     const personNames=[profile?.name,profile?.preferredName,profile?.nickname,profile?.videoNickname,profile?.xiaohongshuNickname].map(text).filter(Boolean);
     if(personNames.some(name=>name.length>1&&v.includes(name)))return '';
     const evidence=headlineEvidenceText(profile);
@@ -145,17 +146,22 @@
     return v;
   }
   function headlineFallback(profile){
-    const careers=bioCareerFacts(profile);const traits=bioTraitFacts(profile);const family=familyIdentity(profile);const education=bioEducationFacts(profile);const honors=bioHonorFacts(profile);
+    const careers=bioCareerFacts(profile);const family=familyIdentity(profile);const education=bioEducationFacts(profile);const honors=bioHonorFacts(profile);
+    const interests=bioInterestFacts(profile).filter(v=>safeXhs(v)&&!/^(生活日常|家庭照护)$/.test(v));
+    const interest=interests[0]||'';
     const careerFact=careers.find(v=>/\d/.test(v))||careers[0]||'';
     const cleanCareer=text(careerFact).replace(/工作经验|工作经历|从业经验|从业经历/g,'').trim();
-    if(cleanCareer&&traits.length)return `${cleanCareer}，${traits.slice(0,2).join('、')}是我的标签`;
     if(cleanCareer&&family)return `${cleanCareer}，也是${family}`;
-    if(cleanCareer&&education.length)return `${cleanCareer}，${education[0]}是我的专业底色`;
-    if(cleanCareer)return `${cleanCareer}，把真实经历变成长期内容`;
-    if(family&&traits.length)return `${family}，${traits.slice(0,2).join('、')}是我的标签`;
-    if(education.length&&honors.length)return `${education[0]}，${honors[0]}是我的专业底色`;
-    if(traits.length)return `${traits.slice(0,3).join('、')}，做一个让人记得住的人`;
-    return family?`${family}，认真记录真实生活`:'真实、清楚、有记忆点，这是我的表达方式';
+    if(cleanCareer&&education.length)return `${cleanCareer}，${education[0]}`;
+    if(cleanCareer&&interest)return `${cleanCareer}，也爱${interest}`;
+    if(cleanCareer)return cleanCareer;
+    if(family&&interest)return `${family}，也爱${interest}`;
+    if(education.length&&honors.length)return `${education[0]}，${honors[0]}`;
+    if(family)return `${family}，认真记录真实生活`;
+    if(interest)return `爱${interest}，也认真记录生活`;
+    if(education.length)return `${education[0]}，保持真实表达`;
+    if(honors.length)return `${honors[0]}，保持真实表达`;
+    return '真实、清楚、有记忆点，这是我的表达方式';
   }
   function headline(profile,candidate='') {
     const proposed=cleanHeadlineCandidate(profile,candidate);
