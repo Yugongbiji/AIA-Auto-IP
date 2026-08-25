@@ -66,7 +66,9 @@ def test_headline_103_is_one_slogan_owner_without_vertical_separator_and_is_reus
     assert 'XHS_BANNED.test(v)' in clean
     assert 'numbers.some' in clean and '0人脉' in clean and '擅长' in clean
     build=POLICY.split('function buildBios(profile,platform,headlineText)',1)[1].split('function enforceProposal',1)[0]
-    assert "lines:[...bioBody(profile,platform),...(slogan?[slogan]:[]),...complianceFooter(profile,platform)]" in build
+    assert 'const slogan=text(headlineText);const body=bioBody(profile,platform);' in build
+    assert 'const sloganLine=slogan?emojiLine(BIO_EMOJIS[body.length % BIO_EMOJIS.length],slogan)' in build
+    assert 'lines:[...body,...(sloganLine?[sloganLine]:[]),...complianceFooter(profile,platform)]' in build
     enforce=POLICY.split('function enforceProposal(proposal,profile)',1)[1].split('function canonicalizeHistory',1)[0]
     assert 'const slogan=headline(p,proposal?.headline)' in enforce
     assert 'proposal.headline=slogan' in enforce
@@ -105,6 +107,7 @@ def test_bio_layout_has_12_20_preferred_range_and_25_absolute_cap():
 def test_bio_short_assets_are_merged_instead_of_forced_to_standalone_lines():
     assert 'function packBioItems(items,maxLines=3)' in POLICY and "`${current}｜${item}`" in POLICY
     assert 'if(charWeight(lines[i])>=BIO_PREFERRED_MIN)continue' in POLICY
+    assert 'packed.filter(line=>charWeight(line)>=BIO_PREFERRED_MIN)' in POLICY
     assert "type:'identity'" in POLICY and "type:'advantage'" in POLICY and "type:'value'" in POLICY
     assert 'services.slice(0,4)' not in POLICY
 
@@ -132,7 +135,7 @@ def test_bio_preserves_time_precision_and_never_invents_vague_duration():
 
 
 def test_bio_does_not_invent_default_value_lines_just_to_reach_three_lines():
-    service_block=POLICY.split('function bioServiceFacts',1)[1].split('function bioInterestFacts',1)[0]
+    service_block=POLICY.split('function bioServiceFacts(profile,platform)',1)[1].split('function bioInterestFacts',1)[0]
     dimension_block=POLICY.split('function dimensionLines',1)[1].split('function dedupeBioLines',1)[0]
     assert "if(!evidence)return []" in service_block
     assert "['职业选择','转型成长'" not in service_block
@@ -159,6 +162,11 @@ def test_floating_buttons_are_icons_only_and_visibility_has_one_page_truth_sourc
     assert '<svg aria-hidden="true"' in FLOAT and 'profileButton.innerHTML' in FLOAT and 'proposalButton.innerHTML' in FLOAT
     assert '最新 IP 方案 · V' not in FLOAT and "querySelector('span:last-child')" not in FLOAT and "state.activeTool==='ip'" not in FLOAT
     assert 'isIpConversationVisible' in FLOAT and 'ownsProfileData:false' in FLOAT
+    assert 'floatingUiStartWorkspace' in FLOAT and 'queueMicrotask(syncVisibility)' in FLOAT and 'requestAnimationFrame(syncVisibility)' in FLOAT
+
+
+def test_existing_nickname_audit_reuses_proposal_card_component():
+    assert "card.className='proposal-card nickname-audit-card'" in V29
 
 
 def test_personal_intro_is_not_removed_by_old_profile_layers():
@@ -170,6 +178,10 @@ def test_personal_intro_is_not_removed_by_old_profile_layers():
 def test_compliance_ui_does_not_generate_bios_and_has_two_columns():
     assert 'proposal.bios=' not in V10.replace(' ','')
     assert "['可以说',cfg.can" in V10 and "['不可以说',cfg.cannot" in V10 and '返回检查' not in V10
+    assert 'justify-content:flex-start' in V10 and 'justify-content:flex-end' not in V10
+    assert 'appendThird' not in V10
+    assert "hs[0].textContent='小红书简介 · 推荐版'" in V10
+    assert "hs[1].textContent='视频号 / 抖音简介 · 推荐版'" in V10
 
 
 def test_clipboard_success_has_one_owner():
