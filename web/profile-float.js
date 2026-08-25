@@ -39,10 +39,13 @@
     const workspace=document.getElementById('workspace'), identity=document.getElementById('identity-screen');
     return !!workspace && !workspace.classList.contains('hidden') && (!identity || identity.classList.contains('hidden'));
   }
-  function isIpConversationVisible() {
-    // 88/114/122：可见性只以最终 DOM 为准，不依赖 state.activeTool 的同步时序。
+  function ipChatDomVisible() {
     const chat=document.getElementById('ip-chat-panel');
-    return workspaceReady() && !!chat && !chat.classList.contains('hidden') && !overlayOpen();
+    return !!chat && !chat.classList.contains('hidden');
+  }
+  function isIpConversationVisible() {
+    // 88/114/122：可见性只以最终 DOM 为准，不依赖任何 activeTool 状态同步时序。
+    return workspaceReady() && ipChatDomVisible() && !overlayOpen();
   }
   function closeProfileDetail() {
     panel.classList.remove('profile-floating-detail-open'); panel.setAttribute('aria-expanded','false'); profileButton.setAttribute('aria-expanded','false');
@@ -96,7 +99,8 @@
     startWorkspace=function floatingUiStartWorkspace(){
       closeStaleOverlaysForIp();
       const result=base.apply(this,arguments);
-      if(state.activeTool==='ip')closeStaleOverlaysForIp();
+      // startWorkspace 内部可能切换默认工具；只读取最终 DOM，不依赖状态变量。
+      if(ipChatDomVisible())closeStaleOverlaysForIp();
       settleVisibility();
       return result;
     };
