@@ -18,7 +18,7 @@ RULES = (ROOT / "rules" / "ip-headline-slogan-rules.md").read_text(encoding="utf
 def test_114_ip_conversation_restores_floating_profile_entry():
     assert "function isIpConversationVisible" in FLOAT
     assert "queueMicrotask(syncVisibility)" in FLOAT
-    assert "setTimeout(syncVisibility" in FLOAT
+    assert "requestAnimationFrame(syncVisibility)" in FLOAT
 
 
 def test_115_existing_nickname_advice_reuses_proposal_card_component():
