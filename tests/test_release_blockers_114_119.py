@@ -5,6 +5,7 @@ CORE = (ROOT / "web" / "ip-policy-core.js").read_text(encoding="utf-8")
 V6 = (ROOT / "web" / "product-rules-v6.js").read_text(encoding="utf-8")
 V7 = (ROOT / "web" / "product-rules-v7.js").read_text(encoding="utf-8")
 V10 = (ROOT / "web" / "product-rules-v10.js").read_text(encoding="utf-8")
+V13 = (ROOT / "web" / "product-rules-v13.js").read_text(encoding="utf-8")
 V19 = (ROOT / "web" / "product-rules-v19.js").read_text(encoding="utf-8")
 V22 = (ROOT / "web" / "product-rules-v22.js").read_text(encoding="utf-8")
 V25 = (ROOT / "web" / "product-rules-v25.js").read_text(encoding="utf-8")
@@ -42,6 +43,36 @@ def test_127_floating_profile_drawer_contains_confirmed_information_sections():
     for feedback in ["大家怎么称呼我", "他们和我的关系", "他们眼中的我", "他们愿意找我聊什么", "他们觉得我更像哪种人", "他们怎么向别人介绍我"]:
         assert feedback in FLOAT
     assert "`${label} ×${count}`" in FLOAT
+
+
+def test_135_floating_actions_use_fixed_safe_zone_above_composer():
+    compact = FLOAT_CSS.replace(' ', '').replace('\n', '')
+    assert '.aia-ip-owner-actions{' in compact
+    assert 'bottom:104px' in compact
+    assert 'bottom:calc(88px+env(safe-area-inset-bottom,0px))' in compact
+    assert 'touch-action:none' not in FLOAT_CSS
+
+
+def test_132_questionnaire_keeps_education_and_expression_style_when_missing():
+    assert "educationQuestion.chips = ['大专', '本科', '硕士', '博士']" in V13
+    assert "educationQuestion.collectIfMissing = true" in V13
+    assert "styleQuestion.collectIfMissing = true" in V13
+    assert "styleQuestion.multiple = true" in V13
+    assert "styleQuestion.maxSelections = 2" in V13
+    assert '这个选择会影响后续的脚本改写风格' in V13
+    assert "'contentTone'" in V13 and "'education'" in V13
+
+
+def test_135_questionnaire_persistence_never_blocks_next_question():
+    assert 'questionnaireNonBlockingPersist' in V13
+    assert 'profileSaveQueue' in V13
+    assert 'return Promise.resolve()' in V13
+    assert 'QUESTIONNAIRE_OWNED_FIELDS' in V27
+    assert 'QUESTIONNAIRE_OWNED_FIELDS.has(key)' in V27
+    # 后台语义分析不得再控制问卷游标或触发下一题。
+    semantic_block = V27.split('async function semanticEnrich', 1)[1].split('function normalizeCountItems', 1)[0]
+    assert 'state.currentQuestion' not in semantic_block
+    assert 'presentQuestion()' not in semantic_block
 
 
 def test_115_existing_nickname_advice_reuses_proposal_card_component():
@@ -132,7 +163,6 @@ def test_preview_helper_cannot_restore_full_document_observer():
 def test_generic_intro_keywords_cannot_upgrade_to_previous_career():
     assert "function explicitCareerIntro" in V27
     assert "field === 'previousCareer' ? explicitCareerIntro(intro) : intro" in V27
-    assert "单独出现“财务/法律/教育”等领域关键词不能升级为人物经历" in V27
     assert "def _explicit_career_context" in SEMANTIC
     assert 'key == "previousCareer" and not _explicit_career_context(proof)' in SEMANTIC
     assert "单独出现“财务/法律/教育/医疗”等领域关键词不得写入" in SEMANTIC
