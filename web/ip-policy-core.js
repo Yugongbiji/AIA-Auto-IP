@@ -129,17 +129,38 @@
     return uniq(rules.filter(([p])=>p.test(evidence)).map(([,label])=>label)).slice(0,4);
   }
 
-  function headline(profile) {
-    const goal=inferPrimaryGoal(profile); const job=career(profile), family=familyIdentity(profile), proof=proofs(profile)[0];
-    if (goal===PRIMARY_GOALS.RECRUITMENT) {
-      if (job) return `从${job}跨界，分享职业转型与长期成长的真实经验`;
-      if (proof) return `带着${proof}的专业底色，分享职业选择与长期成长`;
-      return '分享职业选择、真实转型与长期成长的经验和思考';
-    }
-    if (job) return `从${job}跨界，用自己的经验讲清家庭保障与长期规划`;
-    if (family) return `从${family}视角，分享家庭保障与长期规划的实用经验`;
-    if (proof) return `带着${proof}的专业底色，讲清家庭保障与长期规划`;
-    return '围绕家庭保障与长期规划，分享真实、实用、听得懂的内容';
+  function headlineEvidenceText(profile){
+    try{return JSON.stringify(profile||{});}catch(_){return [profile?.selfIntro,profile?.previousCareer,profile?.honors,profile?.hobbies].map(text).join(' ');}
+  }
+  function cleanHeadlineCandidate(profile,value){
+    let v=text(value).replace(/[｜|]+/g,'，').replace(/，{2,}/g,'，').replace(/^，+|，+$/g,'');
+    if(!v||XHS_BANNED.test(v)||/专家|导师|顾问|权威|顶级|第一|唯一|稳赚|无风险/.test(v))return '';
+    const personNames=[profile?.name,profile?.preferredName,profile?.nickname,profile?.videoNickname,profile?.xiaohongshuNickname].map(text).filter(Boolean);
+    if(personNames.some(name=>name.length>1&&v.includes(name)))return '';
+    const evidence=headlineEvidenceText(profile);
+    const numbers=v.match(/\d+(?:\.\d+)?/g)||[];
+    if(numbers.some(n=>!evidence.includes(n)))return '';
+    if(/0人脉/.test(v)&&!/0人脉/.test(evidence))return '';
+    if(/擅长/.test(v)&&!/擅长/.test(evidence))return '';
+    return v;
+  }
+  function headlineFallback(profile){
+    const careers=bioCareerFacts(profile);const traits=bioTraitFacts(profile);const family=familyIdentity(profile);const education=bioEducationFacts(profile);const honors=bioHonorFacts(profile);
+    const careerFact=careers.find(v=>/\d/.test(v))||careers[0]||'';
+    const cleanCareer=text(careerFact).replace(/工作经验|工作经历|从业经验|从业经历/g,'').trim();
+    if(cleanCareer&&traits.length)return `${cleanCareer}，${traits.slice(0,2).join('、')}是我的标签`;
+    if(cleanCareer&&family)return `${cleanCareer}，也是${family}`;
+    if(cleanCareer&&education.length)return `${cleanCareer}，${education[0]}是我的专业底色`;
+    if(cleanCareer)return `${cleanCareer}，把真实经历变成长期内容`;
+    if(family&&traits.length)return `${family}，${traits.slice(0,2).join('、')}是我的标签`;
+    if(education.length&&honors.length)return `${education[0]}，${honors[0]}是我的专业底色`;
+    if(traits.length)return `${traits.slice(0,3).join('、')}，做一个让人记得住的人`;
+    return family?`${family}，认真记录真实生活`:'真实、清楚、有记忆点，这是我的表达方式';
+  }
+  function headline(profile,candidate='') {
+    const proposed=cleanHeadlineCandidate(profile,candidate);
+    if(proposed)return proposed;
+    return headlineFallback(profile).replace(/[｜|]+/g,'，');
   }
   function subheadline(profile){return inferPrimaryGoal(profile)===PRIMARY_GOALS.RECRUITMENT?'用真实经历建立信任，持续吸引适合长期发展的同行者':'保险是主内容，真实经历与生活身份帮助建立长期信任';}
   function targetPortrait(profile){
@@ -334,18 +355,19 @@
     const license=explicitLicense(profile);
     return [VIDEO_DISCLAIMER,`营销服务部：${department||'待补充'}`,`执业证编号：${license||'待补充'}`];
   }
-  function buildBios(profile,platform){
+  function buildBios(profile,platform,headlineText){
     const label=platform==='xhs'?'小红书简介 · 推荐版':'视频号 / 抖音简介 · 推荐版';
-    return [{label,focus:'我是谁 + 我的优势 + 我能提供什么价值',lines:[...bioBody(profile,platform),...complianceFooter(profile,platform)]}];
+    const slogan=text(headlineText);
+    return [{label,focus:'我是谁 + 我的优势 + 我能提供什么价值',lines:[...bioBody(profile,platform),...(slogan?[slogan]:[]),...complianceFooter(profile,platform)]}];
   }
 
   function enforceProposal(proposal,profile){
     if(!proposal)return proposal;
-    const p=profile||{};prepareProfileGoal(p);const branch=secondaryTopics(p);
-    proposal.headline=headline(p);proposal.subheadline=subheadline(p);proposal.primaryGoal=inferPrimaryGoal(p);
+    const p=profile||{};prepareProfileGoal(p);const branch=secondaryTopics(p);const slogan=headline(p,proposal?.headline);
+    proposal.headline=slogan;proposal.subheadline=subheadline(p);proposal.primaryGoal=inferPrimaryGoal(p);
     proposal.clientPortrait=targetPortrait(p);proposal.advantages=advantageItems(p);proposal.tags=proposalTags(p,branch);
     proposal.contentMainline=normalizedMainlines(p,proposal);proposal.secondaryContent=branch.topics;proposal.secondaryContentSource=branch.source;proposal.secondaryContentRanking=branch.ranking;
-    proposal.bios=proposal.bios||{};proposal.bios.xiaohongshu=buildBios(p,'xhs');proposal.bios.videoDouyin=buildBios(p,'video');
+    proposal.bios=proposal.bios||{};proposal.bios.xiaohongshu=buildBios(p,'xhs',slogan);proposal.bios.videoDouyin=buildBios(p,'video',slogan);
     if(window.aiaNicknamePolicyV1?.enforce)window.aiaNicknamePolicyV1.enforce(proposal,p);
     return proposal;
   }
