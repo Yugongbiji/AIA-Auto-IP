@@ -18,7 +18,7 @@ import server as core
 from backend import profile_semantic, script_api, script_persona_rules
 import script_library_store as script_store
 
-# Make confirmed account tone an explicit, auditable script-rewrite contract.
+# Install explicit creative runtime contracts before serving requests.
 script_persona_rules.install(core)
 
 
@@ -117,6 +117,24 @@ def merged_profile_with_live_reviews(agent_id: str):
     return result
 
 
+def save_canonical_proposal(agent_id: str, version: int, proposal: dict) -> bool:
+    """Persist the browser canonical proposal for an already-created version."""
+    if not agent_id or not isinstance(proposal, dict) or not version:
+        return False
+    with core.database() as conn:
+        exists = conn.execute(
+            "SELECT 1 FROM proposals WHERE agent_id = ? AND version = ?",
+            (agent_id, int(version)),
+        ).fetchone()
+        if not exists:
+            return False
+        conn.execute(
+            "UPDATE proposals SET proposal_json = ? WHERE agent_id = ? AND version = ?",
+            (json.dumps(proposal, ensure_ascii=False), agent_id, int(version)),
+        )
+    return True
+
+
 # server.AppHandler resolves merged_profile through server.py globals at request time.
 core.merged_profile = merged_profile_with_live_reviews
 
@@ -179,6 +197,22 @@ class ScriptAppHandler(core.AppHandler):
                 self.send_json({"error": "资料分析请求格式不正确"}, HTTPStatus.BAD_REQUEST)
                 return
             self.send_json({"ok": True, **result})
+            return
+
+        if path == "/api/proposal/canonical":
+            try:
+                payload = self._read_script_payload()
+                agent_id = _clean(payload.get("agentId"))
+                version = int(payload.get("version") or 0)
+                proposal = payload.get("proposal") if isinstance(payload.get("proposal"), dict) else None
+                saved = save_canonical_proposal(agent_id, version, proposal)
+            except (ValueError, TypeError, json.JSONDecodeError):
+                self.send_json({"error": "标准化方案保存格式不正确"}, HTTPStatus.BAD_REQUEST)
+                return
+            if not saved:
+                self.send_json({"error": "未找到对应方案版本"}, HTTPStatus.NOT_FOUND)
+                return
+            self.send_json({"saved": True})
             return
 
         if path not in {"/api/scripts/recommend", "/api/scripts/activity"}:
