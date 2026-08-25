@@ -94,7 +94,8 @@ def test_bio_does_not_use_interest_or_region_as_primary_filler():
 def test_customer_feedback_latest_requirement_supersedes_single_summary():
     ledger = read("docs/product/CURRENT_EFFECTIVE_REQUIREMENTS_LEDGER_20260825.md")
     profile = read("web/product-rules-v27.js")
-    assert "客户反馈必须独立为“客户反馈”板块" in ledger
+    assert "客户反馈独立为“客户反馈”板块" in ledger
+    assert "不能塞进一个摘要字段" in ledger
     assert "大家怎么称呼我" in profile
     assert "他们和我的关系" in profile
     assert "他们眼中的我" in profile
@@ -144,7 +145,7 @@ def test_compliance_rule_does_not_regrant_nickname_brand_generation():
 
 def test_content_goal_boundary_uses_canonical_primary_goal_only():
     boundary = read("rules/content-goal-boundary-rules.md")
-    assert "最终只认标准化后的 `primaryGoal`" in boundary
-    assert "`purpose` 只是历史/报名原始来源" in boundary
-    assert "双目标/模糊目标不能直接进入方案" in boundary
-    assert "同时生成拓客与增员两条专业主线" not in boundary
+    assert "只读标准化 `primaryGoal`" in boundary
+    assert "原始报名字段 `purpose` 只作为目标判断输入" in boundary
+    assert "必须重新询问并二选一" in boundary
+    assert "不存在第三种“双主线”最终状态" in boundary
