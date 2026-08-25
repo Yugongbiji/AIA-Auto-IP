@@ -61,11 +61,12 @@ def test_bio_visual_anchors_and_single_platform_recommendations_live_in_canonica
     assert 'proposal.bios.videoDouyin=buildBios' in CORE.replace(' ', '')
 
 
-def test_compliance_help_uses_secondary_helper_row_not_title_row():
+def test_compliance_help_keeps_question_mark_in_card_top_right():
     compact = COMPLIANCE_UI.replace(' ', '')
-    assert 'aia-compliance-title-row' not in COMPLIANCE_UI
-    assert 'aia-compliance-help-row' in COMPLIANCE_UI
-    assert "heading.insertAdjacentElement('afterend',row)" in compact
+    assert "b.textContent='?'" in COMPLIANCE_UI
+    assert "heading.closest('section,article,.proposal-card,.proposal-block')" in COMPLIANCE_UI
+    assert "host.appendChild(b)" in compact
+    assert 'position:absolute' in COMPLIANCE_UI and 'right:14px' in COMPLIANCE_UI and 'top:14px' in COMPLIANCE_UI
     assert '查看昵称合规提示' in COMPLIANCE_UI
     assert '查看简介合规提示' in COMPLIANCE_UI
 
