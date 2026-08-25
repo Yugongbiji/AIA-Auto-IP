@@ -9,6 +9,7 @@
 |---|---|---|---|
 | `primaryGoal` 拓客/增员 | `web/ip-policy-core.js` | 读取报名目的、判断是否需追问、标准化成二选一 | 不得自行重新猜目的、不得恢复“两者都要/个人品牌”作为最终目标 |
 | 目标人群语义 | `web/ip-policy-core.js` | 根据 `primaryGoal` 切换客户 / 准增员对象与年龄问题 | 资料提取层不得把客户画像当准增员画像，反之亦然 |
+| IP 问卷问题完整性 / 提问文案 / 保存节奏 | `web/product-rules-v13.js` | 对缺失字段逐项提问；维护学历、表达风格等题目；档案保存后台串行且不得阻塞下一题 | V27/语义分析不得修改 `state.currentQuestion`、不得替用户填写问卷字段、不得因为异步请求控制跳题 |
 | IP 方案定位类输出 | `web/ip-policy-core.js` | 唯一写入 `headline/subheadline/tags/clientPortrait/advantages` | AI 原始方案、旧 Vxx 不得直接决定最终可见结果 |
 | 保险主线 | `web/ip-policy-core.js` | 从受控保险业务主题或增员主题生成 | 生活兴趣不得写入主线；旧 Vxx 不得改写 |
 | 内容支线最终结果 | `web/ip-policy-core.js` | 使用 `rankIpContentBranches()` 候选排序后选唯一最终支线 | 排序模块只能提供候选，不得直接写 proposal |
@@ -21,8 +22,8 @@
 | 复制前合规弹窗 | `web/product-rules-v10.js` | UI 展示“可以说/不可以说”、首次复制流程 | 不得生成简介业务数据；不得自己写 Clipboard |
 | 公共 Clipboard | `web/product-rules-v28.js` (`window.aiaClipboard`) | 昵称、简介、脚本改写、小红书统一真实复制成功/失败反馈 | 其他层不得直接维护 `navigator.clipboard` 成功逻辑 |
 | 公共创作 Loading / Toast | `web/product-rules-v22.js` | 在消息进入 DOM 前统一 Loading 文案；公共 Toast | 不得靠全局 MutationObserver 事后改文案 |
-| 资料标准化 / 自我介绍提取 / 客户反馈展示 | `web/product-rules-v27.js` | 归一报名字段、目标感知语义提取、展示个人介绍与结构化客户反馈 | 不得改昵称、简介、内容方向或悬浮入口 |
-| 悬浮入口 | `web/profile-float.js` + `web/profile-float.css` | 纯图标、显示范围、展开/收起、拖动、打开方案 | 不得重写 `renderProfile` 的业务内容，不得显示版本号/文字标签 |
+| 资料标准化 / 自我介绍提取 / 客户反馈展示 | `web/product-rules-v27.js` | 归一报名字段、目标感知语义提取、展示个人介绍与结构化客户反馈 | 不得改昵称、简介、内容方向、悬浮入口或问卷游标；不得用语义推断替代问卷答案 |
+| 悬浮入口 | `web/profile-float.js` + `web/profile-float.css` | 独立资料抽屉、显示范围、固定安全位置、打开最新方案 | 不得重写资料业务数据；不得依赖旧 `.profile-panel` / `activeTool` / overlay 状态；不得遮挡 composer |
 | 内容方向 UI | `web/product-rules-v20.js` | 读取 core 的 `contentMainline/secondaryContent` 并展示、跳转推荐脚本 | 不得重新推断主线/支线 |
 | 推荐脚本数据/去重/脚本库分页/行为记录 | `web/script-recommendation-v1.js` + 后端推荐服务 | 推荐、去重、无 IP 完整库、L1/L2 筛选、真实分页、详情打开，以及曝光/详情/改写/排版 handoff activity | UI 增强层不得重新生成推荐数据 |
 | 推荐脚本“换一批/今日日期/详情清理” | `web/product-rules-v21.js` | 纯展示交互 | 不得改变推荐业务归类 |
@@ -41,7 +42,7 @@
 - `product-rules-v9.js`：报名 purpose 只展示；不得创建最终目标、不得重算资料完成度。
 - `product-rules-v10.js`：仅合规提醒 UI；不得写 `proposal.bios` 或 Clipboard。
 - `product-rules-v12.js`：仅撤销旧内容规划入口；旧 content plan 不得影响当前导航或业务结果。
-- `product-rules-v13.js`：仅保留仍有效的提问文案。
+- `product-rules-v13.js`：IP 问卷补充规则 Owner；只负责问题完整性、问法/选项与非阻塞保存，不得生成任何方案业务结果。
 - `product-rules-v16.js`：仅环境隔离资料缓存；不得整理简介。
 - `product-rules-v19.js`：仅提供称呼辅助；不得改推荐昵称。
 - `product-rules-v24.js`：仅术语/欢迎文案。
