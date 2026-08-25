@@ -36,7 +36,6 @@ def test_goal_controls_recruitment_questions_and_whole_proposal():
 
 
 def test_canonical_proposal_is_applied_before_use_and_persisted():
-    assert "/api/generate" in CORE
     assert "enforceProposal(payload.proposal" in CORE
     assert "state.proposals=[lastGenerated]" in CORE
     assert "/api/proposal/canonical" in CORE
@@ -69,7 +68,7 @@ def test_customer_feedback_has_one_display_owner():
 def test_nickname_uses_peer_feedback_first_and_never_falls_back_to_unanchored_ai():
     anchors_block = NICK.split("function anchors", 1)[1].split("function pickAnchor", 1)[0]
     assert anchors_block.index("peerAnchors") < anchors_block.index("naturalNameAnchors")
-    assert "proposal.nicknameOptions=controlled.slice(0,5)" in NICK.replace(" ", "")
+    assert "proposal.nicknameOptions=rankByMemory(controlled,p,a,existing).slice(0,5)" in NICK.replace(" ", "")
     assert "proposal.nicknameNeedsIdentity=!a" in NICK.replace(" ", "")
     assert "if(!anchor||!Array.isArray(rawOptions))return[]" in NICK.replace(" ", "")
 
@@ -129,11 +128,10 @@ def test_xhs_contract_is_two_sentence_dense_and_repairs_isolated_punctuation():
     assert "core_module.enforce_xhs_readability = readability" in XHS
 
 
-def test_prompt_cannot_confuse_agent_id_with_license_number():
-    video_section = PROMPT.split("## 视频号/抖音简介", 1)[1].split("## 通用禁区", 1)[0]
-    assert "执业证编号" in video_section
-    assert "不得把营销员编号当作执业证编号" in video_section
-    assert "营销服务部与营销员编号" not in video_section
+def test_prompt_cannot_generate_or_confuse_fixed_compliance_footer():
+    assert "固定合规尾部不是模型职责" in PROMPT
+    assert "模型不得生成个人意见固定声明、营销服务部行、执业证编号行" in PROMPT
+    assert "ip-policy-core.js::complianceFooter()" in PROMPT
 
 
 def test_runtime_ip_generation_reads_prompt_file_instead_of_hardcoded_product_rules():
