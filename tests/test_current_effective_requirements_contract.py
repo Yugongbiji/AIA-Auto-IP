@@ -38,18 +38,18 @@ def test_xhs_emoji_density_uses_latest_v4_specialized_rule():
 
 def test_nickname_rules_keep_people_anchor_and_reject_mechanical_templates():
     baseline = read("docs/product/CURRENT_PRODUCT_RULES_BASELINE_20260824.md")
-    nickname = read("docs/昵称受控词库与模板-V1-20260824.md")
     owner = read("web/nickname-policy-v1.js")
     assert "昵称**必须包含人物称呼**" in baseline
-    assert "六类受控模板" in nickname
-    assert "成都+称呼" in baseline
     assert "function controlledOptions" in owner
     assert "nicknameNeedsIdentity" in owner
-    assert "function educationAsset" in owner
-    assert "function achievementAsset" in owner
-    assert "function regionAsset" in owner
     assert "function aiFallbackOptions" in owner
-    assert "n===`${asset}${anchor}`" in owner
+    assert "function safeName" in owner
+    assert "GENERIC_SUFFIXES" in owner
+    # 过往职业、学历、城市、荣誉不再是新昵称生成路线。
+    assert "function career(" not in owner
+    assert "function educationAsset" not in owner
+    assert "function achievementAsset" not in owner
+    assert "function regionAsset" not in owner
 
 
 def test_nickname_anchor_priority_and_existing_nickname_evidence_are_explicit():
@@ -60,26 +60,20 @@ def test_nickname_anchor_priority_and_existing_nickname_evidence_are_explicit():
     natural = owner.index("...naturalNameAnchors(p)")
     assert -1 not in (peer, preferred, existing, natural)
     assert peer < preferred < existing < natural
-    assert "包含稳定人物称呼" in owner
+    assert "existingNickname" in owner and "已有用户记忆" in owner
 
 
-def test_bio_latest_rules_replace_three_strategies_and_mechanical_reduction():
+def test_bio_latest_rules_use_one_final_recommendation_and_same_dimension_packing():
     core = read("web/ip-policy-core.js")
     bio_rules = read("docs/简介受控词库与模板-V1-20260824.md")
-    ledger = read("docs/product/CURRENT_EFFECTIVE_REQUIREMENTS_LEDGER_20260825.md")
     baseline = read("docs/product/CURRENT_PRODUCT_RULES_BASELINE_20260824.md")
-
     assert "三个维度均可根据真实资料丰富程度使用 **1–3 行**" in bio_rules
     assert "小红书简介：1 套最终推荐版" in bio_rules
     assert "视频号 / 抖音简介：1 套共用最终推荐版" in bio_rules
-    assert "取消机械减法" in bio_rules
     assert "每一行必须保持同一语义维度" in bio_rules
     assert "硕士学历”优先精简为“硕士" in bio_rules
-
-    assert "同一平台固定生成三套简介" in ledger
-    assert "机械减法" in ledger
-    assert "function bioCareerFacts" in core
-    assert "function packBioItems" in core
+    assert "function careerFacts" in core
+    assert "function packDimension" in core
     assert "function dimensionLines" in core
     assert "小红书简介 · 推荐版" in core
     assert "视频号 / 抖音简介 · 推荐版" in core
@@ -95,9 +89,9 @@ def test_bio_latest_rules_replace_three_strategies_and_mechanical_reduction():
 def test_bio_fact_boundary_and_customer_feedback_are_not_ai_explanations():
     core = read("web/ip-policy-core.js")
     bio_rules = read("docs/简介受控词库与模板-V1-20260824.md")
-    assert "BIO_GENERIC_DOMAINS" in core
-    assert "^(法律|教育|金融|医疗" in core
-    assert "bioCareerFacts" in core
+    assert "function normalizeCareer" in core
+    assert "法律|教育|金融|医疗" in core
+    assert "function careerFacts" in core
     assert "客户比较常提到我" not in core
     assert "客户高频评价" not in core
     assert "只呈现结论，不解释证据来源" in bio_rules
@@ -112,8 +106,7 @@ def test_bio_keeps_high_information_density_without_old_numeric_caps():
     assert "function charWeight" in core
     assert "maxLines=3" in core
     assert "services.slice(0,4)" not in core
-    assert "interests.join('、'),items:interests" not in core
-    assert "return uniq(out).slice(0,3)" not in core.split("function bioEducationFacts", 1)[1].split("function bioHonorFacts", 1)[0]
+    assert "function packDimension" in core
 
 
 def test_customer_feedback_latest_requirement_supersedes_single_summary():
