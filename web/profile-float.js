@@ -40,7 +40,7 @@
     return !!workspace && !workspace.classList.contains('hidden') && (!identity || identity.classList.contains('hidden'));
   }
   function isIpConversationVisible() {
-    // 88：可见性以真实 DOM 为准，不依赖 state.activeTool 的同步时序。
+    // 88/114：可见性以真实 DOM 为准，不依赖 state.activeTool 的同步时序。
     // 桌面端恢复会话/导航 wrapper 可能先切面板、后更新 state；若把 state 当第二真源，会误隐藏悬浮入口。
     const chat=document.getElementById('ip-chat-panel');
     return workspaceReady() && !!chat && !chat.classList.contains('hidden') && !overlayOpen();
@@ -76,6 +76,16 @@
   if (typeof renderProfile==='function') { const base=renderProfile; renderProfile=function floatingUiRenderProfile(){const result=base.apply(this,arguments);ensureConversationHint();ensureCloseButton();syncVisibility();return result;}; }
   if (typeof selectTool==='function') { const base=selectTool; selectTool=function floatingUiSelectTool(tool){const result=base(tool);syncVisibility();return result;}; }
   if (typeof refreshProposalButton==='function') { const base=refreshProposalButton; refreshProposalButton=function floatingUiRefreshProposalButton(){const result=base.apply(this,arguments);syncProposalButton();return result;}; }
+  if (typeof startWorkspace==='function') {
+    const base=startWorkspace;
+    startWorkspace=function floatingUiStartWorkspace(){
+      const result=base.apply(this,arguments);
+      // 114：登录/恢复会话完成后再按最终 DOM 状态同步一次，避免初始隐藏状态被保留下来。
+      queueMicrotask(syncVisibility);
+      requestAnimationFrame(syncVisibility);
+      return result;
+    };
+  }
 
   let drag=null;
   actions.addEventListener('pointerdown',(event)=>{if(event.button!==0)return;const rect=actions.getBoundingClientRect();drag={startX:event.clientX,startY:event.clientY,left:rect.left,top:rect.top,moved:false};});
