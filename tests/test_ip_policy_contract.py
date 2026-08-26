@@ -60,15 +60,28 @@ def test_lifestyle_topics_can_only_be_secondary():
 
 def test_headline_is_single_natural_slogan_owner_and_rejects_mechanical_output():
     assert "function headline(profile,candidate='')" in POLICY
-    clean=POLICY.split('function cleanHeadlineCandidate',1)[1].split('function headlineFallback',1)[0]
+    clean=POLICY.split('function cleanHeadlineCandidate',1)[1].split('function transformationFacts',1)[0]
     fallback=POLICY.split('function headlineFallback',1)[1].split("function headline(profile",1)[0]
     assert "replace(/[｜|]+/g,'，')" in clean
     assert 'XHS_BANNED.test(v)' in clean
     assert '是我的标签' in clean and '是我的专业底色' in clean and '做一个让人记得住的人' in clean
     assert '本科|硕士|博士|大专' in clean and 'MDRT|COT|TOT' in clean
     assert 'nums.some' in clean and '0人脉' in clean and '擅长' in clean
+    assert '懂[\\u4e00-\\u9fa5]' in clean and '多年|长期' in clean
     assert 'profile?.name' not in fallback and 'preferredName' not in fallback
     assert 'education.length&&honors.length' not in fallback
+
+
+def test_headline_competes_strong_facts_and_uses_goal_as_ranking_context():
+    block=POLICY.split('function headlineAssets',1)[1].split('function headlineFallback',1)[0]
+    assert "'career',/\\d/.test(v)?100:82" in block
+    assert "'transformation',92" in block
+    assert "'honor',72" in block
+    assert "'education',64" in block
+    assert "'trait',58" in block
+    assert "'family',52" in block
+    assert "'interest',36" in block
+    assert 'PRIMARY_GOALS.RECRUITMENT' in block and 'PRIMARY_GOALS.CUSTOMER' in block
 
 
 def test_headline_is_reused_verbatim_in_both_bios_before_footer():
@@ -76,7 +89,7 @@ def test_headline_is_reused_verbatim_in_both_bios_before_footer():
     enforce=POLICY.split('function enforceProposal',1)[1].split('function canonicalizeHistory',1)[0]
     assert 'body=bioBody(profile,platform)' in build
     assert 'slogan=text(headlineText)' in build
-    assert 'BIO_EMOJIS[body.length%BIO_EMOJIS.length]' in build
+    assert 'sloganEmoji=pickBioEmoji' in build
     assert 'proposal.headline=slogan' in enforce
     assert "buildBios(p,'xhs',slogan)" in enforce and "buildBios(p,'video',slogan)" in enforce
 
@@ -107,40 +120,71 @@ def test_bio_uses_strict_career_evidence_and_does_not_upgrade_generic_domain_key
     assert '曾任|曾做|从事|工作于|任职于' in career
 
 
-def test_bio_layout_has_12_20_preferred_range_and_25_absolute_cap():
+def test_bio_layout_has_12_20_preferred_range_25_cap_and_balancing():
     assert 'const BIO_PREFERRED_MIN=12;' in POLICY
     assert 'const BIO_PREFERRED_MAX=20;' in POLICY
     assert 'const BIO_ABSOLUTE_MAX=25;' in POLICY
     pack=POLICY.split('function packDimension',1)[1].split('function bioDimensions',1)[0]
-    assert 'charWeight(candidate)>BIO_PREFERRED_MAX' in pack
-    assert 'charWeight(built)>=BIO_PREFERRED_MIN' in pack
-    assert 'charWeight(v)>=BIO_PREFERRED_MIN&&charWeight(v)<=BIO_ABSOLUTE_MAX' in pack
+    assert 'partitionCandidates(clean,k)' in pack
+    assert 'partitionScore(a)-partitionScore(b)' in pack
+    assert 'charWeight(line)<=BIO_ABSOLUTE_MAX' in pack
+    assert 'charWeight(line)>=BIO_PREFERRED_MIN' in pack
 
 
 def test_bio_short_assets_are_same_dimension_merged_not_forced_standalone():
     assert 'function packDimension(items,maxLines=3)' in POLICY
-    assert "[...current,item].join('｜')" in POLICY
+    assert "g.join('｜')" in POLICY
     assert 'function dimensionLines(profile,platform)' in POLICY
-    assert 'packDimension(d.identity)' in POLICY
-    assert 'packDimension(d.advantage)' in POLICY
-    assert 'packDimension(d.value)' in POLICY
+    assert 'packDimension(d.identity,3)' in POLICY
+    assert 'packDimension(d.advantage,3)' in POLICY
+    assert 'packDimension(d.value,3)' in POLICY
 
 
-def test_bio_emoji_is_unique_by_line_and_summary_uses_next_emoji():
+def test_bio_cancels_old_interest_honor_trait_quantity_caps():
+    dims=POLICY.split('function bioDimensions',1)[1].split('function dimensionLines',1)[0]
+    assert 'identity.push(...interests);' in dims
+    assert 'advantage.push(...honors);' in dims
+    assert 'advantage.push(...traits);' in dims
+    assert 'interests.slice(' not in dims and 'honors.slice(' not in dims and 'traits.slice(' not in dims
+
+
+def test_bio_semantic_dedupe_prefers_specific_quantified_fact():
+    assert 'function bioSemanticFamily' in POLICY
+    assert 'function bioFactStrength' in POLICY
+    assert 'function dedupeBioFacts' in POLICY
+    strength=POLICY.split('function bioFactStrength',1)[1].split('function dedupeBioFacts',1)[0]
+    assert "score+=6" in strength and '长期|多年' in strength and 'score-=2' in strength
+    dedupe=POLICY.split('function dedupeBioFacts',1)[1].split('function partitionCandidates',1)[0]
+    assert 'bioFactStrength(raw)>bioFactStrength(out[index])' in dedupe
+
+
+def test_bio_emoji_is_semantic_unique_and_summary_has_non_repeating_anchor():
     assert 'const BIO_EMOJIS=Object.freeze' in POLICY
+    assert "'👤'" not in POLICY.split('const BIO_EMOJIS',1)[1].split('const KNOWN_INTERESTS',1)[0]
+    assert 'function emojiCandidates(line,dimension)' in POLICY
+    assert "if(/本科|硕士|博士|大专|985|211|QS|双一流|留学|海归/.test(v))return ['🎓'" in POLICY
+    assert "if(/喝茶|茶|咖啡/.test(v))return ['☕'" in POLICY
+    assert 'function pickBioEmoji(line,dimension,used)' in POLICY
     body=POLICY.split('function bioBody',1)[1].split('function explicitLicense',1)[0]
-    assert 'BIO_EMOJIS[index%BIO_EMOJIS.length]' in body
+    assert 'used=new Set()' in body and 'pickBioEmoji(line,dimension,used)' in body
     build=POLICY.split('function buildBios',1)[1].split('function bioAssets',1)[0]
-    assert 'BIO_EMOJIS[body.length%BIO_EMOJIS.length]' in build
-    assert "'👤'" not in POLICY.split('const BIO_EMOJIS',1)[1].split('function normalizeGoalValue',1)[0]
+    assert 'used=new Set(body.map' in build and 'sloganEmoji=pickBioEmoji' in build
 
 
-def test_bio_preserves_explicit_duration_without_inventing_numbers():
-    block=POLICY.split("function insuranceExperience",1)[1].split('function traitFacts',1)[0]
-    assert "raw.match(/\\d+(?:\\.\\d+)?/g)" in block
-    assert "`${n}年保险从业经验`" in block
-    assert "`${n}年从业经历`" in block
+def test_bio_preserves_explicit_duration_precision_without_inventing_long_term():
+    block=POLICY.split('function insuranceExperience',1)[1].split('const TRAIT_ALLOWED',1)[0]
+    assert "raw.match(/\\d+(?:\\.\\d+)?/)" in block
+    assert "/年多|\\+/.test(raw)?`${n}年+`:`${n}年`" in block
+    assert "'多年保险行业经验'" in block
+    assert "platform==='xhs'?'从业经历':'保险从业'" in block
     assert '长期保险行业经验' not in POLICY
+
+
+def test_bio_interests_only_use_explicit_profile_or_self_intro_evidence():
+    block=POLICY.split('function interestFacts',1)[1].split('function serviceFacts',1)[0]
+    assert 'profile?.hobbies' in block and 'profile?.interests' in block
+    assert 'KNOWN_INTERESTS.filter(v=>intro.includes(v))' in block
+    assert 'secondaryTopics(profile)' not in block
 
 
 def test_bio_does_not_invent_default_value_lines_to_fill_space():
@@ -152,7 +196,7 @@ def test_bio_does_not_invent_default_value_lines_to_fill_space():
 def test_xhs_filters_sensitive_body_but_does_not_filter_rendered_text_after_core():
     dims=POLICY.split('function bioDimensions',1)[1].split('function dimensionLines',1)[0]
     assert "if(platform==='xhs')" in dims and 'XHS_BANNED.test(v)' in dims
-    assert "platform==='xhs'?`${n}年从业经历`" in POLICY
+    assert "return platform==='xhs'?`${years}从业经历`:`${years}保险从业经验`" in POLICY
     assert 'sanitizeBioBlocks' not in V10 and 'textarea.value=' not in V10
     assert "proposal.bios={xiaohongshu:buildBios(p,'xhs',slogan),videoDouyin:buildBios(p,'video',slogan)}" in POLICY
 
@@ -160,6 +204,12 @@ def test_xhs_filters_sensitive_body_but_does_not_filter_rendered_text_after_core
 def test_missing_nickname_is_never_treated_as_keepable():
     assert 'const missing=' in V29 and '当前没有填写昵称' in V29
     assert "missing(rawVideo)?'':rawVideo" in V29 and '建议优先保留' in V29
+
+
+def test_existing_nickname_audit_flags_special_symbols_emoji_and_full_english():
+    assert 'cleanNickname=value=>window.aiaNicknamePolicyV1?.cleanNicknameDisplay' in V29
+    assert '包含特殊符号、Emoji 或装饰标点' in V29
+    assert '纯英文昵称对普通中文用户的记忆、输入和搜索成本较高' in V29
 
 
 def test_floating_buttons_are_icons_only_and_visibility_has_one_page_truth_source():
