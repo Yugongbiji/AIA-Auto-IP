@@ -1,136 +1,140 @@
-/* IP 人设资料：仅在 IP 页出现的一行悬浮资料条；点击后展开查看。 */
+/* IP 人设悬浮入口唯一 Owner。旧右侧资料栏退出视觉职责。 */
 .workspace { grid-template-columns:minmax(0,1fr)!important; }
+.profile-panel { display:none!important; }
 
-#ip-chat-panel { padding-top:58px; }
+.aia-ip-owner-actions[hidden],
+.aia-ip-owner-drawer[hidden],
+.aia-ip-owner-button[hidden] { display:none!important; }
 
-.profile-panel {
+/* 固定在 composer 上方的安全区，不遮挡输入框/发送按钮；不再依赖拖动。 */
+.aia-ip-owner-actions {
   position:fixed;
-  z-index:16;
-  top:var(--profile-float-top,72px);
-  left:50%;
-  width:min(720px,calc(100vw - 32px));
-  max-height:calc(100dvh - var(--profile-float-top,72px) - 16px);
-  padding:0;
-  overflow:hidden;
-  transform:translateX(-50%);
-  border:1px solid #eadde1;
-  border-radius:14px;
-  background:#fffffff7;
-  box-shadow:0 12px 32px #3c07121a;
-  backdrop-filter:blur(12px);
+  z-index:1200;
+  right:20px;
+  bottom:104px;
+  display:flex;
+  flex-direction:column;
+  gap:9px;
+  align-items:flex-end;
 }
+.aia-ip-owner-button {
+  position:relative;
+  width:50px;
+  min-width:50px;
+  height:50px;
+  min-height:50px;
+  padding:0;
+  border:1px solid #e7ccd5;
+  border-radius:50%;
+  background:#fff6f8;
+  color:#b20f3b;
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+  box-shadow:0 10px 26px #3c071225;
+}
+#aia-ip-owner-proposal-button { background:#d31145; border-color:#d31145; color:#fff; }
+.aia-ip-owner-button:hover { transform:translateY(-1px); box-shadow:0 13px 30px #3c071230; }
+.aia-ip-owner-button:focus-visible { outline:3px solid #d3114540; outline-offset:2px; }
+.aia-ip-owner-icon { font-size:20px; line-height:1; }
+.aia-ip-owner-tooltip {
+  position:absolute;
+  right:60px;
+  top:50%;
+  transform:translateY(-50%);
+  white-space:nowrap;
+  padding:6px 9px;
+  border-radius:8px;
+  background:#3d3437;
+  color:#fff;
+  font-size:12px;
+  line-height:1;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .12s ease;
+}
+.aia-ip-owner-button:hover .aia-ip-owner-tooltip,
+.aia-ip-owner-button:focus-visible .aia-ip-owner-tooltip { opacity:1; }
 
-.profile-panel.profile-float-expanded { overflow:auto; }
-.profile-panel.profile-float-hidden { display:none!important; }
-
-.profile-title {
+.aia-ip-owner-drawer {
+  position:fixed;
+  z-index:1199;
+  right:82px;
+  bottom:104px;
+  width:min(560px,calc(100vw - 120px));
+  max-height:min(72dvh,700px);
+  overflow:auto;
+  border:1px solid #eadde1;
+  border-radius:18px;
+  background:#fff;
+  box-shadow:0 20px 52px #3c071230;
+}
+.aia-ip-owner-drawer-head {
+  position:sticky;
+  top:0;
+  z-index:2;
   display:flex;
   align-items:center;
-  gap:10px;
-  min-height:46px;
-  margin:0;
-  padding:9px 14px;
-  cursor:pointer;
-  user-select:none;
-}
-.profile-title::before { content:'✨'; flex:0 0 auto; }
-.profile-title::after { content:'⌄'; margin-left:2px; color:#a10f39; font-size:17px; font-weight:800; transition:transform .18s ease; }
-.profile-float-expanded .profile-title::after { transform:rotate(180deg); }
-.profile-title>div { display:flex; flex:1; align-items:center; min-width:0; gap:8px; }
-.profile-title .eyebrow { display:none; }
-.profile-title h2 { margin:0; overflow:hidden; font-size:14px; white-space:nowrap; text-overflow:ellipsis; }
-.profile-title h2::after { content:' · 点击展开/收起'; color:#8b7a80; font-size:12px; font-weight:500; }
-.profile-title>span { flex:0 0 auto; color:var(--brand); font-size:13px; font-weight:800; }
-
-.profile-panel:not(.profile-float-expanded) .profile-card,
-.profile-panel:not(.profile-float-expanded) #generate-button,
-.profile-panel:not(.profile-float-expanded) #view-proposal,
-.profile-panel:not(.profile-float-expanded) .profile-conversation-hint { display:none!important; }
-
-.profile-panel.profile-float-expanded .profile-card {
-  display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:0 16px;
-  padding:4px 14px 8px;
-  border-top:1px solid var(--line);
-}
-.profile-panel.profile-float-expanded #generate-button,
-.profile-panel.profile-float-expanded #view-proposal { width:calc(100% - 28px); margin:0 14px 12px; }
-
-.profile-conversation-hint {
-  margin:0 14px 12px;
-  padding:8px 0 0;
-  color:#7A7278;
-  font-size:11px;
-  font-weight:400;
-  line-height:1.55;
-  border-top:1px solid #eee9eb;
-  overflow-wrap:anywhere;
-}
-
-.profile-group {
-  min-width:0;
-  padding:10px 0;
-  border-top:1px solid var(--line);
-}
-.profile-group:nth-child(-n+2) { border-top:0; }
-.profile-inline-hint { margin:5px 0 0; color:#7A7278; font-size:11px; line-height:1.55; }
-
-/* 多选题：选项区可滚动，但确认按钮始终留在选项区底部。 */
-.quick-replies:has(.multi-confirm) {
-  max-height:min(36dvh,280px);
-  overflow-y:auto;
-  overscroll-behavior:contain;
-  align-content:flex-start;
-  padding-bottom:10px;
+  justify-content:space-between;
+  gap:16px;
+  padding:14px 16px;
+  border-bottom:1px solid #eee7ea;
   background:#fff;
 }
-.quick-replies:has(.multi-confirm) .multi-confirm {
-  position:sticky;
-  z-index:4;
-  bottom:0;
-  flex:1 0 100%;
-  width:100%;
-  min-height:42px;
-  margin-top:2px;
-  box-shadow:0 -8px 16px #ffffff,0 5px 12px #d3114538;
+.aia-ip-owner-drawer-head span { display:block; margin-bottom:2px; color:#8a7f83; font-size:11px; }
+.aia-ip-owner-drawer-head h2 { margin:0; font-size:18px; color:#332b2e; }
+#aia-ip-owner-profile-close {
+  width:34px;
+  min-width:34px;
+  height:34px;
+  padding:0;
+  border:1px solid #eadde1;
+  border-radius:50%;
+  background:#fff;
+  color:#6d6267;
+  font-size:21px;
+  cursor:pointer;
 }
+.aia-ip-owner-drawer-body { display:grid; gap:12px; padding:14px 16px 4px; }
+.aia-ip-owner-section {
+  padding:14px;
+  border:1px solid #eee5e8;
+  border-radius:14px;
+  background:#fff;
+}
+.aia-ip-owner-section h3 { margin:0 0 11px; font-size:15px; color:#3f3438; }
+.aia-ip-owner-section-head { display:flex; justify-content:space-between; align-items:baseline; gap:12px; }
+.aia-ip-owner-section-head span { color:#8a7f83; font-size:12px; }
+.aia-ip-owner-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px 18px; }
+.aia-ip-owner-field { min-width:0; }
+.aia-ip-owner-field span { display:block; margin-bottom:3px; color:#8a7f83; font-size:11px; }
+.aia-ip-owner-field strong { display:block; color:#41383b; font-size:13px; line-height:1.55; font-weight:600; overflow-wrap:anywhere; }
+.aia-ip-owner-feedback-group { margin-top:13px; }
+.aia-ip-owner-feedback-group h4 { margin:0 0 7px; font-size:12px; color:#62575b; }
+.aia-ip-owner-chips { display:flex; flex-wrap:wrap; gap:7px; }
+.aia-ip-owner-chips span { padding:6px 9px; border:1px solid #eadfe3; border-radius:999px; background:#fff7f9; color:#5f3d48; font-size:12px; }
+.aia-ip-owner-quote { margin:7px 0 0; padding:9px 11px; border-radius:10px; background:#f8f7f7; color:#51494c; line-height:1.6; font-size:12px; }
+.aia-ip-owner-intro { margin:0; color:#4e4649; line-height:1.75; white-space:pre-wrap; font-size:13px; }
+.aia-ip-owner-empty { margin:0; padding:24px 4px; text-align:center; color:#8a7f83; }
+.aia-ip-owner-drawer-hint { margin:10px 16px 15px; padding-top:10px; border-top:1px solid #eee9eb; color:#7a7278; font-size:11px; }
 
 @media (max-width:720px) {
-  #ip-chat-panel { padding-top:54px; }
-  .profile-panel { width:calc(100vw - 20px); border-radius:12px; }
-  .profile-title { min-height:42px; padding:8px 11px; }
-  .profile-title h2 { font-size:13px; }
-  .profile-title h2::after { content:' · 点击展开'; font-size:11px; }
-  .profile-float-expanded .profile-title h2::after { content:' · 点击收起'; }
-  .profile-panel.profile-float-expanded .profile-card { grid-template-columns:1fr; padding:2px 11px 8px; }
-  .profile-group:nth-child(2) { border-top:1px solid var(--line); }
-  .profile-panel.profile-float-expanded #generate-button,
-  .profile-panel.profile-float-expanded #view-proposal { width:calc(100% - 22px); margin:0 11px 10px; }
-  .profile-conversation-hint {
-    margin:0 11px 10px;
-    padding-top:7px;
-    font-size:10.5px;
-    line-height:1.5;
-  }
-
-  .quick-replies:has(.multi-confirm) {
-    max-height:min(32dvh,230px);
-    padding:0 12px 8px;
+  .aia-ip-owner-actions {
+    right:12px;
+    bottom:calc(88px + env(safe-area-inset-bottom, 0px));
     gap:7px;
-    border-top:1px solid #f1edef;
   }
-  .quick-replies:has(.multi-confirm) button:not(.multi-confirm) {
-    max-width:100%;
-    white-space:normal;
-    text-align:left;
+  .aia-ip-owner-button { width:46px; min-width:46px; height:46px; min-height:46px; }
+  .aia-ip-owner-tooltip { display:none; }
+  .aia-ip-owner-drawer {
+    right:10px;
+    bottom:calc(148px + env(safe-area-inset-bottom, 0px));
+    width:calc(100vw - 20px);
+    max-height:64dvh;
+    border-radius:15px;
   }
-  .quick-replies:has(.multi-confirm) .custom-multi-input {
-    flex:1 0 100%;
-    min-width:0;
-  }
-  .quick-replies:has(.multi-confirm) .multi-confirm {
-    min-height:44px;
-    border-radius:10px;
-  }
+  .aia-ip-owner-drawer-body { padding:11px 11px 2px; }
+  .aia-ip-owner-grid { grid-template-columns:1fr; gap:9px; }
+  .aia-ip-owner-section { padding:12px; }
+  .aia-ip-owner-drawer-hint { margin:9px 11px 12px; }
 }

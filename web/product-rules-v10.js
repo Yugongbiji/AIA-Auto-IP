@@ -1,123 +1,51 @@
-// 产品规则 V10：首次复制昵称/简介提醒修改次数；IP 合规板块默认折叠。
-(function () {
-  const reminderSeen = { nickname: false, bio: false };
+// 产品规则 V10（纯 UI Owner）：只负责昵称/简介复制前的合规提醒与 ? 帮助按钮。
+// 严禁修改 proposal / textarea / 简介正文；最终简介只能由 ip-policy-core.js 生成。
+(function(){
+  'use strict';
+  const seen={nickname:false,bio:false};
+  const REMINDERS=[
+    '小红书个人简介：7 天内最多修改 3 次，频繁修改也可能影响账号稳定。',
+    '微信视频号昵称：每年最多可修改 5 次。',
+    '微信视频号简介：目前没有明确的修改次数限制。'
+  ];
+  const COMPLIANCE={
+    nickname:{can:['使用本人真实、长期稳定的人物称呼或名字线索','使用真实且不过度夸大的个人特色','不同平台尽量使用同一个昵称，减少频繁修改'],cannot:['使用联系方式、链接或明显导流信息','虚构或夸大学历、职业、荣誉、地域等资料','使用不符合当前公司/平台合规规则的敏感表达']},
+    bio:{can:['使用本人真实身份、经历、客户反馈和真实可提供的服务','小红书简介最后保留固定个人意见声明','视频号/抖音按固定顺序展示个人意见声明、营销服务部、执业证编号'],cannot:['小红书简介出现保险、金融、理财、贷款、股票、基金、医疗、护理、教育、玄学等敏感行业词','在简介留下微信号、手机号、邮箱、QQ等联系方式或利益诱导','把营销员编号当成执业证编号，或重复输出执业编号/合规声明']}
+  };
+  const t=v=>String(v??'').trim();
 
-  function setCopiedState(button) {
-    const original = button.textContent;
-    button.textContent = '已复制';
-    setTimeout(() => { button.textContent = original; }, 1200);
+  function close(node){node?.remove();document.body.classList.remove('copy-reminder-open');}
+  async function write(text,button){if(window.aiaClipboard?.copyWithFeedback)return window.aiaClipboard.copyWithFeedback(text,button);if(typeof copyText==='function')return copyText(text,button);window.aiaToast?.('复制失败，请重试','error');return false;}
+  function simpleModal(title,lines,confirm,onConfirm){
+    const back=document.createElement('div');back.className='copy-reminder-backdrop';back.setAttribute('role','dialog');back.setAttribute('aria-modal','true');
+    const card=document.createElement('section');card.className='copy-reminder-modal';const h=document.createElement('h3');h.textContent=title;card.appendChild(h);
+    const ul=document.createElement('ul');lines.forEach(text=>{const li=document.createElement('li');li.textContent=text;ul.appendChild(li);});card.appendChild(ul);
+    const actions=document.createElement('div');actions.className='copy-reminder-actions';const ok=document.createElement('button');ok.type='button';ok.className='primary';ok.textContent=confirm;ok.onclick=()=>{close(back);onConfirm?.();};actions.appendChild(ok);card.appendChild(actions);back.appendChild(card);document.body.appendChild(back);document.body.classList.add('copy-reminder-open');ok.focus();
   }
-
-  function writeClipboard(text, button) {
-    navigator.clipboard?.writeText(text).then(() => setCopiedState(button)).catch(() => {
-      button.textContent = '请手动复制';
-    });
+  function complianceModal(kind,text,button,copyAfter=true){
+    const cfg=COMPLIANCE[kind]||COMPLIANCE.bio;const back=document.createElement('div');back.className='copy-reminder-backdrop';back.setAttribute('role','dialog');back.setAttribute('aria-modal','true');
+    const card=document.createElement('section');card.className='copy-reminder-modal aia-compliance-modal';const h=document.createElement('h3');h.textContent=kind==='nickname'?'昵称合规提示 ⚠️':'简介合规提示 ⚠️';card.appendChild(h);
+    const grid=document.createElement('div');grid.className='aia-compliance-grid';[['可以说',cfg.can,'aia-compliance-can'],['不可以说',cfg.cannot,'aia-compliance-cannot']].forEach(([title,items,cls])=>{const col=document.createElement('section');col.className=`aia-compliance-column ${cls}`;const hh=document.createElement('h4');hh.textContent=title;const ul=document.createElement('ul');items.forEach(x=>{const li=document.createElement('li');li.textContent=x;ul.appendChild(li);});col.append(hh,ul);grid.appendChild(col);});card.appendChild(grid);
+    const actions=document.createElement('div');actions.className='copy-reminder-actions';const ok=document.createElement('button');ok.type='button';ok.className='primary';ok.textContent=copyAfter?'我已了解，继续复制':'我知道了';ok.onclick=async()=>{close(back);if(copyAfter){seen[kind]=true;await write(text,button);}};actions.appendChild(ok);card.appendChild(actions);back.appendChild(card);document.body.appendChild(back);document.body.classList.add('copy-reminder-open');ok.focus();
   }
-
-  function closeReminder(modal) {
-    modal?.remove();
-    document.body.classList.remove('copy-reminder-open');
+  function firstCopy(kind,text,button){simpleModal('复制前先提醒一下 📌',REMINDERS,'下一步：查看合规',()=>complianceModal(kind,text,button,true));}
+  function bind(button,kind,text){if(!button||button.dataset.copyReminderBound==='1')return;button.dataset.copyReminderBound='1';button.addEventListener('click',e=>{if(seen[kind])return;e.preventDefault();e.stopImmediatePropagation();firstCopy(kind,text,button);},true);}
+  function help(content,kind){
+    const pattern=kind==='nickname'?/推荐昵称|昵称推荐/:/简介/;const heading=[...content.querySelectorAll('h2,h3,strong')].find(n=>pattern.test(t(n.textContent)));if(!heading)return;
+    const card=heading.closest('.proposal-card,section,article')||heading.parentElement;if(!card||card.querySelector(`.aia-compliance-help[data-kind="${kind}"]`))return;
+    card.classList.add('aia-compliance-help-host');const b=document.createElement('button');b.type='button';b.className='aia-compliance-help';b.dataset.kind=kind;b.textContent='?';b.setAttribute('aria-label',kind==='nickname'?'查看昵称合规提示':'查看简介合规提示');b.title=b.getAttribute('aria-label');b.onclick=()=>complianceModal(kind,'',b,false);card.appendChild(b);
   }
-
-  function showFirstCopyReminder(kind, text, button) {
-    const modal = document.createElement('div');
-    modal.className = 'copy-reminder-backdrop';
-    modal.setAttribute('role', 'dialog');
-    modal.setAttribute('aria-modal', 'true');
-    modal.setAttribute('aria-label', '发布前修改次数提醒');
-
-    const card = document.createElement('section');
-    card.className = 'copy-reminder-modal';
-    const title = document.createElement('h3');
-    title.textContent = '复制前提醒一下 📌';
-    const intro = document.createElement('p');
-    intro.textContent = kind === 'nickname'
-      ? '昵称可以慢慢选，发布前建议先确认好。部分平台修改次数有限。'
-      : '简介复制后可以再检查一遍，部分平台短期内修改次数有限。';
-
-    const list = document.createElement('ul');
-    const reminders = kind === 'nickname'
-      ? ['微信视频号昵称：每年最多可修改 5 次。', '不同平台规则可能调整，最终以平台当时提示为准。']
-      : ['小红书个人简介：7 天内最多修改 3 次，频繁修改也可能影响账号稳定。', '微信视频号简介：目前没有明确的修改次数限制。', '不同平台规则可能调整，最终以平台当时提示为准。'];
-    reminders.forEach((line) => { const li = document.createElement('li'); li.textContent = line; list.appendChild(li); });
-
-    const actions = document.createElement('div');
-    actions.className = 'copy-reminder-actions';
-    const cancel = document.createElement('button');
-    cancel.type = 'button';
-    cancel.className = 'secondary-button';
-    cancel.textContent = '先不复制';
-    cancel.onclick = () => closeReminder(modal);
-    const confirm = document.createElement('button');
-    confirm.type = 'button';
-    confirm.className = 'primary';
-    confirm.textContent = '知道了，继续复制';
-    confirm.onclick = () => {
-      reminderSeen[kind] = true;
-      writeClipboard(text, button);
-      closeReminder(modal);
-    };
-    actions.append(cancel, confirm);
-    card.append(title, intro, list, actions);
-    modal.appendChild(card);
-    document.body.appendChild(modal);
-    document.body.classList.add('copy-reminder-open');
-    confirm.focus();
-
-    modal.addEventListener('click', (event) => { if (event.target === modal) closeReminder(modal); });
-    modal.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeReminder(modal); });
+  function normalizeRecommendationLabels(content){
+    const cols=[...content.querySelectorAll('.platform-column')];const hs=cols.map(c=>c.querySelector('h4'));
+    if(hs[0])hs[0].textContent='小红书简介 · 推荐版';if(hs[1])hs[1].textContent='视频号 / 抖音简介 · 推荐版';
+    cols.forEach(col=>[...col.querySelectorAll('.bio-copy-block')].slice(1).forEach(node=>node.remove()));
+    content.querySelectorAll('.license-note').forEach(node=>{if(/000/.test(t(node.textContent)))node.remove();});
   }
-
-  function bindCopyReminder(button, kind, text) {
-    if (!button || button.dataset.copyReminderBound === '1') return;
-    button.dataset.copyReminderBound = '1';
-    button.addEventListener('click', (event) => {
-      if (reminderSeen[kind]) return;
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      showFirstCopyReminder(kind, text, button);
-    }, true);
+  function enhance(content){
+    normalizeRecommendationLabels(content);content.querySelector('.ip-compliance-fold')?.remove();content.querySelectorAll('.compliance-card,.platform-reminders').forEach(n=>n.classList.add('aia-compliance-source-hidden'));
+    help(content,'nickname');help(content,'bio');content.querySelectorAll('.nickname-option').forEach(r=>bind(r.querySelector('.copy-button'),'nickname',r.querySelector('strong')?.textContent?.trim()||''));content.querySelectorAll('.bio-copy-block').forEach(b=>bind(b.querySelector('.copy-button'),'bio',b.querySelector('textarea')?.value||''));
   }
-
-  function makeComplianceFold(content) {
-    const compliance = content.querySelector('.compliance-card');
-    const reminders = content.querySelector('.platform-reminders');
-    if ((!compliance && !reminders) || content.querySelector('.ip-compliance-fold')) return;
-
-    const details = document.createElement('details');
-    details.className = 'ip-compliance-fold';
-    const summary = document.createElement('summary');
-    summary.innerHTML = '<span>🛡️ 合规与修改提醒</span><small>点击查看</small>';
-    details.appendChild(summary);
-    if (compliance) details.appendChild(compliance);
-    if (reminders) details.appendChild(reminders);
-    content.appendChild(details);
-  }
-
-  function enhanceProposalCopy(content) {
-    content.querySelectorAll('.nickname-option').forEach((row) => {
-      const button = row.querySelector('.copy-button');
-      const text = row.querySelector('strong')?.textContent?.trim() || '';
-      bindCopyReminder(button, 'nickname', text);
-    });
-
-    content.querySelectorAll('.bio-copy-block').forEach((block) => {
-      const button = block.querySelector('.copy-button');
-      const text = block.querySelector('textarea')?.value || '';
-      bindCopyReminder(button, 'bio', text);
-    });
-  }
-
-  if (typeof renderProposal === 'function') {
-    const baseRenderProposalV10 = renderProposal;
-    renderProposal = function renderProposalV10(proposal, version) {
-      const result = baseRenderProposalV10(proposal, version);
-      const content = document.getElementById('proposal-content');
-      if (content) {
-        makeComplianceFold(content);
-        enhanceProposalCopy(content);
-      }
-      return result;
-    };
-  }
+  if(typeof renderProposal==='function'){const base=renderProposal;renderProposal=function productRulesV10ComplianceOnly(proposal,version){const result=base(proposal,version);const content=document.getElementById('proposal-content');if(content)enhance(content);return result;};}
+  if(!document.getElementById('compliance-v10-redesign-style')){const s=document.createElement('style');s.id='compliance-v10-redesign-style';s.textContent='.aia-compliance-source-hidden{display:none!important}.aia-compliance-help-host{position:relative!important}.aia-compliance-help{position:absolute!important;top:16px;right:16px;display:inline-grid;place-items:center;width:28px;min-width:28px;height:28px;min-height:28px;padding:0;border-radius:50%;border:1px solid #eadde1;background:#fff7f9;color:#9e2444;font-size:15px;font-weight:800;line-height:1;cursor:pointer}.aia-compliance-help:hover{border-color:#d8b7c1;background:#fff1f5}.aia-compliance-help:focus-visible{outline:3px solid #d3114540;outline-offset:2px}.aia-compliance-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}.aia-compliance-column{padding:14px;border-radius:12px}.aia-compliance-can{background:#f4fbf7}.aia-compliance-cannot{background:#fff5f6}.aia-compliance-column h4{margin:0 0 8px}.aia-compliance-column ul{margin:0;padding-left:20px}@media(max-width:720px){.aia-compliance-help{top:12px;right:12px}.aia-compliance-grid{grid-template-columns:1fr}}';document.head.appendChild(s);}
+  window.aiaComplianceUiV10=Object.freeze({complianceModal,firstCopy,ownsClipboard:false,ownsBioText:false});
 })();

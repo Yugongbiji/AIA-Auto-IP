@@ -1,0 +1,79 @@
+"""Deterministic XHS formatting contract matching the latest product rule.
+
+Authoritative density rule: rules/xhs-formatting-rules.md V4 (2026-08-24),
+which explicitly supersedes the older XHS section in docs/脚本改写与小红书排版规则.md.
+The formatter may only change layout/emoji insertion; source wording is preserved.
+"""
+from __future__ import annotations
+
+import re
+
+_NEUTRAL = ("📌", "💡", "✨", "✅")
+_EMOJI_RE = re.compile(r"[\U0001F300-\U0001FAFF\u2600-\u27BF]")
+_ISOLATED_PUNCT = re.compile(r"^[\s【】\[\]（）()“”‘’《》〈〉：:，,。！？!?；;、…—-]+$")
+
+
+def _fix_isolated_punctuation(text: str) -> str:
+    """Remove line breaks that leave punctuation/brackets alone on a line."""
+    lines = str(text or "").splitlines()
+    out: list[str] = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped and _ISOLATED_PUNCT.fullmatch(stripped) and out:
+            out[-1] = out[-1].rstrip() + stripped
+        else:
+            out.append(line)
+    merged: list[str] = []
+    index = 0
+    while index < len(out):
+        current = out[index]
+        if index + 1 < len(out) and current.rstrip().endswith(("【", "[", "（", "(", "“", "‘", "《", "〈")):
+            merged.append(current.rstrip() + out[index + 1].lstrip())
+            index += 2
+        else:
+            merged.append(current)
+            index += 1
+    return "\n".join(merged)
+
+
+def _strict_scan_emojis(text: str) -> str:
+    """Ensure every two consecutive complete sentences contain an emoji anchor.
+
+    This is the latest V4 hard rule. Existing semantic emoji reset the counter;
+    otherwise a neutral cue is added to the second emoji-free sentence. The
+    function never edits or reorders source wording.
+    """
+    parts = re.split(r"(?<=[。！？!?])", str(text or ""))
+    indexes = [i for i, part in enumerate(parts) if part.strip()]
+    if not indexes:
+        return text
+
+    emoji_free_run = 0
+    neutral_index = 0
+    for part_index in indexes:
+        if _EMOJI_RE.search(parts[part_index]):
+            emoji_free_run = 0
+            continue
+        emoji_free_run += 1
+        if emoji_free_run < 2:
+            continue
+        current = parts[part_index]
+        leading = current[: len(current) - len(current.lstrip())]
+        body = current.lstrip()
+        parts[part_index] = f"{leading}{_NEUTRAL[neutral_index % len(_NEUTRAL)]} {body}"
+        neutral_index += 1
+        emoji_free_run = 0
+    return "".join(parts)
+
+
+def install(core_module) -> None:
+    if getattr(core_module, "__aia_xhs_contract_installed__", False):
+        return
+    original_readability = core_module.enforce_xhs_readability
+
+    def readability(text: str) -> str:
+        return _fix_isolated_punctuation(original_readability(text))
+
+    core_module.enforce_xhs_readability = readability
+    core_module.add_scan_emojis = _strict_scan_emojis
+    core_module.__aia_xhs_contract_installed__ = True

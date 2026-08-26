@@ -1,147 +1,41 @@
-// 脚本推荐 V1：直接复用 IP 方案里的内容方向，不另造一套标签体系。
+// 脚本推荐 V5：有 IP 时按保险主线 / 内容支线推荐；无 IP 时按一级/二级标签浏览脚本库。
 (function () {
-  const recommendationState = { loaded: false, loading: false, batch: '', groups: [], detail: null, direction: '' };
-  // “换一批”属于后续排序能力；V1 先不展示一个会返回相同结果的伪操作。
+  'use strict';
+  const recommendationState = { loaded:false, loading:false, batch:'', groups:[], detail:null, direction:'', library:null, libraryLevel1:'', libraryLevel2:'', libraryPage:1, error:'' };
   document.getElementById('script-recommendation-refresh')?.remove();
-
-  function latestProposal() { return state.proposals?.[0]?.proposal || {}; }
-
-  function currentDirections() {
-    if (typeof window.buildIpContentStrategy !== 'function') return [];
-    const strategy = window.buildIpContentStrategy(state.profile || {}, latestProposal());
-    return [...new Set((strategy.lines || []).flatMap((line) => line.directions || []).filter(Boolean))];
-  }
-
-  function metaText(script) {
-    const tags = [script.level1_tag, script.level2_tag].filter(Boolean);
-    return [...tags, `${script.word_count || 0}字`, `${Number(script.estimated_minutes || 0).toFixed(1)}min`].join(' · ');
-  }
-
-  async function track(scriptId, eventType, contentDirection) {
-    try {
-      await fetch('/api/scripts/activity', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          scriptId, eventType, agentId: state.profile?.agentId || '',
-          contentDirection: contentDirection || '', recommendationBatch: recommendationState.batch || '',
-        }),
-      });
-    } catch (_) { /* 埋点失败不能阻断用户使用 */ }
-  }
-
-  function renderRecommendations() {
-    const root = document.getElementById('script-recommendation-body');
-    if (!root) return;
-    root.innerHTML = '';
-    if (recommendationState.loading) {
-      root.innerHTML = '<div class="script-recommendation-loading">正在根据你的内容主线挑选脚本…</div>';
-      return;
-    }
-    if (!recommendationState.groups.length) {
-      root.innerHTML = '<div class="script-recommendation-empty">还没有匹配到可推荐的脚本。先完成 IP 方案，或等待脚本库补充对应方向。</div>';
-      return;
-    }
-    recommendationState.groups.forEach((group) => {
-      const section = document.createElement('section'); section.className = 'script-direction-section';
-      const heading = document.createElement('div'); heading.className = 'script-direction-heading';
-      heading.innerHTML = `<div><h3>${escapeHtml(group.content_direction)}</h3><p class="script-direction-reason">${escapeHtml(group.reason || '')}</p></div>`;
-      section.appendChild(heading);
-      const list = document.createElement('div'); list.className = 'script-card-list';
-      (group.scripts || []).forEach((script) => {
-        const card = document.createElement('article'); card.className = 'script-recommendation-card';
-        const row = document.createElement('div'); row.className = 'script-card-title-row';
-        if (script.is_hot) {
-          const hot = document.createElement('span'); hot.className = 'script-hot-badge'; hot.textContent = '热点'; row.appendChild(hot);
-        }
-        const title = document.createElement('button'); title.type = 'button'; title.className = 'script-card-title'; title.textContent = script.title || '未命名脚本';
-        title.addEventListener('click', () => openDetail(script.script_id, group.content_direction)); row.appendChild(title);
-        const meta = document.createElement('p'); meta.className = 'script-card-meta'; meta.textContent = metaText(script);
-        card.append(row, meta); list.appendChild(card);
-        track(script.script_id, 'impression', group.content_direction);
-      });
-      section.appendChild(list); root.appendChild(section);
-    });
-  }
-
-  async function loadRecommendations() {
-    if (recommendationState.loading || recommendationState.loaded) return;
-    const directions = currentDirections();
-    recommendationState.loading = true; renderRecommendations();
-    try {
-      const response = await fetch('/api/scripts/recommend', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contentDirections: directions }),
-      });
-      if (!response.ok) throw new Error('recommendation request failed');
-      const payload = await response.json();
-      recommendationState.batch = payload.recommendation_batch || '';
-      recommendationState.groups = payload.groups || [];
-      recommendationState.loaded = true;
-    } catch (_) {
-      recommendationState.groups = [];
-      const root = document.getElementById('script-recommendation-body');
-      if (root) root.innerHTML = '<div class="script-recommendation-empty">脚本推荐暂时没有加载成功，请稍后再试。</div>';
-    } finally {
-      recommendationState.loading = false; renderRecommendations();
-    }
-  }
-
-  async function openDetail(scriptId, contentDirection) {
-    try {
-      const response = await fetch(`/api/scripts/${encodeURIComponent(scriptId)}`);
-      if (!response.ok) throw new Error('detail request failed');
-      const payload = await response.json();
-      recommendationState.detail = payload.script;
-      recommendationState.direction = contentDirection || '';
-      const detail = recommendationState.detail;
-      document.getElementById('script-detail-title').textContent = detail.title_1 || '脚本详情';
-      document.getElementById('script-detail-meta').textContent = metaText(detail);
-      document.getElementById('script-detail-body').textContent = detail.body || '';
-      document.getElementById('script-detail-screen').classList.remove('hidden');
-      track(detail.script_id, 'detail_click', contentDirection);
-    } catch (_) {
-      window.alert('脚本详情暂时无法打开，请稍后再试。');
-    }
-  }
-
-  function closeDetail() { document.getElementById('script-detail-screen')?.classList.add('hidden'); }
-
-  function handoff(tool) {
-    const detail = recommendationState.detail;
-    if (!detail) return;
-    const source = [detail.title_1, detail.body].filter(Boolean).join('\n');
-    track(detail.script_id, tool === 'script' ? 'rewrite_click' : 'xhs_click', recommendationState.direction);
-    closeDetail();
-    selectTool(tool);
-    const input = document.getElementById(tool === 'script' ? 'script-input' : 'xhs-input');
-    if (input) { input.value = source; input.dispatchEvent(new Event('input', { bubbles: true })); input.focus(); }
-  }
-
-  function escapeHtml(value) {
-    const div = document.createElement('div'); div.textContent = String(value || ''); return div.innerHTML;
-  }
-
-  if (typeof selectTool === 'function') {
-    const baseSelectTool = selectTool;
-    selectTool = function selectToolWithRecommendation(tool) {
-      if (tool !== 'recommendation') {
-        document.getElementById('script-recommendation-panel')?.classList.add('hidden');
-        return baseSelectTool(tool);
-      }
-      state.activeTool = tool;
-      document.querySelectorAll('[data-tool]').forEach((button) => button.classList.toggle('active', button.dataset.tool === tool));
-      ['ip-chat-panel', 'planning-panel', 'script-panel', 'xhs-panel', 'tool-placeholder'].forEach((id) => document.getElementById(id)?.classList.add('hidden'));
-      document.getElementById('script-recommendation-panel')?.classList.remove('hidden');
-      document.getElementById('generate-button')?.classList.add('hidden');
-      document.getElementById('view-proposal')?.classList.add('hidden');
-      loadRecommendations();
-    };
-  }
-
-  document.querySelector('[data-tool="recommendation"]')?.addEventListener('click', () => selectTool('recommendation'));
-  document.getElementById('script-detail-close')?.addEventListener('click', closeDetail);
-  document.getElementById('script-detail-rewrite')?.addEventListener('click', () => handoff('script'));
-  document.getElementById('script-detail-xhs')?.addEventListener('click', () => handoff('xhs'));
-
-  window.scriptRecommendationV1 = { currentDirections, loadRecommendations, openDetail };
+  function latestProposal(){return state.proposals?.[0]?.proposal||null;} function hasIpPlan(){return Boolean(latestProposal());}
+  function scriptApiUrl(path){const normalized=String(path||'').replace(/^\/+/, '');const preview=window.location.pathname==='/preview'||window.location.pathname.startsWith('/preview/');return `${preview?'/preview':''}/api/scripts/${normalized}`;}
+  function asList(value){if(Array.isArray(value))return value.filter(Boolean);if(!value)return[];return String(value).split(/[｜|、,，;；/\n]+/).map(v=>v.trim()).filter(Boolean);}
+  const SCRIPT_DIRECTION_ALIASES=Object.freeze({
+    '家庭保障':['家庭保障','家庭保障方案'], '重疾保障':['重疾保障','医疗保障'], '医疗保障':['医疗保障'],
+    '养老规划':['养老规划'], '财富规划':['财富规划'], '教育规划':['教育规划','教育金规划'],
+    '保险知识':['保险知识','保险科普'], '增员与职业发展':['增员与职业发展','转型经历','行业发展','团队日常','个人成长','从业经验'],
+    '升学教育':['升学教育','升学规划'], '运动健身':['运动健身','运动'], '法律常识':['法律常识','法律'], '科技职场':['科技职场','职场成长'],
+  });
+  function standardizedDirections(){const p=latestProposal()||{};return{insurance:asList(p.contentMainline),branch:asList(p.secondaryContent),branchSource:String(p.secondaryContentSource||'').trim()};}
+  function aliasesFor(direction){return SCRIPT_DIRECTION_ALIASES[direction]||[direction];}
+  function requestDirections(){const d=standardizedDirections();return[...new Set([...d.insurance,...d.branch].flatMap(aliasesFor).filter(Boolean))];}
+  function sectionDefinitions(){const d=standardizedDirections();const recruitment=(latestProposal()?.primaryGoal==='recruitment'||state.profile?.primaryGoal==='recruitment');return[{key:'insurance',title:'保险主线',subtitle:recruitment?'围绕增员主线推荐':'围绕拓客主线推荐',directions:d.insurance},{key:'branch',title:'内容支线',subtitle:d.branchSource?`来源：${d.branchSource}`:'来自你的真实职业、身份或爱好',directions:d.branch}];}
+  function metaText(script){return [...[script.level1_tag,script.level2_tag].filter(Boolean),`${script.word_count||0}字`,`${Number(script.estimated_minutes||0).toFixed(1)}min`].join(' · ');}
+  function normalized(value){return String(value||'').toLowerCase().replace(/[\s\u3000，。！？、；：,.!?;:'“”‘’（）()【】\[\]<>《》—_-]+/g,'');}
+  function contentKey(script){return `${normalized(script?.title||script?.title_1)}|${normalized(script?.body)}`;}
+  async function track(scriptId,eventType,contentDirection){try{await fetch(scriptApiUrl('activity'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({scriptId,eventType,agentId:state.profile?.agentId||'',contentDirection:contentDirection||'',recommendationBatch:recommendationState.batch||''})});}catch(_){}}
+  function scriptsForDirections(directions,globalSeen=new Set()){const wanted=new Set((directions||[]).flatMap(aliasesFor)),result=[],seenIds=new Set();recommendationState.groups.forEach((group)=>{if(!wanted.has(group.content_direction))return;(group.scripts||[]).forEach((script)=>{if(!script?.script_id||seenIds.has(script.script_id))return;const key=contentKey(script);if(key!=='|'&&globalSeen.has(key))return;seenIds.add(script.script_id);if(key!=='|')globalSeen.add(key);result.push({...script,_direction:group.content_direction});});});return result;}
+  function renderScriptCard(script,list){const card=document.createElement('article');card.className='script-recommendation-card';const row=document.createElement('div');row.className='script-card-title-row';if(script.is_hot){const hot=document.createElement('span');hot.className='script-hot-badge';hot.textContent='热点';row.appendChild(hot);}const title=document.createElement('button');title.type='button';title.className='script-card-title';title.textContent=script.title||script.title_1||'未命名脚本';title.onclick=()=>openDetail(script.script_id,script._direction||'脚本库');const meta=document.createElement('p');meta.className='script-card-meta';meta.textContent=metaText(script);row.appendChild(title);card.append(row,meta);list.appendChild(card);track(script.script_id,'impression',script._direction||'脚本库');}
+  function addIpPrompt(root){const p=document.createElement('section');p.className='script-library-ip-prompt';p.innerHTML='<div><strong>完成 IP 人设，推荐会更懂你</strong><p>现在可以先浏览完整脚本库。完成 IP 方案后，会根据你的保险主线、内容支线和个人特点优先推荐。</p></div>';const b=document.createElement('button');b.type='button';b.className='primary';b.textContent='去完善我的 IP';b.onclick=()=>selectTool('ip');p.appendChild(b);root.appendChild(p);}
+  function tagButton(t,a,fn){const b=document.createElement('button');b.type='button';b.className=`script-library-tag ${a?'active':''}`;b.textContent=t;b.onclick=fn;return b;}
+  function renderLibraryFilters(root,data){const f=document.createElement('section');f.className='script-library-filter';const l=document.createElement('div');l.className='script-library-tags';l.appendChild(tagButton('全部脚本',!recommendationState.libraryLevel1,()=>{recommendationState.libraryLevel1='';recommendationState.libraryLevel2='';recommendationState.libraryPage=1;loadLibrary(true);}));(data.level1_tags||[]).forEach((tag)=>l.appendChild(tagButton(tag,recommendationState.libraryLevel1===tag,()=>{recommendationState.libraryLevel1=tag;recommendationState.libraryLevel2='';recommendationState.libraryPage=1;loadLibrary(true);})));f.appendChild(l);if(recommendationState.libraryLevel1){const l2=document.createElement('div');l2.className='script-library-tags';l2.appendChild(tagButton('全部',!recommendationState.libraryLevel2,()=>{recommendationState.libraryLevel2='';recommendationState.libraryPage=1;loadLibrary(true);}));(data.level2_by_level1?.[recommendationState.libraryLevel1]||[]).forEach((tag)=>l2.appendChild(tagButton(tag,recommendationState.libraryLevel2===tag,()=>{recommendationState.libraryLevel2=tag;recommendationState.libraryPage=1;loadLibrary(true);})));f.appendChild(l2);}root.appendChild(f);}
+  function pageButton(label,page,disabled=false,active=false){const b=document.createElement('button');b.type='button';b.className=`script-library-page-button${active?' active':''}`;b.textContent=label;b.disabled=disabled;b.onclick=()=>{recommendationState.libraryPage=page;loadLibrary(true);};return b;}
+  function renderPagination(root,data){const pages=Math.max(1,Number(data.pages||1)),current=Math.min(pages,Math.max(1,Number(data.page||recommendationState.libraryPage||1)));if(pages<=1&&Number(data.total||0)<=Number(data.page_size||20))return;const nav=document.createElement('nav');nav.className='script-library-pagination';nav.setAttribute('aria-label','脚本库分页');nav.appendChild(pageButton('上一页',Math.max(1,current-1),current<=1));const start=Math.max(1,Math.min(current-2,pages-4));const end=Math.min(pages,start+4);for(let page=start;page<=end;page++)nav.appendChild(pageButton(String(page),page,false,page===current));nav.appendChild(pageButton('下一页',Math.min(pages,current+1),current>=pages));const total=document.createElement('span');total.className='script-library-total';total.textContent=`共 ${Number(data.total||0)} 条`;nav.appendChild(total);root.appendChild(nav);}
+  function renderLibrary(){const root=document.getElementById('script-recommendation-body');if(!root)return;root.innerHTML='';addIpPrompt(root);if(recommendationState.loading||!recommendationState.library){root.insertAdjacentHTML('beforeend','<div class="script-recommendation-loading">正在加载脚本库…</div>');return;}if(recommendationState.error){root.insertAdjacentHTML('beforeend',`<div class="script-recommendation-empty">${escapeHtml(recommendationState.error)}</div>`);return;}const data=recommendationState.library;renderLibraryFilters(root,data);const list=document.createElement('div');list.className='script-card-list script-library-grid';const seen=new Set();(data.scripts||[]).forEach((s)=>{const k=contentKey(s);if(k!=='|'&&seen.has(k))return;if(k!=='|')seen.add(k);renderScriptCard(s,list);});if(!list.children.length)list.innerHTML='<p class="script-recommendation-empty">这个分类暂时没有脚本。</p>';root.appendChild(list);renderPagination(root,data);}
+  function renderRecommendations(){if(!hasIpPlan())return renderLibrary();const root=document.getElementById('script-recommendation-body');if(!root)return;root.innerHTML='';if(recommendationState.loading){root.innerHTML='<div class="script-recommendation-loading">正在根据你的保险主线和内容支线挑选脚本…</div>';return;}if(recommendationState.error){root.innerHTML=`<div class="script-recommendation-empty">${escapeHtml(recommendationState.error)}</div>`;return;}if(!recommendationState.groups.length){root.innerHTML='<div class="script-recommendation-empty">当前脚本库还没有匹配到你的方向。</div>';return;}const globalSeen=new Set();sectionDefinitions().forEach((d)=>{const section=document.createElement('section');section.className=`script-direction-section script-section-${d.key}`;section.innerHTML=`<div class="script-direction-heading"><div><h3>${escapeHtml(d.title)}</h3><p class="script-direction-reason">${escapeHtml(d.subtitle)}</p></div></div>`;const list=document.createElement('div');list.className='script-card-list';const scripts=scriptsForDirections(d.directions,globalSeen);if(!scripts.length){const e=document.createElement('p');e.className='script-recommendation-empty';e.textContent=d.key==='branch'&&!d.directions.length?'你的内容支线还没有确定。补充过往职业、生活身份或个人爱好后，我会从这里推荐对应脚本。':'当前脚本库里还没有匹配到这一板块的脚本。';list.appendChild(e);}else scripts.forEach((s)=>renderScriptCard(s,list));section.appendChild(list);root.appendChild(section);});}
+  async function loadLibrary(force=false){if(recommendationState.loading)return;if(!force&&recommendationState.library)return renderLibrary();recommendationState.loading=true;recommendationState.error='';renderLibrary();try{const q=new URLSearchParams({page:String(recommendationState.libraryPage),pageSize:'20'});if(recommendationState.libraryLevel1)q.set('level1',recommendationState.libraryLevel1);if(recommendationState.libraryLevel2)q.set('level2',recommendationState.libraryLevel2);const r=await fetch(scriptApiUrl(`library?${q}`));if(!r.ok)throw new Error(`脚本库接口返回 ${r.status}`);recommendationState.library=await r.json();recommendationState.libraryPage=Number(recommendationState.library.page||recommendationState.libraryPage||1);}catch(_){recommendationState.library={level1_tags:[],level2_by_level1:{},scripts:[],page:1,pages:1,total:0};recommendationState.error='脚本库暂时加载失败，请刷新后重试。';}finally{recommendationState.loading=false;renderLibrary();}}
+  async function loadRecommendations(force=false){if(!hasIpPlan())return loadLibrary(force);if(recommendationState.loading||(recommendationState.loaded&&!force))return;recommendationState.loading=true;recommendationState.error='';renderRecommendations();try{const directions=requestDirections();if(!directions.length)throw new Error('IP 方案缺少可用内容方向');const r=await fetch(scriptApiUrl('recommend'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contentDirections:directions})});if(!r.ok)throw new Error(`推荐接口返回 ${r.status}`);const p=await r.json();recommendationState.batch=p.recommendation_batch||'';recommendationState.groups=p.groups||[];recommendationState.loaded=true;}catch(_){recommendationState.groups=[];recommendationState.error='推荐脚本暂时加载失败，请刷新后重试。';}finally{recommendationState.loading=false;renderRecommendations();}}
+  async function openDetail(scriptId,contentDirection){try{const r=await fetch(scriptApiUrl(String(encodeURIComponent(scriptId))));if(!r.ok)throw new Error();const p=await r.json(),d=p.script;recommendationState.detail=d;recommendationState.direction=contentDirection||'';document.getElementById('script-detail-title').textContent=d.title_1||d.title||'脚本详情';document.getElementById('script-detail-meta').textContent=metaText(d);document.getElementById('script-detail-body').textContent=d.body||'';document.getElementById('script-detail-screen').classList.remove('hidden');track(d.script_id,'detail_click',contentDirection);}catch(_){window.alert('脚本详情暂时无法打开，请稍后再试。');}}
+  function closeDetail(){document.getElementById('script-detail-screen')?.classList.add('hidden');}
+  function handoff(tool){const d=recommendationState.detail;if(!d)return;const source=[d.title_1||d.title,d.body].filter(Boolean).join('\n');track(d.script_id,tool==='script'?'rewrite_click':'xhs_click',recommendationState.direction||'脚本库');closeDetail();selectTool(tool);const input=document.getElementById(tool==='script'?'script-input':'xhs-input');if(input){input.value=source;input.dispatchEvent(new Event('input',{bubbles:true}));input.focus();}}
+  function escapeHtml(v){const d=document.createElement('div');d.textContent=String(v||'');return d.innerHTML;}
+  function reset(){recommendationState.loaded=false;recommendationState.loading=false;recommendationState.groups=[];recommendationState.library=null;recommendationState.libraryPage=1;recommendationState.error='';}
+  document.getElementById('script-detail-close')?.addEventListener('click',closeDetail);document.getElementById('script-detail-rewrite')?.addEventListener('click',()=>handoff('script'));document.getElementById('script-detail-xhs')?.addEventListener('click',()=>handoff('xhs'));
+  window.aiaScriptRecommendation=Object.freeze({load:loadRecommendations,reset,openDetail,state:recommendationState});
 })();

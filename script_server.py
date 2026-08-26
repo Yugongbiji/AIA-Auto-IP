@@ -1,21 +1,25 @@
 """AIA Auto IP server entrypoint with Script Recommendation V1 APIs.
 
 This keeps the existing large `server.py` stable: all old routes are delegated to
-`server.AppHandler`; only `/api/scripts/*` is handled here.
+`server.AppHandler`; only the focused extension routes are handled here.
 """
 from __future__ import annotations
 
 import argparse
 import json
 import os
+from collections import Counter
 from http import HTTPStatus
 from http.server import ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 import server as core
-from backend import script_api
+from backend import profile_semantic, script_api, script_persona_rules
 import script_library_store as script_store
+
+# Install explicit creative runtime contracts before serving requests.
+script_persona_rules.install(core)
 
 
 def dedicated_script_database_enabled() -> bool:
@@ -24,21 +28,13 @@ def dedicated_script_database_enabled() -> bool:
 
 
 def script_database():
-    """Use a dedicated PostgreSQL connection for the script library when configured.
-
-    This deliberately keeps the rest of AIA Auto IP on its existing database. Only
-    `/api/scripts/*` reads/writes the script RDS connection, which avoids migrating
-    IP profiles, conversations and other production data as part of Script V1.
-    """
     if not dedicated_script_database_enabled():
         return core.database()
-
     try:
         import psycopg
         from psycopg.rows import dict_row
     except ImportError as error:
         raise RuntimeError("未安装 PostgreSQL 驱动。请运行：pip install -r requirements.txt") from error
-
     conn = psycopg.connect(
         host=os.environ["SCRIPT_DB_HOST"].strip(),
         port=int(os.getenv("SCRIPT_DB_PORT", "5432")),
@@ -56,6 +52,93 @@ def script_database_engine() -> str:
     return "postgresql" if dedicated_script_database_enabled() else core.database_engine()
 
 
+def _clean(value) -> str:
+    return str(value or "").strip()
+
+
+def _split_multi(value) -> list[str]:
+    value = _clean(value).replace("；", ";").replace("、", ";").replace("，", ";").replace(",", ";")
+    return [item.strip() for item in value.split(";") if item.strip() and item.strip() != "其他"]
+
+
+def _count_items(counter: Counter) -> list[dict]:
+    return [{"label": label, "count": count} for label, count in counter.most_common()]
+
+
+def live_peer_review_summary(agent_id: str):
+    """Build the display summary from raw reviews so the UI never depends on an old truncated cache."""
+    try:
+        with core.database() as conn:
+            rows = conn.execute(
+                "SELECT reviewer_nickname, relationship, traits, topics, roles, intro FROM peer_reviews WHERE agent_id = ? ORDER BY id",
+                (agent_id,),
+            ).fetchall()
+    except Exception:
+        return None
+    if not rows:
+        return None
+    nicknames, relationships, traits, topics, roles = Counter(), Counter(), Counter(), Counter(), Counter()
+    quotes = []
+    for row in rows:
+        nickname = _clean(row["reviewer_nickname"])
+        relationship = _clean(row["relationship"])
+        if nickname:
+            nicknames[nickname] += 1
+        if relationship:
+            relationships[relationship] += 1
+        traits.update(_split_multi(row["traits"]))
+        topics.update(_split_multi(row["topics"]))
+        roles.update(_split_multi(row["roles"]))
+        intro = _clean(row["intro"])
+        if intro and intro not in quotes:
+            quotes.append(intro)
+    return {
+        "source": "身边人评价问卷",
+        "reviewCount": len(rows),
+        "topNicknames": _count_items(nicknames),
+        "relationships": _count_items(relationships),
+        "topTraits": _count_items(traits),
+        "topTopics": _count_items(topics),
+        "topRoles": _count_items(roles),
+        "representativeQuotes": quotes,
+    }
+
+
+_base_merged_profile = core.merged_profile
+
+
+def merged_profile_with_live_reviews(agent_id: str):
+    result = _base_merged_profile(agent_id)
+    if not result:
+        return result
+    summary = live_peer_review_summary(agent_id)
+    if summary:
+        result.setdefault("profile", {})["peerReviewSummary"] = summary
+    return result
+
+
+def save_canonical_proposal(agent_id: str, version: int, proposal: dict) -> bool:
+    """Persist the browser canonical proposal for an already-created version."""
+    if not agent_id or not isinstance(proposal, dict) or not version:
+        return False
+    with core.database() as conn:
+        exists = conn.execute(
+            "SELECT 1 FROM proposals WHERE agent_id = ? AND version = ?",
+            (agent_id, int(version)),
+        ).fetchone()
+        if not exists:
+            return False
+        conn.execute(
+            "UPDATE proposals SET proposal_json = ? WHERE agent_id = ? AND version = ?",
+            (json.dumps(proposal, ensure_ascii=False), agent_id, int(version)),
+        )
+    return True
+
+
+# server.AppHandler resolves merged_profile through server.py globals at request time.
+core.merged_profile = merged_profile_with_live_reviews
+
+
 class ScriptAppHandler(core.AppHandler):
     MAX_SCRIPT_API_BODY = 64 * 1024
 
@@ -69,7 +152,25 @@ class ScriptAppHandler(core.AppHandler):
         return payload
 
     def do_GET(self):
-        path = urlparse(self.path).path
+        parsed = urlparse(self.path)
+        path = parsed.path
+        if path == "/api/scripts/library":
+            query = parse_qs(parsed.query)
+            try:
+                result = script_api.library(
+                    script_database,
+                    level1=(query.get("level1", [""])[0] or ""),
+                    level2=(query.get("level2", [""])[0] or ""),
+                    tag=(query.get("tag", [""])[0] or ""),
+                    page=int(query.get("page", ["1"])[0] or 1),
+                    page_size=int(query.get("pageSize", ["20"])[0] or 20),
+                )
+            except ValueError:
+                self.send_json({"error": "脚本库请求格式不正确"}, HTTPStatus.BAD_REQUEST)
+                return
+            self.send_json({"ok": True, **result})
+            return
+
         prefix = "/api/scripts/"
         if path.startswith(prefix) and path != prefix:
             raw_id = path[len(prefix):].strip("/")
@@ -87,6 +188,33 @@ class ScriptAppHandler(core.AppHandler):
 
     def do_POST(self):
         path = urlparse(self.path).path
+        if path == "/api/profile/analyze":
+            try:
+                payload = self._read_script_payload()
+                profile = payload.get("profile") if isinstance(payload.get("profile"), dict) else {}
+                result = profile_semantic.analyze(profile)
+            except (ValueError, json.JSONDecodeError):
+                self.send_json({"error": "资料分析请求格式不正确"}, HTTPStatus.BAD_REQUEST)
+                return
+            self.send_json({"ok": True, **result})
+            return
+
+        if path == "/api/proposal/canonical":
+            try:
+                payload = self._read_script_payload()
+                agent_id = _clean(payload.get("agentId"))
+                version = int(payload.get("version") or 0)
+                proposal = payload.get("proposal") if isinstance(payload.get("proposal"), dict) else None
+                saved = save_canonical_proposal(agent_id, version, proposal)
+            except (ValueError, TypeError, json.JSONDecodeError):
+                self.send_json({"error": "标准化方案保存格式不正确"}, HTTPStatus.BAD_REQUEST)
+                return
+            if not saved:
+                self.send_json({"error": "未找到对应方案版本"}, HTTPStatus.NOT_FOUND)
+                return
+            self.send_json({"saved": True})
+            return
+
         if path not in {"/api/scripts/recommend", "/api/scripts/activity"}:
             super().do_POST()
             return
@@ -112,14 +240,9 @@ def main():
 
     core.load_local_env()
     core.initialize_database()
-
-    # Preview/local SQLite owns its own tables. Production's dedicated script RDS
-    # tables are provisioned separately with least-privilege credentials, so the
-    # web process must not require CREATE TABLE / CREATE INDEX privileges there.
     if not dedicated_script_database_enabled():
         script_store.initialize_script_library(script_database, script_database_engine)
     else:
-        # Fail fast if the dedicated script database cannot be read.
         with script_database() as conn:
             conn.execute("SELECT 1 FROM script_library LIMIT 1").fetchone()
 

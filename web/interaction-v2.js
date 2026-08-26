@@ -1,15 +1,24 @@
 // 通用交互 V4：快捷选项只负责填充答案；统一由底部“发送”提交。
-// 选项点击不得主动聚焦输入框；已选标签真正嵌入同一个输入容器；所有聊天功能统一自动跟随。
-// 同时统一移动端 visualViewport、错误重试与长会话滚动边界。
+// 业务选择状态只读取 app.js 的 state/planningState，不再维护第二套 Set，也不再点击隐藏确认按钮。
+// 同时统一自动跟随、移动端 visualViewport、错误重试与长会话滚动边界。
 (function () {
   const configs = [
-    { replies:'quick-replies', form:'chat-form', input:'chat-input', messages:'messages', panel:'ip-chat-panel' },
-    { replies:'planning-quick-replies', form:'planning-form', input:'planning-input', messages:'planning-messages', panel:'planning-panel' },
+    {
+      replies:'quick-replies', form:'chat-form', input:'chat-input', messages:'messages', panel:'ip-chat-panel',
+      question:() => (typeof questions !== 'undefined' ? questions[state.currentQuestion] : null),
+      selection:() => state.multiSelection,
+      toggle:(value) => typeof toggleMultiOption === 'function' && toggleMultiOption(value),
+    },
+    {
+      replies:'planning-quick-replies', form:'planning-form', input:'planning-input', messages:'planning-messages', panel:'planning-panel',
+      question:() => (typeof planningQuestions !== 'undefined' ? planningQuestions[planningState.currentQuestion] : null),
+      selection:() => planningState.multiSelection,
+      toggle:(value) => {
+        const question = typeof planningQuestions !== 'undefined' ? planningQuestions[planningState.currentQuestion] : null;
+        if (question && typeof togglePlanningOption === 'function') togglePlanningOption(value, question);
+      },
+    },
   ];
-
-  function isOtherLabel(text) {
-    return /^其他(?:$|[：:\s…\.（(])/.test(String(text || '').trim());
-  }
 
   configs.forEach((cfg) => {
     const replies = document.getElementById(cfg.replies);
@@ -17,9 +26,14 @@
     const input = document.getElementById(cfg.input);
     if (!replies || !form || !input) return;
 
-    const selected = new Set();
     let editor = null;
     let tray = null;
+
+    function currentSelection() {
+      const value = cfg.selection?.();
+      return value instanceof Set ? value : new Set();
+    }
+    function multiActive() { return Boolean(cfg.question?.()?.multiple); }
 
     function ensureEditor() {
       if (editor && editor.isConnected) return editor;
@@ -36,8 +50,13 @@
     }
 
     function syncOptionButtons() {
-      replies.querySelectorAll('button[data-v3-option]').forEach((button) => {
-        const active = selected.has(button.dataset.v3Option);
+      const selected = currentSelection();
+      replies.querySelectorAll('button').forEach((button) => {
+        if (button.classList.contains('multi-confirm') || button.classList.contains('custom-selected')) return;
+        const value = String(button.dataset.v3Option || button.textContent || '').trim();
+        if (!value) return;
+        button.dataset.v3Option = value;
+        const active = multiActive() && selected.has(value);
         button.classList.toggle('selected', active);
         button.setAttribute('aria-pressed', active ? 'true' : 'false');
       });
@@ -46,82 +65,55 @@
     function renderTray() {
       ensureEditor();
       tray.innerHTML = '';
-      selected.forEach((value) => {
-        const chip = document.createElement('span');
-        chip.className = 'composer-selection-chip';
-        const label = document.createElement('span');
-        label.textContent = value;
-        const remove = document.createElement('button');
-        remove.type = 'button';
-        remove.setAttribute('aria-label', `取消选择 ${value}`);
-        remove.textContent = '×';
-        remove.addEventListener('pointerdown', (event) => event.preventDefault());
-        remove.addEventListener('click', (event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          const option = [...replies.querySelectorAll('button[data-v3-option]')].find((button) => button.dataset.v3Option === value);
-          if (option) option.click();
-          else {
-            selected.delete(value);
-            renderTray();
-            syncOptionButtons();
-          }
+      const selected = currentSelection();
+      if (multiActive()) {
+        selected.forEach((value) => {
+          const chip = document.createElement('span');
+          chip.className = 'composer-selection-chip';
+          const label = document.createElement('span');
+          label.textContent = value;
+          const remove = document.createElement('button');
+          remove.type = 'button';
+          remove.setAttribute('aria-label', `取消选择 ${value}`);
+          remove.textContent = '×';
+          remove.addEventListener('pointerdown', (event) => event.preventDefault());
+          remove.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            cfg.toggle?.(value);
+          });
+          chip.append(label, remove);
+          tray.appendChild(chip);
         });
-        chip.append(label, remove);
-        tray.appendChild(chip);
-      });
-      editor.classList.toggle('has-chips', selected.size > 0);
+      }
+      editor.classList.toggle('has-chips', multiActive() && selected.size > 0);
     }
 
-    function upgradeMultiChoices() {
-      const confirm = replies.querySelector('.multi-confirm');
-      if (!confirm) {
-        selected.clear();
-        ensureEditor();
-        renderTray();
+    function upgradeChoices() {
+      ensureEditor();
+      if (!multiActive()) {
         replies.classList.remove('quick-replies-v3');
+        renderTray();
+        syncOptionButtons();
         return;
       }
 
-      ensureEditor();
       replies.classList.add('quick-replies-v3');
-      replies.querySelectorAll('.custom-multi-input').forEach((node) => node.remove());
+      // 旧 app.js 仍会生成这些兼容节点；V4 直接移除，不允许它们成为第二输入/提交入口。
+      replies.querySelectorAll('.custom-multi-input,.multi-confirm,.custom-selected').forEach((node) => node.remove());
       replies.querySelectorAll('button').forEach((button) => {
-        const text = button.textContent.trim();
-        if (!text || button.classList.contains('multi-confirm')) return;
-        if (button.dataset.v3Ready === '1') return;
-
-        button.dataset.v3Ready = '1';
-        button.dataset.v3Option = text;
-        button.setAttribute('aria-pressed', selected.has(text) ? 'true' : 'false');
-        button.addEventListener('pointerdown', (event) => event.preventDefault());
-        button.addEventListener('click', () => {
-          if (isOtherLabel(text)) return;
-          if (selected.has(text)) selected.delete(text);
-          else selected.add(text);
-          renderTray();
-          requestAnimationFrame(syncOptionButtons);
-        });
+        const value = String(button.textContent || '').trim();
+        if (value) button.dataset.v3Option = value;
       });
+      renderTray();
       syncOptionButtons();
     }
 
-    new MutationObserver(upgradeMultiChoices).observe(replies, { childList:true, subtree:true });
+    new MutationObserver(() => queueMicrotask(upgradeChoices)).observe(replies, { childList:true, subtree:true });
+    replies.addEventListener('click', () => queueMicrotask(() => { renderTray(); syncOptionButtons(); }), true);
+    form.addEventListener('submit', () => queueMicrotask(() => { renderTray(); syncOptionButtons(); }), true);
     ensureEditor();
-    upgradeMultiChoices();
-
-    form.addEventListener('submit', () => {
-      if (!selected.size) return;
-      const freeText = input.value.trim();
-      input.value = freeText;
-      setTimeout(() => {
-        const confirm = replies.querySelector('.multi-confirm');
-        if (confirm && !confirm.disabled) confirm.click();
-        selected.clear();
-        renderTray();
-        syncOptionButtons();
-      }, 0);
-    }, true);
+    upgradeChoices();
   });
 
   // 全工作台统一自动跟随：新问题/新回复出现后，保证最新内容进入可视区。
@@ -237,8 +229,6 @@
   viewport?.addEventListener('scroll', syncVisualViewport, { passive:true });
 
   // 公共错误态：记住最近一次原始提交，并把“重试”绑定回产生错误的原业务操作。
-  // 已点击过重试的历史错误卡片会被标记为 handled，避免 MutationObserver 再次补回按钮。
-  // 如果这次重试仍失败，业务层会产生一张新的错误卡片；新卡片仍可正常再次重试。
   const retryConfigs = [
     {
       form:'script-form', input:'script-input', messages:'script-messages',

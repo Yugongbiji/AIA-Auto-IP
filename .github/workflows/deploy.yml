@@ -20,11 +20,30 @@ jobs:
             set -e
             cd /opt/AIA-Auto-IP
             PREVIOUS_COMMIT=$(git rev-parse HEAD)
+            OVERRIDE_DIR=/etc/systemd/system/aia-auto-ip.service.d
+            OVERRIDE=$OVERRIDE_DIR/10-script-server.conf
+            OVERRIDE_BACKUP=/tmp/aia-auto-ip-script-server.conf.backup
+            HAD_OVERRIDE=0
+            if [ -f "$OVERRIDE" ]; then
+              cp "$OVERRIDE" "$OVERRIDE_BACKUP"
+              HAD_OVERRIDE=1
+            fi
+
+            restore_override() {
+              if [ "$HAD_OVERRIDE" = "1" ]; then
+                mkdir -p "$OVERRIDE_DIR"
+                cp "$OVERRIDE_BACKUP" "$OVERRIDE"
+              else
+                rm -f "$OVERRIDE"
+              fi
+            }
 
             rollback() {
-              echo "Production frontend deployment failed. Restoring ${PREVIOUS_COMMIT}."
+              echo "Production deployment failed. Restoring ${PREVIOUS_COMMIT}."
               git reset --hard "$PREVIOUS_COMMIT"
               /opt/AIA-Auto-IP/.venv/bin/pip install -r requirements.txt
+              restore_override
+              systemctl daemon-reload
               systemctl restart aia-auto-ip
               systemctl is-active --quiet aia-auto-ip
               curl -fsS --retry 5 --retry-delay 2 http://127.0.0.1:8000/ >/dev/null
@@ -35,8 +54,15 @@ jobs:
             git reset --hard origin/main
             /opt/AIA-Auto-IP/.venv/bin/pip install -r requirements.txt
 
-            OVERRIDE=/etc/systemd/system/aia-auto-ip.service.d/10-script-server.conf
-            rm -f "$OVERRIDE"
+            # script_server.py extends the existing app server: old routes remain unchanged,
+            # while /api/scripts/* is served by the same process and port.
+            mkdir -p "$OVERRIDE_DIR"
+            cat > "$OVERRIDE" <<'UNIT'
+            [Service]
+            ExecStart=
+            ExecStart=/opt/AIA-Auto-IP/.venv/bin/python /opt/AIA-Auto-IP/script_server.py --port 8000
+            UNIT
+
             systemctl daemon-reload
             systemctl restart aia-auto-ip
 
@@ -46,4 +72,18 @@ jobs:
               rollback
             fi
 
-            echo "Frontend deployment healthy: $(git rev-parse --short HEAD)"
+            # 核心业务验收：正式站必须真的能返回推荐，并能打开其中一条脚本详情。
+            RECOMMEND_JSON=$(curl -fsS --retry 5 --retry-delay 2 \
+              -H 'Content-Type: application/json' \
+              -d '{"contentDirections":["家庭保障方案"]}' \
+              http://127.0.0.1:8000/api/scripts/recommend) || rollback
+            echo "$RECOMMEND_JSON" | grep -q '"ok": true' || rollback
+            SCRIPT_ID=$(printf '%s' "$RECOMMEND_JSON" | python3 -c 'import json,sys; p=json.load(sys.stdin); groups=p.get("groups") or []; scripts=(groups[0].get("scripts") or []) if groups else []; print(scripts[0].get("script_id", "") if scripts else "")')
+            if [ -z "$SCRIPT_ID" ]; then
+              echo 'Production recommendation returned no scripts.' >&2
+              rollback
+            fi
+            DETAIL_JSON=$(curl -fsS --retry 5 --retry-delay 2 "http://127.0.0.1:8000/api/scripts/$SCRIPT_ID") || rollback
+            echo "$DETAIL_JSON" | grep -q '"ok": true' || rollback
+
+            echo "Production deployment healthy with script recommendation: $(git rev-parse --short HEAD)"
