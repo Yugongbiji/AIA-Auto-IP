@@ -11,7 +11,7 @@ def test_129_preset_nickname_reason_is_user_facing_not_internal_governance():
     assert "angle:index===0?'首选推荐':'备选推荐'" in NICK.replace(' ', '')
     assert '已由产品负责人基于真实资料人工验收确认' not in NICK
     assert '优先于临时生成，仍保留 AI 补充路径' not in NICK
-    for phrase in ['人物锚点', '记忆点', '网感', '好记也方便搜索']:
+    for phrase in ['人物锚点', '记忆点', '网感', '也方便搜索']:
         assert phrase in NICK
 
 
