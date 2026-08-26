@@ -1,0 +1,37 @@
+/* 发布收口：多选组件仅做布局与可读性修正，不改交互逻辑。 */
+.quick-replies { align-items:center; }
+.quick-replies .custom-multi-input {
+  flex:1 0 100%;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:8px;
+  min-width:0;
+  margin-top:2px;
+}
+.quick-replies .custom-multi-input input {
+  width:100%;
+  min-width:0;
+  height:40px;
+  padding:9px 12px;
+  border-radius:10px;
+}
+.quick-replies .custom-multi-input button {
+  min-width:64px;
+  height:40px;
+  padding:0 14px;
+  border-radius:10px;
+  font-weight:700;
+}
+.quick-replies .multi-confirm {
+  flex:0 0 auto;
+  min-height:40px;
+  padding:9px 15px;
+  border-radius:10px;
+}
+.quick-replies button.selected,
+.quick-replies .custom-selected { box-shadow:none; }
+@media (max-width:720px) {
+  .quick-replies { padding-right:16px; padding-left:16px; }
+  .quick-replies .custom-multi-input { grid-template-columns:minmax(0,1fr) 64px; }
+  .quick-replies .multi-confirm { flex:1 0 100%; width:100%; }
+}
