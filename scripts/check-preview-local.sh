@@ -24,8 +24,13 @@ fi
   tests/test_regressions_80_85.py \
   tests/test_product_experience_contract_round3.py \
   tests/test_current_effective_requirements_contract.py \
+  tests/test_final_ip_output_owner_contract.py \
   tests/test_release_blockers_114_119.py \
+  tests/test_release_blockers_129_133_136.py \
+  tests/test_release_blockers_138_139.py \
   tests/test_release_finalization_contract.py \
+  tests/test_stable_ip_baseline.py \
+  tests/test_release_stable_contract.py \
   tests/backend/test_xhs_formatting_contract.py \
   tests/backend/test_script_persona_rules.py \
   -q
@@ -35,16 +40,20 @@ log "2/5 检查 Python / Shell 关键运行文件语法"
   script_server.py \
   server.py \
   scripts/reset_preview_test_data.py \
+  scripts/import_approved_ip_baseline.py \
   backend/profile_semantic.py \
   backend/script_api.py \
   backend/script_persona_rules.py \
+  backend/stable_ip.py \
+  backend/stable_runtime.py \
   backend/xhs_formatting_contract.py
 bash -n scripts/check-preview-local.sh scripts/deploy-preview-local.sh scripts/finalize_preview_release.sh
 
 echo "✅ Python / Shell 关键运行文件语法通过"
 
 log "3/5 检查 index.html 实际加载的 JavaScript 文件与可用语法门禁"
-mapfile -t JS_FILES < <(grep -oE '<script src="[^"]+"' web/index.html | sed -E 's/.*src="([^"]+)"/\1/' | grep -E '\.js$')
+# Cache-busting query strings are part of the browser URL, not the repository filename.
+mapfile -t JS_FILES < <(grep -oE '<script src="[^"]+"' web/index.html | sed -E 's/.*src="([^"]+)"/\1/' | sed -E 's/[?#].*$//' | grep -E '\.js$')
 [[ ${#JS_FILES[@]} -gt 0 ]] || fail "index.html 没有解析到任何 JS 文件。"
 for rel in "${JS_FILES[@]}"; do
   file="web/$rel"
@@ -115,10 +124,12 @@ grep -q 'function complianceFooter' web/ip-policy-core.js || fail "合规尾部�
 grep -q 'rankIpContentBranches' web/ip-policy-core.js || fail "内容支线唯一排序入口缺失"
 grep -q '/api/proposal/canonical' web/ip-policy-core.js || fail "canonical 方案持久化调用缺失"
 grep -q 'path == "/api/proposal/canonical"' script_server.py || fail "canonical 方案服务器保存入口缺失"
+grep -q 'stable_runtime.install' backend/script_persona_rules.py || fail "stable runtime 未安装到服务入口"
+grep -q 'current_ip_outputs' backend/stable_ip.py || fail "current_ip_outputs 稳定稿权威表缺失"
 grep -q 'script-library-pagination' web/script-recommendation-v1.js || fail "无 IP 脚本库真实分页缺失"
 grep -q 'aia-auto-ip-session:preview' web/api-routing-v1.js || fail "Preview 本地会话隔离缺失"
 grep -q 'previewIdentityStartWorkspace' web/product-rules-v25.js || fail "Preview 旧 session 抢占保护缺失"
-echo "✅ Owner / 死链 / 性能 / 环境隔离门禁通过"
+echo "✅ Owner / DB-first / 死链 / 性能 / 环境隔离门禁通过"
 
 log "5/5 检查当前 Git 状态"
 echo "branch: $(git branch --show-current)"
