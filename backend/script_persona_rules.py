@@ -4,7 +4,7 @@ from __future__ import annotations
 import sys
 import time
 
-from backend import ip_persona_generator, xhs_formatting_contract
+from backend import ip_persona_generator, stable_runtime, xhs_formatting_contract
 
 
 FORMAT_FAILURE_MARKERS = ("改写格式不完整", "没有返回", "改写稿不完整")
@@ -68,6 +68,8 @@ def _call_with_format_retry(original, prepared, ip_plan, source, revision):
 
 
 def install(core_module) -> None:
+    # Stable approved output must be installed before any request path can generate or read proposal history.
+    stable_runtime.install(core_module)
     # Product prompt is loaded from prompts/ip-persona-prompt.md; do this before requests are served.
     ip_persona_generator.install(core_module)
     xhs_formatting_contract.install(core_module)
