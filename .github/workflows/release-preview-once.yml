@@ -1,0 +1,149 @@
+name: Release Preview Once
+
+on:
+  push:
+    branches:
+      - agent/ip-product-optimization-20260821
+
+concurrency:
+  group: aia-auto-ip-release-preview-once
+  cancel-in-progress: true
+
+jobs:
+  release-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Gate and deploy Preview on ECS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.ECS_HOST }}
+          username: ${{ secrets.ECS_USER }}
+          key: ${{ secrets.ECS_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            BRANCH=agent/ip-product-optimization-20260821
+            PREVIEW_DIR=/opt/AIA-Auto-IP-preview
+            SERVICE=aia-auto-ip-preview
+
+            echo '=== 0. Production health guard ==='
+            systemctl is-active --quiet aia-auto-ip
+            curl -fsS --retry 3 http://127.0.0.1:8000/ >/dev/null
+
+            echo '=== 1. Detect ECS-only tracked changes before sync ==='
+            cd "$PREVIEW_DIR"
+            git fetch origin "$BRANCH"
+            if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+              echo 'BLOCKED_ECS_TRACKED_CHANGES_BEGIN'
+              git status --short --untracked-files=no
+              git diff --no-ext-diff --binary || true
+              echo 'BLOCKED_ECS_TRACKED_CHANGES_END'
+              exit 42
+            fi
+            UNTRACKED=$(git ls-files --others --exclude-standard | grep -Ev '^(data/|\.env($|\.)|\.venv/|__pycache__/|.*\.pyc$)' || true)
+            if [ -n "$UNTRACKED" ]; then
+              echo 'BLOCKED_ECS_UNTRACKED_CODE_BEGIN'
+              printf '%s\n' "$UNTRACKED"
+              echo 'BLOCKED_ECS_UNTRACKED_CODE_END'
+              exit 43
+            fi
+
+            echo '=== 2. Sync code only; preserve Preview SQLite ==='
+            git checkout -B "$BRANCH" "origin/$BRANCH"
+            git reset --hard "origin/$BRANCH"
+            HEAD_SHA=$(git rev-parse HEAD)
+            echo "PREVIEW_HEAD=$HEAD_SHA"
+            test -f .env
+            grep -Eq "^[[:space:]]*DB_ENGINE[[:space:]]*=[[:space:]]*(sqlite|'sqlite'|\"sqlite\")[[:space:]]*$" .env
+            test -f data/persona.sqlite3
+
+            echo '=== 3. Verify approved baseline before gate ==='
+            .venv/bin/python - <<'PY'
+            import json, sqlite3
+            from pathlib import Path
+            db=Path('data/persona.sqlite3')
+            conn=sqlite3.connect(db)
+            tables={r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+            if 'current_ip_outputs' not in tables:
+                raise SystemExit('current_ip_outputs missing')
+            count=conn.execute('SELECT COUNT(*) FROM current_ip_outputs').fetchone()[0]
+            print(json.dumps({'current_ip_outputs': count}, ensure_ascii=False))
+            if count != 57:
+                raise SystemExit(f'expected current_ip_outputs=57, got {count}')
+            PY
+
+            echo '=== 4. Install dev gate dependencies only if needed ==='
+            if ! .venv/bin/python -m pytest --version >/dev/null 2>&1; then
+              .venv/bin/pip install -r requirements-dev.txt
+            fi
+
+            echo '=== 5. Run one total release gate ==='
+            bash scripts/check-preview-local.sh
+
+            echo '=== 6. Lightweight deploy; no database reset ==='
+            bash scripts/deploy-preview-local.sh "$BRANCH"
+
+            echo '=== 7. DB-first contract smoke on two approved accounts ==='
+            .venv/bin/python - <<'PY'
+            import json, sqlite3, urllib.parse, urllib.request
+            from pathlib import Path
+
+            db=sqlite3.connect(Path('data/persona.sqlite3'))
+            db.row_factory=sqlite3.Row
+            rows=db.execute('''
+              SELECT a.agent_id,a.name,c.output_json,c.proposal_version
+              FROM current_ip_outputs c JOIN agents a ON a.agent_id=c.agent_id
+              ORDER BY a.agent_id LIMIT 2
+            ''').fetchall()
+            if len(rows) != 2:
+                raise SystemExit(f'need 2 stable accounts, got {len(rows)}')
+
+            def get_json(url):
+                with urllib.request.urlopen(url, timeout=10) as r:
+                    return json.loads(r.read().decode('utf-8'))
+            def post_json(url,payload):
+                req=urllib.request.Request(url,data=json.dumps(payload,ensure_ascii=False).encode('utf-8'),headers={'Content-Type':'application/json'},method='POST')
+                with urllib.request.urlopen(req, timeout=15) as r:
+                    return json.loads(r.read().decode('utf-8'))
+
+            for i,row in enumerate(rows,1):
+                expected=json.loads(row['output_json'])
+                before=db.execute('SELECT COUNT(*) FROM proposals WHERE agent_id=?',(row['agent_id'],)).fetchone()[0]
+                qs=urllib.parse.urlencode({'name':row['name'],'agentId':row['agent_id']})
+                lookup=get_json('http://127.0.0.1:8001/api/lookup?'+qs)
+                if not lookup.get('matched'):
+                    raise SystemExit(f'lookup failed for smoke account {i}')
+                proposals=lookup.get('proposals') or []
+                if not proposals or not proposals[0].get('proposal',{}).get('_stableMeta',{}).get('approved'):
+                    raise SystemExit(f'lookup did not return stable-first for smoke account {i}')
+                got=proposals[0]['proposal']
+                for key in ('nickname','headline','xiaohongshuBio','videoDouyinBio'):
+                    if got.get(key) != expected.get(key):
+                        raise SystemExit(f'lookup stable field drift: account={i} key={key}')
+                generated=post_json('http://127.0.0.1:8001/api/generate',{'agentId':row['agent_id'],'profile':lookup.get('profile') or {}})
+                if not generated.get('stable'):
+                    raise SystemExit(f'generate did not short-circuit stable account {i}')
+                for key in ('nickname','headline','xiaohongshuBio','videoDouyinBio'):
+                    if generated.get('proposal',{}).get(key) != expected.get(key):
+                        raise SystemExit(f'generate stable field drift: account={i} key={key}')
+                after=db.execute('SELECT COUNT(*) FROM proposals WHERE agent_id=?',(row['agent_id'],)).fetchone()[0]
+                if after != before:
+                    raise SystemExit(f'generate created duplicate proposal history for stable account {i}: {before}->{after}')
+                print(f'SMOKE_ACCOUNT_{i}={row["name"]}|{row["agent_id"]}|V{row["proposal_version"]}')
+            count=db.execute('SELECT COUNT(*) FROM current_ip_outputs').fetchone()[0]
+            print(f'CURRENT_IP_OUTPUTS_AFTER={count}')
+            if count != 57:
+                raise SystemExit('stable baseline count changed during deploy')
+            PY
+
+            echo '=== 8. Browser-cache contract and public Preview health ==='
+            HTML=$(curl -fsS --retry 5 http://127.0.0.1:8001/)
+            printf '%s' "$HTML" | grep -q 'app.js?v=20260826-release1'
+            printf '%s' "$HTML" | grep -q 'ip-policy-core.js?v=20260826-release1'
+            printf '%s' "$HTML" | grep -q 'nickname-policy-v1.js?v=20260826-release1'
+            printf '%s' "$HTML" | grep -q 'profile-float.css?v=20260826-release1'
+            curl -fsS --retry 5 http://127.0.0.1/preview/ >/dev/null
+            systemctl is-active --quiet "$SERVICE"
+            systemctl is-active --quiet aia-auto-ip
+            test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+            echo 'RELEASE_PREVIEW_GREEN=1'
