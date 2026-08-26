@@ -50,7 +50,7 @@ echo "PRODUCTION_TARGET_COMMIT=$MAIN_SHA"
 if [[ ! -x .venv/bin/python ]]; then python3 -m venv .venv; fi
 .venv/bin/pip install -r requirements.txt
 
-log "2/9 读取正式数据库真实类型"
+log "2/9 读取正式数据库真实类型，并在 SQLite 模式下先做一致性备份"
 ENGINE="$(.venv/bin/python - <<'PY'
 import server
 server.load_local_env()
@@ -58,7 +58,26 @@ print(server.database_engine())
 PY
 )"
 echo "PRODUCTION_DB_ENGINE=$ENGINE"
-[[ "$ENGINE" == "postgresql" ]] || fail "正式环境数据库实际不是 postgresql；为防误写，停止发布。"
+[[ "$ENGINE" == "sqlite" || "$ENGINE" == "postgresql" ]] || fail "正式环境数据库类型不受支持：$ENGINE"
+if [[ "$ENGINE" == "sqlite" ]]; then
+  .venv/bin/python - <<'PY'
+from datetime import datetime
+from pathlib import Path
+import sqlite3
+import server
+server.load_local_env()
+src = Path(server.DB_PATH)
+if src.exists():
+    backup_dir = src.parent / 'production-backups'
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    dst = backup_dir / f"{src.name}.{datetime.now().strftime('%Y%m%d-%H%M%S')}.bak"
+    with sqlite3.connect(src) as source, sqlite3.connect(dst) as target:
+        source.backup(target)
+    print(f"PRODUCTION_SQLITE_BACKUP={dst}")
+else:
+    print(f"PRODUCTION_SQLITE_BACKUP=SKIPPED_EMPTY:{src}")
+PY
+fi
 
 log "3/9 定位并验证同一份 57 人人工确认 Excel"
 XLSX="$XLSX_ARG"
