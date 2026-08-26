@@ -37,7 +37,16 @@
 
   function controlledOptions(profile){const preset=approvedPresetOptions(profile),a=pickAnchor(profile);if(!a)return preset.slice(0,5);const candidates=[];preset.forEach(item=>{if(!candidates.some(x=>x.name===item.name))candidates.push(item);});const add=(raw,angle,opts={})=>{const name=safeName(raw,a);if(!name||awkward(name,profile,a,opts)||candidates.some(x=>x.name===name))return;candidates.push({name,angle,reason:reasonFor(name,profile,a,opts),memoryKind:opts.memoryKind||''});};const existing=existingNickname(profile,a);if(existing)add(existing,'优先保留',{existing:true,memoryKind:'existing'});descriptorOptions(profile,a).forEach(item=>{const name=safeName(item.name,a);if(name&&!awkward(name,profile,a)&&!candidates.some(x=>x.name===name))candidates.push(item);});distinctiveOptions(profile,a).forEach(item=>{const name=safeName(item.name,a);if(name&&!awkward(name,profile,a)&&!candidates.some(x=>x.name===name))candidates.push(item);});const family=familyIdentity(profile);if(family)add(`${family}${a}`,'突出生活身份',{memoryKind:'distinctive'});const topic=neutralTopic(profile);if(topic&&!['生活','成长'].includes(topic))add(`${topic}搭子${a}`,'突出真实兴趣',{memoryKind:'distinctive'});add(a,'突出人物',{memoryKind:'plain'});return rankByMemory(candidates,profile,a,existing).slice(0,5);}
   function aiFallbackOptions(rawOptions,profile,anchor){if(!anchor||!Array.isArray(rawOptions))return [];const result=[];rawOptions.forEach(item=>{const name=safeName(item?.name??item,anchor);if(!name||awkward(name,profile,anchor)||result.some(x=>x.name===name))return;result.push({name,angle:'补充推荐',reason:reasonFor(name,profile,anchor),memoryKind:'ai'});});return result;}
-  function enforce(proposal,profile){if(!proposal)return proposal;const p=profile||{},raw=Array.isArray(proposal.nicknameOptions)?proposal.nicknameOptions:[],a=pickAnchor(p),controlled=controlledOptions(p),allowAi=p.nicknamePreset?.allowAiFallback!==false;if(allowAi&&a&&controlled.length<3)aiFallbackOptions(raw,p,a).forEach(item=>{if(controlled.length<5&&!controlled.some(x=>x.name===item.name))controlled.push(item);});const existing=existingNickname(p,a);proposal.nicknameOptions=rankByMemory(controlled,p,a,existing).slice(0,5);proposal.nicknameNeedsIdentity=!a&&!approvedPresetOptions(p).length;return proposal;}
+  function enforce(proposal,profile){
+    if(!proposal)return proposal;
+    const p=profile||{},raw=Array.isArray(proposal.nicknameOptions)?proposal.nicknameOptions:[],a=pickAnchor(p),controlled=controlledOptions(p);
+    const allowAi=p.nicknamePreset?.allowAiFallback!==false;
+    if(allowAi&&a&&controlled.length<3)aiFallbackOptions(raw,p,a).forEach(item=>{if(controlled.length<5&&!controlled.some(x=>x.name===item.name))controlled.push(item);});
+    const existing=existingNickname(p,a);
+    proposal.nicknameOptions=rankByMemory(controlled,p,a,existing).slice(0,5);
+    proposal.nicknameNeedsIdentity=!a&&!approvedPresetOptions(p).length;
+    return proposal;
+  }
 
   if(typeof renderProposal==='function'){const base=renderProposal;renderProposal=function nicknameOwnerRender(proposal,version){enforce(proposal,state.profile||{});return base(proposal,version);};}
   window.aiaNicknamePolicyV1=Object.freeze({controlledOptions,enforce,BANNED,anchors,pickAnchor,aiFallbackOptions,naturalNameAnchors,awkward,distinctiveOptions,memorablePeerDescriptor,descriptorOptions,normalizeSearchable,fullEnglish,memoryScore,rankByMemory,approvedPresetOptions,presetReason,reasonFor});
