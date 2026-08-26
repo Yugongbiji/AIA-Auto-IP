@@ -79,7 +79,32 @@
   function bioAssets(profile,platform='video'){const d=bioDimensions(profile,platform);return [...d.identity.map(value=>({type:'identity',value})),...d.advantage.map(value=>({type:'advantage',value})),...d.value.map(value=>({type:'value',value}))];}
   const bioCareerFacts=careerFacts;
 
-  function enforceProposal(proposal,profile){if(!proposal)return proposal;const p=profile||{};prepareProfileGoal(p);const branch=secondaryTopics(p),slogan=headline(p,proposal?.headline);proposal.headline=slogan;proposal.subheadline=subheadline(p);proposal.primaryGoal=inferPrimaryGoal(p);proposal.clientPortrait=targetPortrait(p);proposal.advantages=advantageItems(p);proposal.tags=proposalTags(p,branch);proposal.contentMainline=normalizedMainlines(p,proposal);proposal.secondaryContent=branch.topics;proposal.secondaryContentSource=branch.source;proposal.secondaryContentRanking=branch.ranking;proposal.bios={xiaohongshu:buildBios(p,'xhs',slogan),videoDouyin:buildBios(p,'video',slogan)};if(window.aiaNicknamePolicyV1?.enforce)window.aiaNicknamePolicyV1.enforce(proposal,p);return proposal;}
+  function stableApproved(proposal){return Boolean(proposal?._stableMeta?.approved);}
+  function stableProposal(proposal){
+    if(!stableApproved(proposal))return proposal;
+    const focus='我是谁 + 我的优势 + 我能提供什么价值';
+    proposal.bios={
+      xiaohongshu:[{
+        label:'小红书简介 · 推荐版',
+        focus,
+        lines:Array.isArray(proposal.xiaohongshuBio)?proposal.xiaohongshuBio:[]
+      }],
+      videoDouyin:[{
+        label:'视频号 / 抖音简介 · 推荐版',
+        focus,
+        lines:Array.isArray(proposal.videoDouyinBio)?proposal.videoDouyinBio:[]
+      }]
+    };
+    if(proposal.nickname){
+      proposal.nicknameOptions=[{
+        name:proposal.nickname,
+        angle:'人工确认',
+        reason:'已确认稳定昵称'
+      }];
+    }
+    return proposal;
+  }
+  function enforceProposal(proposal,profile){if(!proposal)return proposal;if(stableApproved(proposal)){const p=profile||{};prepareProfileGoal(p);const branch=secondaryTopics(p);proposal.subheadline=subheadline(p);proposal.primaryGoal=inferPrimaryGoal(p);proposal.clientPortrait=targetPortrait(p);proposal.advantages=advantageItems(p);proposal.tags=proposalTags(p,branch);proposal.contentMainline=normalizedMainlines(p,proposal);proposal.secondaryContent=branch.topics;proposal.secondaryContentSource=branch.source;proposal.secondaryContentRanking=branch.ranking;return stableProposal(proposal);}const p=profile||{};prepareProfileGoal(p);const branch=secondaryTopics(p),slogan=headline(p,proposal?.headline);proposal.headline=slogan;proposal.subheadline=subheadline(p);proposal.primaryGoal=inferPrimaryGoal(p);proposal.clientPortrait=targetPortrait(p);proposal.advantages=advantageItems(p);proposal.tags=proposalTags(p,branch);proposal.contentMainline=normalizedMainlines(p,proposal);proposal.secondaryContent=branch.topics;proposal.secondaryContentSource=branch.source;proposal.secondaryContentRanking=branch.ranking;proposal.bios={xiaohongshu:buildBios(p,'xhs',slogan),videoDouyin:buildBios(p,'video',slogan)};if(window.aiaNicknamePolicyV1?.enforce)window.aiaNicknamePolicyV1.enforce(proposal,p);return proposal;}
   function canonicalizeHistory(proposals,profile){return (proposals||[]).map(entry=>{if(entry?.proposal)enforceProposal(entry.proposal,profile||{});return entry;});}
   const policyFetch=window.fetch.bind(window);
   async function persistCanonical(entry){if(!state.matched||!entry?.proposal||!entry?.version||!state.profile?.agentId)return false;try{const r=await policyFetch('/api/proposal/canonical',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agentId:state.profile.agentId,version:entry.version,proposal:entry.proposal})});return r.ok;}catch(_){return false;}}
@@ -90,7 +115,7 @@
   if(typeof renderProposal==='function'){const base=renderProposal;renderProposal=function ipPolicyRenderProposal(proposal,version){enforceProposal(proposal,state.profile||{});const result=base.call(this,proposal,version);const entry=state.proposals?.find(x=>Number(x?.version)===Number(version));if(entry)persistCanonical(entry);return result;};}
   let lastGenerated=null;
   window.fetch=async function ipPolicyFetch(input,init){const response=await policyFetch(input,init),url=typeof input==='string'?input:(input?.url||'');if(!/\/api\/generate(?:\?|$)/.test(url)||!response.ok)return response;try{const payload=await response.clone().json();if(payload?.proposal){enforceProposal(payload.proposal,state.profile||{});lastGenerated={version:payload.version||state.version||1,proposal:payload.proposal,model:payload.model||''};if(state.matched&&payload.version)persistCanonical(lastGenerated);return new Response(JSON.stringify(payload),{status:response.status,statusText:response.statusText,headers:{'Content-Type':'application/json'}});}}catch(_){}return response;};
-  if(typeof generateProposal==='function'){const base=generateProposal;generateProposal=async function ipPolicyGenerateProposal(...args){lastGenerated=null;const result=await base.apply(this,args);if(!state.matched&&lastGenerated){state.proposals=[lastGenerated];state.version=Number(lastGenerated.version||1)+1;if(typeof refreshProposalButton==='function')refreshProposalButton();if(typeof updateWorkspaceHeadings==='function')updateWorkspaceHeadings();window.aiaScriptRecommendation?.reset?.();}else if(state.proposals?.[0]?.proposal){enforceProposal(state.proposals[0].proposal,state.profile||{});persistCanonical(state.proposals[0]);window.aiaScriptRecommendation?.reset?.();}return result;};}
+  if(typeof generateProposal==='function'){const base=generateProposal;generateProposal=async function ipPolicyGenerateProposal(...args){const stable=state.proposals?.find(entry=>stableApproved(entry?.proposal));if(stable?.proposal){stableProposal(stable.proposal);state.version=Number(stable.version||1)+1;if(typeof renderProposal==='function')renderProposal(stable.proposal,stable.version||1);if(typeof refreshProposalButton==='function')refreshProposalButton();if(typeof updateWorkspaceHeadings==='function')updateWorkspaceHeadings();window.aiaScriptRecommendation?.reset?.();return stable.proposal;}lastGenerated=null;const result=await base.apply(this,args);if(!state.matched&&lastGenerated){state.proposals=[lastGenerated];state.version=Number(lastGenerated.version||1)+1;if(typeof refreshProposalButton==='function')refreshProposalButton();if(typeof updateWorkspaceHeadings==='function')updateWorkspaceHeadings();window.aiaScriptRecommendation?.reset?.();}else if(state.proposals?.[0]?.proposal){enforceProposal(state.proposals[0].proposal,state.profile||{});persistCanonical(state.proposals[0]);window.aiaScriptRecommendation?.reset?.();}return result;};}
 
   window.aiaIpPolicy=Object.freeze({PRIMARY_GOALS,CUSTOMER_MAINLINES,RECRUITMENT_MAINLINES,SECONDARY_ONLY,normalizeGoalValue,inferPrimaryGoal,needsGoalClarification,applyPrimaryGoal,goalQuestion,syncGoalDependentQuestions,normalizedMainlines,secondaryTopics,headline,headlineAssets,subheadline,targetPortrait,advantageItems,bioAssets,bioCareerFacts,bioBody,complianceFooter,buildBios,enforceProposal,canonicalizeHistory,persistCanonical,prepareProfileGoal,dimensionLines,packDimension,pickBioEmoji,bioSemanticFamily,bioFactStrength,dedupeBioFacts});
 })();
