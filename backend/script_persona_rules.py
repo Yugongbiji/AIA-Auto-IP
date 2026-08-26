@@ -68,11 +68,10 @@ def _call_with_format_retry(original, prepared, ip_plan, source, revision):
 
 
 def install(core_module) -> None:
-    # Stable approved output must be installed before any request path can generate or read proposal history.
-    stable_runtime.install(core_module)
-    # Product prompt is loaded from prompts/ip-persona-prompt.md; do this before requests are served.
+    # Install the canonical generator first, then wrap that final generator with the stable DB-first gate.
     ip_persona_generator.install(core_module)
     xhs_formatting_contract.install(core_module)
+    stable_runtime.install(core_module)
     if getattr(core_module.deepseek_script_rewrite, "__aia_persona_contract__", False):
         return
     original = core_module.deepseek_script_rewrite
