@@ -57,8 +57,8 @@ def test_bio_visual_anchors_and_single_platform_recommendations_live_in_canonica
     assert "小红书简介 · 推荐版" in CORE
     assert "视频号 / 抖音简介 · 推荐版" in CORE
     assert "方案 A · 专业背书" not in CORE
-    assert 'proposal.bios.xiaohongshu=buildBios' in CORE.replace(' ', '')
-    assert 'proposal.bios.videoDouyin=buildBios' in CORE.replace(' ', '')
+    compact = CORE.replace(' ', '')
+    assert "proposal.bios={xiaohongshu:buildBios(p,'xhs',slogan),videoDouyin:buildBios(p,'video',slogan)}" in compact
 
 
 def test_compliance_help_keeps_question_mark_in_card_top_right():
