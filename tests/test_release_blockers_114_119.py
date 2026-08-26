@@ -77,28 +77,30 @@ def test_115_existing_nickname_advice_reuses_proposal_card_component():
     assert "proposal-card nickname-audit-card" in V29
 
 
-def test_120_124_bio_final_owner_packs_only_same_dimensions_and_drops_short_lines():
+def test_120_124_bio_final_owner_packs_only_same_dimensions_and_rebalances_valid_lines():
     assert "const BIO_PREFERRED_MIN=12" in CORE
     assert "const BIO_PREFERRED_MAX=20" in CORE
     assert "const BIO_ABSOLUTE_MAX=25" in CORE
     assert "function packDimension(items,maxLines=3)" in CORE
     pack = CORE.split("function packDimension", 1)[1].split("function bioDimensions", 1)[0]
-    assert "charWeight(candidate)>BIO_PREFERRED_MAX" in pack
-    assert "charWeight(built)>=BIO_PREFERRED_MIN" in pack
-    assert "charWeight(v)>=BIO_PREFERRED_MIN&&charWeight(v)<=BIO_ABSOLUTE_MAX" in pack
+    assert "partitionCandidates(clean,k)" in pack
+    assert "partitionScore(a)-partitionScore(b)" in pack
+    assert "charWeight(line)<=BIO_ABSOLUTE_MAX" in pack
+    assert "charWeight(line)>=BIO_PREFERRED_MIN" in pack
     dims = CORE.split("function bioDimensions", 1)[1].split("function dimensionLines", 1)[0]
     assert "const identity=[]" in dims and "advantage=[]" in dims and "value=[]" in dims
     assert "identity.push" in dims and "advantage.push" in dims and "value.push" in dims
+    assert "interests.slice(" not in dims and "honors.slice(" not in dims and "traits.slice(" not in dims
     # V10 是纯 UI，不得再二次过滤正文，否则会复发“只剩合规声明”。
     assert "sanitizeBioBlocks" not in V10
     assert "textarea.value=" not in V10
     assert "ownsBioText:false" in V10
 
 
-def test_117_summary_line_gets_next_non_repeating_emoji():
+def test_117_summary_line_gets_semantic_non_repeating_emoji():
     block = CORE.split("function buildBios", 1)[1].split("function bioAssets", 1)[0]
     assert "body=bioBody(profile,platform)" in block
-    assert "BIO_EMOJIS[body.length%BIO_EMOJIS.length]" in block
+    assert "sloganEmoji=pickBioEmoji" in block
     assert "sloganLine" in block
 
 
@@ -114,7 +116,7 @@ def test_118_123_compliance_help_keeps_question_mark_and_right_side_placement():
 
 
 def test_119_headline_rejects_mechanical_trait_and_credential_wall_templates():
-    clean = CORE.split("function cleanHeadlineCandidate", 1)[1].split("function headlineFallback", 1)[0]
+    clean = CORE.split("function cleanHeadlineCandidate", 1)[1].split("function transformationFacts", 1)[0]
     fallback = CORE.split("function headlineFallback", 1)[1].split("function headline(profile", 1)[0]
     assert "是我的标签" in clean
     assert "是我的专业底色" in clean
