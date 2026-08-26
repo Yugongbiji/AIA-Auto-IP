@@ -15,17 +15,20 @@ def test_104_no_single_character_name_slicing_without_evidence():
     assert 'filter(x=>x.length>=2)' in owner
 
 
-def test_105_peer_feedback_is_top_nickname_anchor_source():
+def test_105_peer_feedback_and_full_anchor_source_order_are_explicit():
     owner=read('web/nickname-policy-v1.js');rules=read('rules/nickname-naturalness-rules-20260825.md')
-    positions=[owner.index(x) for x in ['...peerAnchors(p)','...preferredAnchors(p)','...existingPersonAnchors(p)','...naturalNameAnchors(p)']]
+    positions=[owner.index(x) for x in ['...peerAnchors(p)','...preferredAnchors(p)','...existingPersonAnchors(p)','...englishNameAnchors(p)','...naturalNameAnchors(p)']]
     assert positions==sorted(positions)
+    assert 'function publicAnchorScore' in owner
+    peer=owner.split('function peerAnchors',1)[1].split('function preferredAnchors',1)[0]
+    assert 'b.count-a.count' in peer and 'publicAnchorScore' in peer
     assert '客户/身边人反馈中的高频真实称呼' in rules and '高频评价' in rules and '他人角色认知' in rules
 
 
 def test_106_nickname_candidates_have_naturalness_gate():
     owner=read('web/nickname-policy-v1.js');rules=read('rules/nickname-naturalness-rules-20260825.md')
     assert 'function awkward' in owner and '王一的一一世界' in rules and 'yana打网球' in rules
-    assert 'n.includes(full)&&n.includes(anchor)' in owner
+    assert 'n.includes(full)&&n.includes(a)' in owner
     assert '(打|跑|去|做|学|玩|吃|喝|逛)' in owner
     assert 'awkward(name,profile,a' in owner and 'awkward(name,profile,anchor)' in owner
 
@@ -40,7 +43,7 @@ def test_107_generic_suffixes_are_not_default_generated_routes():
 def test_existing_good_nickname_can_survive_generic_template_gate():
     owner=read('web/nickname-policy-v1.js')
     assert '{existing:true' in owner
-    assert '!GENERIC_SUFFIXES.some' in owner
+    assert '!(existing&&name===existing)&&GENERIC_SUFFIXES.some' in owner
     assert 'existingNickname' in owner
 
 
@@ -88,14 +91,16 @@ def test_112_memorable_supported_descriptor_ranks_before_bare_anchor():
     assert '有证据的鲜明修饰语可以优先于裸称呼' in prompt and '靠谱 / 专业 / 真诚' in rules
 
 
-def test_113_full_english_symbols_and_emoji_are_filtered():
+def test_113_chinese_searchability_symbols_and_full_english_fallback_are_all_enforced():
     owner=read('web/nickname-policy-v1.js');rules=read('rules/nickname-naturalness-rules-20260825.md');prompt=read('prompts/ip-persona-prompt.md')
     assert '中文可记忆、可搜索优先' in rules and 'TotoroFelix' in rules and '兔子Nici' in rules
-    assert '特殊符号' in rules and 'Emoji' in rules
+    assert '特殊符号' in rules and 'Emoji' in rules and '洢萱卍 → 洢萱' in rules
+    assert 'function cleanNicknameDisplay' in owner and 'DECORATIVE_SYMBOLS' in owner
     assert 'function normalizeSearchable' in owner and 'function fullEnglish' in owner
     safe=owner.split('function safeName',1)[1].split('function existingNickname',1)[0]
-    assert 'fullEnglish(n)||!hasChinese(n)' in safe
+    assert 'fullEnglish(n)&&!(fullEnglish(a)&&n===a)' in safe
     assert "replace(/[^\\u4e00-\\u9fa5A-Za-z0-9]/g,'')" in owner
+    assert 'function englishNameAnchors' in owner
     assert '全英文昵称原则上不作为首选' in prompt
 
 
@@ -110,11 +115,11 @@ def test_114_stranger_memory_priority_beats_plain_anchor_when_evidence_exists():
     assert '真实称呼是素材，不是最终答案' in prompt and 'DeepSeek 不拥有首选排序权' in prompt
 
 
-def test_approved_preset_order_and_ai_fallback_are_internal_only():
+def test_approved_preset_order_cleanup_and_ai_fallback_are_internal_only():
     owner=read('web/nickname-policy-v1.js')
     assert 'Array.isArray(preset.alternatives)?preset.alternatives' in owner
     assert 'Array.isArray(preset.candidates)?preset.candidates' in owner
-    assert 'const names=uniq([t(preset.primary),...alternatives.map(t)])' in owner
+    assert 'map(cleanNicknameDisplay)' in owner
     assert "if(kind==='preset')score+=100" in owner
     assert 'allowAi=p.nicknamePreset?.allowAiFallback!==false' in owner
     assert "angle:index===0?'首选推荐':'备选推荐'" in owner
