@@ -29,7 +29,14 @@ if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
   echo "ECS_TRACKED_CHANGES_END"
   fail "ECS 存在尚未同步的 tracked 修改；已输出 diff，本脚本没有 reset、没有碰数据库。"
 fi
-UNTRACKED_CODE="$(git ls-files --others --exclude-standard | grep -Ev '^(data/|\.env($|\.)|\.venv/|__pycache__/|.*\.pyc$|.*\.(xlsx|xls|sqlite3?|db|bak|backup)$)' || true)"
+LOCAL_ONLY_COMMITS="$(git rev-list --count "origin/$BRANCH..HEAD" 2>/dev/null || echo 0)"
+if [[ "$LOCAL_ONLY_COMMITS" != "0" ]]; then
+  echo "ECS_LOCAL_COMMITS_BEGIN"
+  git log --oneline --decorate "origin/$BRANCH..HEAD" || true
+  echo "ECS_LOCAL_COMMITS_END"
+  fail "ECS 存在尚未 push 的本地 commit；已停止，没有 reset、没有碰数据库。"
+fi
+UNTRACKED_CODE="$(git ls-files --others --exclude-standard | grep -Ev '^(data/|\.env($|\.)|\.venv/|\.pytest_cache/|node_modules/|playwright-report/|test-results/|__pycache__/|.*\.pyc$|.*\.(xlsx|xls|sqlite3?|db|bak|backup)$)' || true)"
 if [[ -n "$UNTRACKED_CODE" ]]; then
   echo "ECS_UNTRACKED_CODE_BEGIN"
   printf '%s\n' "$UNTRACKED_CODE"
