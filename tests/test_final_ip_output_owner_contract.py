@@ -17,34 +17,38 @@ def test_final_ip_outputs_have_only_declared_runtime_owners():
 
 
 def test_headline_is_canonical_natural_slogan_not_field_wall():
-    clean=CORE.split('function cleanHeadlineCandidate',1)[1].split('function headlineFallback',1)[0]
+    clean=CORE.split('function cleanHeadlineCandidate',1)[1].split('function transformationFacts',1)[0]
     assert "replace(/[｜|]+/g,'，')" in clean
     assert '是我的标签' in clean and '是我的专业底色' in clean
     assert '本科|硕士|博士|大专' in clean and 'MDRT|COT|TOT' in clean
+    assert '懂[\\u4e00-\\u9fa5]' in clean and '多年|长期' in clean
+    assert 'function headlineAssets' in CORE and 'PRIMARY_GOALS.RECRUITMENT' in CORE
     enforce=CORE.split('function enforceProposal',1)[1].split('function canonicalizeHistory',1)[0]
     assert 'proposal.headline=slogan' in enforce
     assert "buildBios(p,'xhs',slogan)" in enforce
     assert "buildBios(p,'video',slogan)" in enforce
 
 
-def test_bio_is_single_recommendation_with_same_dimension_line_packing():
+def test_bio_is_single_recommendation_with_same_dimension_balanced_packing():
     assert 'function packDimension(items,maxLines=3)' in CORE
     dims=CORE.split('function bioDimensions',1)[1].split('function dimensionLines',1)[0]
     assert 'const identity=[]' in dims and 'advantage=[]' in dims and 'value=[]' in dims
-    lines=CORE.split('function dimensionLines',1)[1].split('function bioBody',1)[0]
-    assert 'packDimension(d.identity)' in lines
-    assert 'packDimension(d.advantage)' in lines
-    assert 'packDimension(d.value)' in lines
+    assert 'interests.slice(' not in dims and 'honors.slice(' not in dims and 'traits.slice(' not in dims
+    lines=CORE.split('function dimensionLines',1)[1].split('function emojiCandidates',1)[0]
+    assert 'packDimension(d.identity,3)' in lines
+    assert 'packDimension(d.advantage,3)' in lines
+    assert 'packDimension(d.value,3)' in lines
     assert 'const BIO_PREFERRED_MIN=12;' in CORE
     assert 'const BIO_PREFERRED_MAX=20;' in CORE
     assert 'const BIO_ABSOLUTE_MAX=25;' in CORE
+    assert 'function bioSemanticFamily' in CORE and 'function bioFactStrength' in CORE and 'function dedupeBioFacts' in CORE
     assert "focus:'我是谁 + 我的优势 + 我能提供什么价值'" in CORE
 
 
-def test_bio_summary_uses_same_headline_with_emoji_and_fixed_footer():
+def test_bio_summary_uses_same_headline_with_semantic_emoji_and_fixed_footer():
     build=CORE.split('function buildBios',1)[1].split('function bioAssets',1)[0]
     assert 'slogan=text(headlineText)' in build
-    assert 'BIO_EMOJIS[body.length%BIO_EMOJIS.length]' in build
+    assert 'sloganEmoji=pickBioEmoji' in build
     assert 'complianceFooter(profile,platform)' in build
     assert "const XHS_DISCLAIMER='本账号所述内容为个人意见，不代表任何官方意见。';" in CORE
     assert 'agentId' not in CORE.split('function complianceFooter',1)[1].split('function buildBios',1)[0]
@@ -67,3 +71,11 @@ def test_nickname_controlled_routes_do_not_use_former_career_or_credentials():
     assert 'function regionAsset' not in NICK
     assert 'distinctiveOptions(profile,a).forEach' in NICK
     assert "add(a,'突出人物'" in NICK
+
+
+def test_nickname_owner_covers_latest_source_symbol_and_english_fallback_rules():
+    assert 'function publicAnchorScore' in NICK
+    assert 'function englishNameAnchors' in NICK
+    assert 'DECORATIVE_SYMBOLS' in NICK and 'function cleanNicknameDisplay' in NICK
+    assert 'fullEnglish(n)&&!(fullEnglish(a)&&n===a)' in NICK
+    assert '!(existing&&name===existing)&&GENERIC_SUFFIXES.some' in NICK
