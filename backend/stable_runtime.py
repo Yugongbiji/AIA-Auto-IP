@@ -22,12 +22,8 @@ def current_snapshot(core_module, agent_id: str):
     agent_id = _text(agent_id)
     if not agent_id:
         return None
-    try:
-        with core_module.database() as conn:
-            return stable_ip.current_output(conn, agent_id)
-    except Exception:
-        # Absence of the stable table/output must not break legacy users.
-        return None
+    with core_module.database() as conn:
+        return stable_ip.current_output(conn, agent_id)
 
 
 def proposal_from_snapshot(snapshot: dict | None):
