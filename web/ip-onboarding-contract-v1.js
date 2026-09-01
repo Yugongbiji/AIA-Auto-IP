@@ -10,6 +10,12 @@
     '专业理性','亲和温暖','风趣幽默','干练直接','犀利直接','生活化真诚','观点鲜明','沉稳可信','轻松有梗'
   ]);
 
+  const REQUIRED_PROFILE_FIELDS = Object.freeze([
+    'primaryGoal','city','customerGroups|recruitmentGroups','customerAges|recruitmentAges',
+    'insuranceYears','strengths','honors','education','schoolTier','overseas','contentTone',
+    'previousCareer','lifeRoles','hobbies','services','department'
+  ]);
+
   const EXPLICIT_SKIP = new Set(['跳过','不希望填写','暂不填写','不愿填写','不想填写']);
 
   function usable(value) {
@@ -18,9 +24,46 @@
     return Boolean(normalized) || EXPLICIT_SKIP.has(normalized);
   }
 
+  function listRef() {
+    if (Array.isArray(typeof questions !== 'undefined' ? questions : null)) return questions;
+    if (Array.isArray(window.questions)) return window.questions;
+    return null;
+  }
+
+  function insertBeforeDepartment(question) {
+    const list = listRef();
+    if (!list || list.some((item) => item.key === question.key)) return;
+    const departmentIndex = list.findIndex((item) => item.key === 'department');
+    list.splice(departmentIndex >= 0 ? departmentIndex : list.length, 0, question);
+  }
+
+  function ensureQuestionShape() {
+    insertBeforeDepartment({
+      key: 'previousCareer', label: '过往职业/经历',
+      ask: '你过去做过什么工作，或有哪些比较有代表性的长期经历？真实积累也可以帮助确定内容支线。可多选，也可以自己补充。',
+      chips: ['教育/教师','医疗健康','法律','财务/会计','互联网/科技','企业经营'], multiple: true, collectIfMissing: true,
+    });
+    insertBeforeDepartment({
+      key: 'lifeRoles', label: '家庭与生活身份',
+      ask: '除了保险从业者之外，你还有哪些长期身份？比如宝爸宝妈、创业者、职场人等。可多选，也可以自己补充。',
+      chips: ['宝爸','宝妈','创业者','职场人'], multiple: true, collectIfMissing: true,
+    });
+    insertBeforeDepartment({
+      key: 'hobbies', label: '个人爱好',
+      ask: '你有哪些真正愿意持续分享的爱好？可多选，也可以自己补充。',
+      chips: ['运动健身','骑行','跑步','户外','旅行','摄影','读书','美食'], multiple: true, collectIfMissing: true,
+    });
+    insertBeforeDepartment({
+      key: 'services', label: '可提供服务',
+      ask: '你目前真实可以提供哪些服务？可多选，也可以自己补充；只填写你确实能提供的内容。',
+      chips: ['保障规划','养老规划','教育规划','财富规划','理赔协助','保单检视'], multiple: true, collectIfMissing: true,
+    });
+  }
+
   function configureQuestions() {
-    if (!Array.isArray(window.questions || (typeof questions !== 'undefined' ? questions : null))) return;
-    const list = typeof questions !== 'undefined' ? questions : window.questions;
+    const list = listRef();
+    if (!list) return;
+    ensureQuestionShape();
 
     const city = list.find((item) => item.key === 'city');
     if (city) {
@@ -29,6 +72,14 @@
       city.chips = [...CITY_OPTIONS];
       city.multiple = false;
       city.collectIfMissing = true;
+    }
+
+    const education = list.find((item) => item.key === 'education');
+    if (education) {
+      education.label = '学历';
+      education.ask = '你的最高学历是什么？';
+      education.chips = ['大专','本科','硕士','博士'];
+      education.collectIfMissing = true;
     }
 
     const tone = list.find((item) => item.key === 'contentTone');
@@ -40,15 +91,33 @@
       tone.collectIfMissing = true;
     }
 
-    if (typeof labels !== 'undefined') labels.contentTone = '账号表达风格';
+    ['insuranceYears','strengths','honors','schoolTier','overseas','previousCareer','lifeRoles','hobbies','services','department'].forEach((key) => {
+      const question = list.find((item) => item.key === key);
+      if (question) question.collectIfMissing = true;
+    });
+
+    if (typeof labels !== 'undefined') {
+      labels.contentTone = '账号表达风格';
+      labels.previousCareer = '过往职业/经历';
+      labels.lifeRoles = '家庭与生活身份';
+      labels.hobbies = '个人爱好';
+      labels.services = '可提供服务';
+    }
   }
 
   function firstMissingIndex() {
-    if (!Array.isArray(questions)) return -1;
-    return questions.findIndex((question) => {
+    const list = listRef();
+    if (!list) return -1;
+    return list.findIndex((question) => {
       if (!question || question.collectIfMissing === false) return false;
       return !usable(state?.profile?.[question.key]);
     });
+  }
+
+  function missingQuestionKeys() {
+    const list = listRef();
+    if (!list) return [];
+    return list.filter((question) => question && question.collectIfMissing !== false && !usable(state?.profile?.[question.key])).map((question) => question.key);
   }
 
   configureQuestions();
@@ -69,7 +138,9 @@
   window.aiaIpOnboardingContract = Object.freeze({
     cities: CITY_OPTIONS,
     contentToneOptions: CONTENT_TONE_OPTIONS,
+    requiredProfileFields: REQUIRED_PROFILE_FIELDS,
     configureQuestions,
     firstMissingIndex,
+    missingQuestionKeys,
   });
 })();
