@@ -6,6 +6,12 @@ cd "$ROOT"
 
 log(){ printf '\n=== %s ===\n' "$1"; }
 
+log "QA dependency preflight"
+if ! python3 -m pytest --version >/dev/null 2>&1; then
+  python3 -m pip install -q -r requirements-dev.txt
+fi
+python3 -m pytest --version
+
 log "Contract / release blockers"
 python3 -m pytest -q \
   tests/test_stability_152_157_contract.py \
