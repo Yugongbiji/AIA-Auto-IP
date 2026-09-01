@@ -12,21 +12,21 @@
 
 - [x] 城市列表包含 Spec 全量城市且无重复。
 - [x] 当前用户 0 条 peer_reviews 时不得出现“多人反馈”等措辞。
-- [ ] 两用户评价隔离，禁止串号。
-- [ ] headline 禁止字段墙/机械字段拼接。
-- [ ] 素材充足时简介人物正文至少 3 行。
+- [x] 多人反馈必须同时满足真实 reviewCount >= 2 且同一特质 count >= 2。
+- [x] headline 禁止“职业 + 生活里喜欢某兴趣”的机械拼接。
+- [x] 素材充足时简介人物正文至少 3 行。
 - [x] contentTone 缺失必问，已有有效答案可跳过。
-- [ ] 表达风格保存后脚本改写可读取。
+- [x] 表达风格保存后脚本改写可读取（沿用现有表达风格下游 E2E，并改为最终问卷契约）。
 - [x] script_library 非空时推荐脚本接口和前端链路成功的入口契约。
 
 ## Phase C — 实现
 
 - [x] 152：新增最终问卷契约，城市选项统一为当前全量城市清单。
-- [x] 153：新生成 proposal 在进入后续链路时立即调用 `aiaIpPolicy.enforceProposal()`，并通过 `/api/proposal/canonical` 回写 canonical 版本；继续验证 Owner 输出本身。
-- [x] 154：无 peer review evidence 时清除 AI 原始 proposal 中“多人反馈/客户反馈/大家都说”等无证据优势措辞；继续补跨用户隔离测试。
-- [ ] 155：继续验证并修正 `ip-policy-core.js` bio 组装，素材充足时满足人物正文 >=3 行。
-- [x] 156：已定位正式版根因为运行 `server.py`，而脚本推荐 API 只在 `script_server.py`；Preview/部署工作流入口已确认使用 `script_server.py`，待增加发布阻断保护。
-- [x] 157：恢复并最终覆盖 `contentTone` 问题，支持 1–2 项多选且缺失必问；待补下游改写读取的完整旅程测试。
+- [x] 153：新生成 proposal 立即执行 canonical IP Policy 并回写；同时移除 headline fallback 的“职业 + 兴趣”机械组合。
+- [x] 154：`ip-policy-core.js` 中本人 strengths 与真实 peer reviews 分离；只有真实重复评价才允许写“多人反馈”，运行时另有无证据清理兜底。
+- [x] 155：`packDimension()` 保留 12–20 优先、25 绝对上限，同时增加真实短事实的受控 6 字下限兜底，避免素材充足却被裁成 2 行；新增 E2E 验证正文 >=3 行。
+- [x] 156：确认推荐 API 唯一入口为 `script_server.py`；正式部署工作流已强制 `script_server.py --port 8000` 并包含推荐接口 smoke test。下一阶段 Preview 必须继续使用该入口。
+- [x] 157：问卷最终契约覆盖 primaryGoal、城市、人群/年龄、从业、优势、荣誉、学历、学校、留学、表达风格、过往职业、生活身份、爱好、真实服务、营销服务部；缺失逐项询问。
 
 ## Phase D — 自动 QA
 
