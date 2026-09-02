@@ -68,10 +68,11 @@ def _call_with_format_retry(original, prepared, ip_plan, source, revision):
 
 
 def install(core_module) -> None:
-    # Install the canonical generator first, then wrap that final generator with the stable DB-first gate.
+    # Install business generators first, then initialize the canonical stable runtime owner.
     ip_persona_generator.install(core_module)
     xhs_formatting_contract.install(core_module)
     stable_runtime.install(core_module)
+    core_module.__aia_runtime_owner__ = "stable_runtime"
     if getattr(core_module.deepseek_script_rewrite, "__aia_persona_contract__", False):
         return
     original = core_module.deepseek_script_rewrite
