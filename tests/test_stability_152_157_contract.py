@@ -3,7 +3,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 INDEX = (ROOT / "web/index.html").read_text(encoding="utf-8")
 ONBOARDING = (ROOT / "web/ip-onboarding-contract-v1.js").read_text(encoding="utf-8")
-RUNTIME = (ROOT / "web/ip-runtime-contract-v1.js").read_text(encoding="utf-8")
 CORE = (ROOT / "web/ip-policy-core.js").read_text(encoding="utf-8")
 DEPLOY = (ROOT / ".github/workflows/deploy.yml").read_text(encoding="utf-8")
 SCRIPT_SERVER = (ROOT / "script_server.py").read_text(encoding="utf-8")
@@ -48,12 +47,13 @@ def test_157_content_tone_is_required_when_missing_and_affects_rewrite():
 
 def test_onboarding_contract_loads_after_legacy_rule_layers():
     assert INDEX.index("product-rules-v29.js") < INDEX.index("ip-onboarding-contract-v1.js")
-    assert INDEX.index("ip-policy-core.js") < INDEX.index("ip-runtime-contract-v1.js")
+    assert INDEX.index("ip-policy-core.js") < INDEX.index("ip-onboarding-contract-v1.js")
+    assert "ip-runtime-contract-v1.js" not in INDEX
 
 
 def test_153_new_proposals_are_canonicalized_before_reuse():
-    assert "window.aiaIpPolicy?.enforceProposal" in RUNTIME
-    assert "/api/proposal/canonical" in RUNTIME
+    assert "enforceProposal(payload.proposal" in CORE
+    assert "/api/proposal/canonical" in CORE
     assert "save_canonical_proposal" in SCRIPT_SERVER
     assert 'path == "/api/proposal/canonical"' in SCRIPT_SERVER
     assert "headlineFallback" in CORE
@@ -68,7 +68,7 @@ def test_154_peer_claims_only_come_from_real_repeated_peer_evidence():
     assert "function ownTraitFacts" in CORE
     assert "else if(ownTraits.length)add('✨','个人优势'" in CORE
     assert "if(peerTraits.length)add('💬','他人评价'" in CORE
-    assert "removeUnsupportedPeerClaims" in RUNTIME
+    assert "reviewCount<2" in CORE
 
 
 def test_155_bio_prefers_12_20_but_can_use_real_short_facts_to_reach_three_lines():

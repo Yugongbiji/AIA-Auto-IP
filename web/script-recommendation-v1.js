@@ -38,4 +38,24 @@
   function reset(){recommendationState.loaded=false;recommendationState.loading=false;recommendationState.groups=[];recommendationState.library=null;recommendationState.libraryPage=1;recommendationState.error='';}
   document.getElementById('script-detail-close')?.addEventListener('click',closeDetail);document.getElementById('script-detail-rewrite')?.addEventListener('click',()=>handoff('script'));document.getElementById('script-detail-xhs')?.addEventListener('click',()=>handoff('xhs'));
   window.aiaScriptRecommendation=Object.freeze({load:loadRecommendations,reset,openDetail,state:recommendationState});
+
+  // 脚本推荐导航由本模块自主管理，退出独立 navigation-fix 补丁层。
+  if(typeof selectTool==='function'){
+    const baseSelectTool=selectTool;
+    selectTool=function recommendationOwnerSelectTool(tool){
+      if(tool!=='recommendation'){
+        document.getElementById('script-recommendation-panel')?.classList.add('hidden');
+        return baseSelectTool(tool);
+      }
+      state.activeTool='recommendation';
+      if(typeof updateWorkspaceHeadings==='function')updateWorkspaceHeadings();
+      document.querySelectorAll('[data-tool]').forEach(button=>button.classList.toggle('active',button.dataset.tool==='recommendation'));
+      ['ip-chat-panel','planning-panel','script-panel','xhs-panel','tool-placeholder'].forEach(id=>document.getElementById(id)?.classList.add('hidden'));
+      document.getElementById('script-recommendation-panel')?.classList.remove('hidden');
+      document.getElementById('generate-button')?.classList.add('hidden');
+      document.getElementById('view-proposal')?.classList.add('hidden');
+      window.aiaFloatingUi?.syncVisibility?.();
+      loadRecommendations(true);
+    };
+  }
 })();

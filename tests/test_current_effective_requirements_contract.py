@@ -131,9 +131,10 @@ def test_script_recommendation_reads_canonical_directions_and_tracks_handoffs():
 
 def test_no_retired_dynamic_v33_revival():
     index = read("web/index.html")
-    nav = read("web/script-recommendation-navigation-fix.js")
+    recommendation = read("web/script-recommendation-v1.js")
     assert "product-integration-v33.js" not in index
-    assert "product-integration-v33.js" not in nav
+    assert "product-integration-v33.js" not in recommendation
+    assert "script-recommendation-navigation-fix.js" not in index
 
 
 def test_field_schema_treats_purpose_as_raw_and_requires_person_anchor():
