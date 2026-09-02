@@ -6,7 +6,7 @@ async function mockLookup(page, payload) {
   });
 }
 
-async function submitIdentity(page, name = '测试用户', agentId = 'A1001') {
+async function submitIdentity(page, name = '测试用户', agentId = '123456789') {
   await page.goto('/');
   await page.getByLabel('姓名').fill(name);
   await page.getByLabel('营销员编号').fill(agentId);
@@ -19,7 +19,7 @@ test.describe('AIA Auto IP 首次进入流程', () => {
     await mockLookup(page, {
       matched: true,
       profile: {
-        name: '测试用户', agentId: 'A1001', purpose: '拓客', city: '成都',
+        name: '测试用户', agentId: '123456789', primaryGoal: 'customer_acquisition', city: '成都',
         customerGroups: ['宝爸宝妈'], insuranceYears: '8', honors: ['MDRT']
       },
       history: [], proposals: [], planningHistory: [], contentPlans: [], creativeHistory: []
@@ -31,17 +31,17 @@ test.describe('AIA Auto IP 首次进入流程', () => {
     await expect(page.locator('#messages')).toContainText('你的目标客户主要处在哪些年龄段');
   });
 
-  test('登录页已经提供姓名和编号但未匹配时，先问做自媒体目的，再继续城市', async ({ page }) => {
+  test('登录页已经提供姓名和编号但未匹配时，先确认拓客或增员主目标，再继续城市', async ({ page }) => {
     await mockLookup(page, {
       matched: false,
       profile: {}, history: [], proposals: [], planningHistory: [], contentPlans: [], creativeHistory: []
     });
-    await submitIdentity(page, '新用户', 'NEW001');
+    await submitIdentity(page, '新用户', '987654321');
 
     await expect(page.locator('#messages')).toContainText(/把“你是谁”|人设定位|长期经营/);
     await expect(page.locator('#messages')).not.toContainText('先告诉我你的姓名');
-    await expect(page.locator('#messages')).toContainText('你做自媒体主要想实现什么');
-    await page.locator('#quick-replies').getByRole('button', { name: '拓客', exact: true }).click();
+    await expect(page.locator('#messages')).toContainText(/吸引潜在客户|吸引潜在增员对象|拓客.*增员/);
+    await page.locator('#quick-replies').getByRole('button', { name: '吸引潜在客户', exact: true }).click();
     await expect(page.locator('#messages')).toContainText('请补充你主要服务的城市');
   });
 
@@ -63,13 +63,14 @@ test.describe('AIA Auto IP 首次进入流程', () => {
     await mockLookup(page, {
       matched: true,
       profile: {
-        name: '完整用户', agentId: 'FULL001', purpose: '拓客', city: '成都', customerGroups: ['企业主'],
+        name: '完整用户', agentId: '111222333', primaryGoal: 'customer_acquisition', city: '成都', customerGroups: ['企业主'],
         customerAges: ['35–45 岁'], insuranceYears: '9', strengths: ['专业靠谱'], honors: ['MDRT'],
-        education: '本科', schoolTier: '985', overseas: '没有', contentTone: '专业理性', department: '成都一部'
+        education: '本科', schoolTier: '985', overseas: '没有', contentTone: '专业理性',
+        previousCareer: ['企业经营'], lifeRoles: ['职场人'], hobbies: ['读书'], services: ['保障规划'], department: '成都一部'
       },
       history: [], proposals: [], planningHistory: [], contentPlans: [], creativeHistory: []
     });
-    await submitIdentity(page, '完整用户', 'FULL001');
+    await submitIdentity(page, '完整用户', '111222333');
 
     await expect(page.locator('#messages')).not.toContainText('请补充你主要服务的城市');
     await expect(page.locator('#messages')).toContainText(/资料已经|资料已|生成/);
