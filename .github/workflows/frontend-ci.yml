@@ -14,9 +14,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  playwright:
+  contract-api:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
 
     steps:
       - name: Checkout
@@ -34,6 +34,22 @@ jobs:
         run: |
           python -m pytest -q
 
+  playwright:
+    needs: contract-api
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        project:
+          - mobile-360
+          - mobile-390
+          - desktop-chromium
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -46,12 +62,12 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run Playwright QA
-        run: npm run test:e2e
+        run: npm run test:e2e -- --project=${{ matrix.project }}
 
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.project }}
           path: playwright-report/
           retention-days: 3
