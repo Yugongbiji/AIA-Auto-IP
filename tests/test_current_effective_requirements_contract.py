@@ -168,3 +168,21 @@ def test_content_goal_boundary_uses_canonical_primary_goal_only():
     assert "原始报名字段 `purpose` 只作为目标判断输入" in boundary
     assert "必须重新询问并二选一" in boundary
     assert "不存在第三种“双主线”最终状态" in boundary
+
+
+def test_script_detail_supports_previous_and_next_article_navigation():
+    index = read("web/index.html")
+    recommendation = read("web/script-recommendation-v1.js")
+    assert 'id="script-detail-prev"' in index
+    assert 'id="script-detail-next"' in index
+    assert "function navigateDetail" in recommendation
+    assert "script-detail-prev" in recommendation
+    assert "script-detail-next" in recommendation
+
+
+def test_script_recommendation_errors_preserve_diagnostic_context():
+    recommendation = read("web/script-recommendation-v1.js")
+    assert "function diagnosticMessage" in recommendation
+    assert "脚本库接口返回" in recommendation
+    assert "推荐接口返回" in recommendation
+    assert "请刷新后重试。';" not in recommendation
