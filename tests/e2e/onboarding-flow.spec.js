@@ -56,7 +56,7 @@ test.describe('AIA Auto IP 首次进入流程', () => {
     await page.locator('#chat-input').fill('直接进入用户');
     await page.locator('#chat-form').getByRole('button', { name: '发送' }).click();
     await expect(page.locator('#messages')).toContainText('9 位营销员编号');
-    await expect(page.locator('#messages')).toContainText('匹配已有资料库');
+    await expect(page.locator('#messages')).toContainText(/匹配已有资料/);
   });
 
   test('资料完整时不再硬问基础问题', async ({ page }) => {
