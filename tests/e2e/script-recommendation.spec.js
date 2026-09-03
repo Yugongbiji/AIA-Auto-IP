@@ -63,7 +63,7 @@ test.describe('脚本推荐 V1', () => {
     await page.locator('#tool-tabs').getByRole('button', { name: /脚本推荐/ }).click();
     await expect(page.locator('#script-recommendation-panel')).toBeVisible();
     await expect(page.locator('.script-section-insurance')).toContainText('保险主线');
-    await expect(page.locator('.script-section-insurance')).toContainText('养老规划');
+    await expect(page.getByRole('button', { name: '养老政策最近有什么变化' })).toBeVisible();
     await expect(page.locator('.script-hot-badge')).toHaveText('热点');
     await expect(page.locator('.script-card-meta')).toHaveText('养老 · 政策 · 486字 · 1.9min');
     expect(requestedDirections).toContain('养老规划');
