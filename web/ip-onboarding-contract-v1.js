@@ -37,6 +37,17 @@
     list.splice(departmentIndex >= 0 ? departmentIndex : list.length, 0, question);
   }
 
+  function ensureIdentityBeforeGoal() {
+    const list = listRef();
+    if (!list) return;
+    const agentIdIndex = list.findIndex((item) => item?.key === 'agentId');
+    const goalIndex = list.findIndex((item) => item?.key === 'primaryGoal');
+    if (agentIdIndex < 0 || goalIndex < 0 || goalIndex === agentIdIndex + 1) return;
+    const [goal] = list.splice(goalIndex, 1);
+    const currentAgentIdIndex = list.findIndex((item) => item?.key === 'agentId');
+    list.splice(currentAgentIdIndex + 1, 0, goal);
+  }
+
   function ensureQuestionShape() {
     insertBeforeDepartment({
       key: 'previousCareer', label: '过往职业/经历',
@@ -64,6 +75,7 @@
     const list = listRef();
     if (!list) return;
     ensureQuestionShape();
+    ensureIdentityBeforeGoal();
 
     const city = list.find((item) => item.key === 'city');
     if (city) {
