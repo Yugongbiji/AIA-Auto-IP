@@ -184,9 +184,9 @@
     ]);
 
     addSection(body, '账号资料', [
-      ['账号优先目标', primaryGoalLabel(p.primaryGoal)], ['账号表达风格', p.contentTone],
+      ['做自媒体目的', primaryGoalLabel(p.primaryGoal)], ['账号表达风格', p.contentTone],
       ['原视频号昵称', p.videoNickname], ['原小红书昵称', p.xiaohongshuNickname || p.xhsNickname],
-      ['历史报名目的', p.purpose], ['账号运营状态', p.status], ['当前卡点', p.painpoints], ['时间投入', p.timeInvest],
+      ['账号运营状态', p.status], ['当前卡点', p.painpoints], ['时间投入', p.timeInvest],
     ]);
 
     addCustomerFeedback(body, p.peerReviewSummary);
