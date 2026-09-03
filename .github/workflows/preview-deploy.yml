@@ -7,7 +7,7 @@ on:
       branch:
         description: Development branch to deploy to Preview
         required: true
-        default: agent/ip-product-optimization-20260821
+        default: agent/aia-harness-stability-20260901
 concurrency:
   group: aia-auto-ip-preview
   cancel-in-progress: true
@@ -53,7 +53,7 @@ jobs:
             cd "$PREVIEW_DIR"
             "$PREVIEW_DIR/.venv/bin/python" - "$PROD_DIR" <<'PY'
             from pathlib import Path
-            import json, os, sqlite3, subprocess, sys
+            import json, os, sqlite3, sys
             import psycopg
             from psycopg.rows import dict_row
             import server, script_library_store
