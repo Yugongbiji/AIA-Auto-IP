@@ -6,23 +6,47 @@ async function enterGuest(page) {
   await expect(page.locator('#workspace')).toBeVisible();
 }
 
+const assetPath = (src) => String(src || '').split('?')[0];
+
 test.describe('当前最终产品集成契约', () => {
-  test('退役 V30/V31/V33 不进入真实加载链', async ({ page }) => {
+  test('退役 V30/V31/V33 不进入真实加载链，canonical owners 保持唯一', async ({ page }) => {
     await page.goto('/');
     const scripts = await page.evaluate(() => [...document.scripts].map((s) => s.getAttribute('src')).filter(Boolean));
-    expect(scripts.some((src) => /product-integration-v30|product-integration-v31|product-integration-v33/.test(src))).toBeFalsy();
-    expect(scripts).toContain('ip-policy-core.js');
-    expect(scripts).toContain('nickname-policy-v1.js');
+    const paths = scripts.map(assetPath);
+    expect(paths.some((src) => /product-integration-v30|product-integration-v31|product-integration-v33/.test(src))).toBeFalsy();
+    expect(paths).toContain('ip-policy-core.js');
+    expect(paths).toContain('nickname-policy-v1.js');
+    expect(paths).toContain('profile-float.js');
   });
 
-  test('两个悬浮入口为纯图标，不显示文字或版本号', async ({ page }) => {
+  test('我的资料悬浮入口使用当前唯一 Owner，默认只显示圆形图标', async ({ page }) => {
     await enterGuest(page);
-    const profile = page.locator('.ip-floating-profile-button');
+    const profile = page.locator('#aia-ip-owner-profile-button');
     await expect(profile).toBeVisible();
-    await expect(profile.locator('svg')).toHaveCount(1);
-    await expect(profile.locator('span')).toHaveCount(0);
-    await expect(profile).not.toContainText('我的');
+    await expect(profile).toHaveAttribute('aria-label', '我的 IP 资料');
+    await expect(profile.locator('.aia-ip-owner-icon')).toBeVisible();
+    await expect(profile.locator('.aia-ip-owner-tooltip')).toHaveCSS('opacity', '0');
+    const box = await profile.boundingBox();
+    expect(Math.abs(box.width - box.height)).toBeLessThanOrEqual(1);
     await expect(profile).not.toContainText(/V\d+/);
+    await expect(page.locator('#aia-ip-owner-proposal-button')).toBeHidden();
+  });
+
+  test('我的资料抽屉可独立打开关闭，不依赖旧 profile-panel', async ({ page }) => {
+    await enterGuest(page);
+    await page.evaluate(() => {
+      state.profile = { name: '王静', agentId: 'A001', city: '成都', primaryGoal: 'customer_acquisition', contentTone: '温暖陪伴' };
+      window.aiaFloatingUi.renderProfileDrawer();
+      window.aiaFloatingUi.sync();
+    });
+    await page.locator('#aia-ip-owner-profile-button').click();
+    const drawer = page.locator('#aia-ip-owner-profile-drawer');
+    await expect(drawer).toBeVisible();
+    await expect(drawer).toContainText('王静');
+    await expect(drawer).toContainText('拓客');
+    await expect(drawer).toContainText('温暖陪伴');
+    await page.locator('#aia-ip-owner-profile-close').click();
+    await expect(drawer).toBeHidden();
   });
 
   test('语义资料 Owner 只补空字段，保留已有真实资料', async ({ page }) => {

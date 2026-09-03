@@ -30,6 +30,12 @@
     return Array.isArray(state?.proposals) && state.proposals.length ? state.proposals[0] : null;
   }
 
+  function primaryGoalLabel(value) {
+    if (value === 'customer_acquisition') return '拓客';
+    if (value === 'recruitment') return '增员';
+    return text(value);
+  }
+
   function makeButton(id, label, icon) {
     const button = document.createElement('button');
     button.id = id;
@@ -178,8 +184,9 @@
     ]);
 
     addSection(body, '账号资料', [
+      ['做自媒体目的', primaryGoalLabel(p.primaryGoal)], ['账号表达风格', p.contentTone],
       ['原视频号昵称', p.videoNickname], ['原小红书昵称', p.xiaohongshuNickname || p.xhsNickname],
-      ['做自媒体目的', p.purpose], ['账号运营状态', p.status], ['当前卡点', p.painpoints], ['时间投入', p.timeInvest],
+      ['账号运营状态', p.status], ['当前卡点', p.painpoints], ['时间投入', p.timeInvest],
     ]);
 
     addCustomerFeedback(body, p.peerReviewSummary);

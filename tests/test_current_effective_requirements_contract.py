@@ -45,7 +45,6 @@ def test_nickname_rules_keep_people_anchor_and_reject_mechanical_templates():
     assert "function aiFallbackOptions" in owner
     assert "function safeName" in owner
     assert "GENERIC_SUFFIXES" in owner
-    # 过往职业、学历、城市、荣誉不再是新昵称生成路线。
     assert "function career(" not in owner
     assert "function educationAsset" not in owner
     assert "function achievementAsset" not in owner
@@ -131,9 +130,10 @@ def test_script_recommendation_reads_canonical_directions_and_tracks_handoffs():
 
 def test_no_retired_dynamic_v33_revival():
     index = read("web/index.html")
-    nav = read("web/script-recommendation-navigation-fix.js")
+    recommendation = read("web/script-recommendation-v1.js")
     assert "product-integration-v33.js" not in index
-    assert "product-integration-v33.js" not in nav
+    assert "product-integration-v33.js" not in recommendation
+    assert "script-recommendation-navigation-fix.js" not in index
 
 
 def test_field_schema_treats_purpose_as_raw_and_requires_person_anchor():
@@ -167,3 +167,29 @@ def test_content_goal_boundary_uses_canonical_primary_goal_only():
     assert "原始报名字段 `purpose` 只作为目标判断输入" in boundary
     assert "必须重新询问并二选一" in boundary
     assert "不存在第三种“双主线”最终状态" in boundary
+
+
+def test_script_detail_supports_previous_and_next_article_navigation():
+    index = read("web/index.html")
+    recommendation = read("web/script-recommendation-v1.js")
+    assert 'id="script-detail-prev"' in index
+    assert 'id="script-detail-next"' in index
+    assert "function navigateDetail" in recommendation
+    assert "script-detail-prev" in recommendation
+    assert "script-detail-next" in recommendation
+
+
+def test_script_recommendation_errors_preserve_diagnostic_context():
+    recommendation = read("web/script-recommendation-v1.js")
+    assert "function diagnosticMessage" in recommendation
+    assert "脚本库接口返回" in recommendation
+    assert "推荐接口返回" in recommendation
+    assert "请刷新后重试。';" not in recommendation
+
+
+def test_ip_profile_drawer_exposes_canonical_goal_and_expression_style():
+    profile = read("web/profile-float.js")
+    assert "function primaryGoalLabel" in profile
+    assert "['做自媒体目的', primaryGoalLabel(p.primaryGoal)]" in profile
+    assert "['账号表达风格', p.contentTone]" in profile
+    assert "['做自媒体目的', p.purpose]" not in profile

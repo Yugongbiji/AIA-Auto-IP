@@ -7,7 +7,7 @@ async function enterGuest(page) {
 }
 
 test.describe('V29 最终渲染契约', () => {
-  test('客户反馈必须是独立板块，旧单字段不得残留', async ({ page }) => {
+  test('客户反馈必须在当前我的资料抽屉中独立展示，旧单字段不得残留', async ({ page }) => {
     await enterGuest(page);
     await page.evaluate(() => {
       state.profile.peerReviewKeywords = '常用称呼：静姐×5；高频印象：靠谱';
@@ -22,13 +22,18 @@ test.describe('V29 最终渲染契约', () => {
       };
       renderProfile();
     });
-    await expect(page.locator('[data-peer-feedback="1"]')).toBeVisible();
-    await expect(page.locator('[data-peer-feedback="1"]')).toContainText('大家怎么称呼我');
-    await expect(page.locator('[data-peer-feedback="1"]')).toContainText('他们眼中的我');
+    await page.locator('#aia-ip-owner-profile-button').click();
+    const drawer = page.locator('#aia-ip-owner-profile-drawer');
+    await expect(drawer).toBeVisible();
+    await expect(drawer).toContainText('客户反馈');
+    await expect(drawer).toContainText('大家怎么称呼我');
+    await expect(drawer).toContainText('静姐 ×5');
+    await expect(drawer).toContainText('他们眼中的我');
+    await expect(drawer).toContainText('靠谱 ×5');
     await expect(page.locator('[data-profile-peer-review="1"]')).toHaveCount(0);
   });
 
-  test('现有昵称建议放在推荐昵称板块正上方，通用昵称原则属于整个板块', async ({ page }) => {
+  test('现有昵称建议位于推荐昵称板块正上方，通用提醒属于整个板块', async ({ page }) => {
     await enterGuest(page);
     await page.evaluate(() => {
       state.profile.name = '王静';
@@ -40,13 +45,13 @@ test.describe('V29 最终渲染契约', () => {
       window.aiaProductRulesV29.renderNicknameAuditInPlace();
     });
     const audit = page.locator('.nickname-audit-card');
-    await expect(audit).toBeVisible();
+    await expect(audit).toHaveCount(1);
     await expect(audit).not.toContainText('缺少可识别的文字主体');
-    await expect(page.locator('.nickname-general-note')).toContainText('一个昵称只保留一个称呼主体');
+    await expect(page.locator('.nickname-general-note')).toContainText('AI 推荐昵称仅供参考');
     const order = await page.evaluate(() => {
       const audit = document.querySelector('.nickname-audit-card');
       const nick = document.getElementById('nick');
-      return audit.nextElementSibling === nick;
+      return audit?.nextElementSibling === nick;
     });
     expect(order).toBeTruthy();
   });

@@ -17,7 +17,7 @@ test.describe('异步与空状态', () => {
     await expect(page.locator('#script-form').getByRole('button', { name: '开始改写' })).toBeVisible();
   });
 
-  test('AI 响应慢时必须持续显示 loading 反馈', async ({ page }) => {
+  test('AI 响应慢时必须持续显示统一 loading 反馈', async ({ page }) => {
     await page.route('**/api/script/rewrite', async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 900));
       await route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: '测试超时后的失败' }) });
@@ -28,7 +28,7 @@ test.describe('异步与空状态', () => {
     await page.locator('#script-form').getByRole('button', { name: '开始改写' }).click();
 
     await expect(page.locator('#script-save-state')).toHaveText('正在改写…');
-    await expect(page.locator('#script-messages')).toContainText('正在保留原文事实');
+    await expect(page.locator('#script-messages')).toContainText('正在改写，请稍候…');
     await expect(page.locator('#script-messages')).toContainText('改写失败：测试超时后的失败', { timeout: 4000 });
     await expect(page.locator('#script-save-state')).toHaveText('本次会话');
   });

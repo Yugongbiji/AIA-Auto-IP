@@ -3,7 +3,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 WEB = ROOT / 'web'
 
-NAV = (WEB / 'script-recommendation-navigation-fix.js').read_text(encoding='utf-8')
 RECOMMEND = (WEB / 'script-recommendation-v1.js').read_text(encoding='utf-8')
 CONTENT_VIEW = (WEB / 'product-rules-v20.js').read_text(encoding='utf-8')
 DETAIL_PAGING = (WEB / 'product-rules-v17.js').read_text(encoding='utf-8')
@@ -16,9 +15,10 @@ FLOAT = (WEB / 'profile-float.js').read_text(encoding='utf-8')
 
 def test_retired_v33_cannot_reenter_runtime_load_chain():
     assert 'product-integration-v33.js' not in INDEX
-    assert 'product-integration-v33.js' not in NAV
-    assert 'data-aia-v33' not in NAV
-    assert "script.src='product-integration-v33.js'" not in NAV.replace(' ', '')
+    assert 'product-integration-v33.js' not in RECOMMEND
+    assert 'data-aia-v33' not in RECOMMEND
+    assert "script.src='product-integration-v33.js'" not in RECOMMEND.replace(' ', '')
+    assert 'script-recommendation-navigation-fix.js' not in INDEX
 
 
 def test_script_recommendation_reads_canonical_ip_directions():

@@ -7,7 +7,7 @@ on:
       branch:
         description: Development branch to deploy to Preview
         required: true
-        default: agent/ip-product-optimization-20260821
+        default: agent/aia-harness-stability-20260901
 concurrency:
   group: aia-auto-ip-preview
   cancel-in-progress: true
@@ -18,18 +18,10 @@ jobs:
     steps:
       - name: Deploy isolated Preview to ECS
         uses: appleboy/ssh-action@v1
-        env:
-          AIA_RDS_HOST: ${{ secrets.AIA_RDS_HOST }}
-          AIA_RDS_PORT: ${{ secrets.AIA_RDS_PORT }}
-          AIA_RDS_NAME: ${{ secrets.AIA_RDS_NAME }}
-          AIA_RDS_USER: ${{ secrets.AIA_RDS_USER }}
-          AIA_RDS_PASSWORD: ${{ secrets.AIA_RDS_PASSWORD }}
-          AIA_RDS_SSLMODE: ${{ secrets.AIA_RDS_SSLMODE }}
         with:
           host: ${{ secrets.ECS_HOST }}
           username: ${{ secrets.ECS_USER }}
           key: ${{ secrets.ECS_SSH_KEY }}
-          envs: AIA_RDS_HOST,AIA_RDS_PORT,AIA_RDS_NAME,AIA_RDS_USER,AIA_RDS_PASSWORD,AIA_RDS_SSLMODE
           script: |
             set -euo pipefail
             PREVIEW_DIR=/opt/AIA-Auto-IP-preview
@@ -39,6 +31,7 @@ jobs:
             [ -n "$PREVIEW_BRANCH" ]
             systemctl is-active --quiet aia-auto-ip
             curl -fsS --retry 3 http://127.0.0.1:8000/ >/dev/null
+            [ -f "$PROD_DIR/data/persona.sqlite3" ]
             if [ ! -d "$PREVIEW_DIR/.git" ]; then ORIGIN_URL=$(git -C "$PROD_DIR" remote get-url origin); git clone "$ORIGIN_URL" "$PREVIEW_DIR"; fi
             git -C "$PREVIEW_DIR" fetch origin "$PREVIEW_BRANCH"
             git -C "$PREVIEW_DIR" checkout -B "$PREVIEW_BRANCH" "origin/$PREVIEW_BRANCH"
@@ -50,52 +43,34 @@ jobs:
             printf '\nDB_ENGINE=sqlite\n' >> "$PREVIEW_DIR/.env"
             rm -f "$PREVIEW_DIR/.env.rds"
             grep -q '^DEEPSEEK_API_KEY=' "$PREVIEW_DIR/.env"
-            cd "$PREVIEW_DIR"
-            "$PREVIEW_DIR/.venv/bin/python" - "$PROD_DIR" <<'PY'
+
+            # Freeze Preview before replacing its isolated database. Production stays online and read-only here.
+            systemctl stop aia-auto-ip-preview 2>/dev/null || true
+            mkdir -p "$PREVIEW_DIR/data"
+            "$PREVIEW_DIR/.venv/bin/python" - "$PROD_DIR/data/persona.sqlite3" "$PREVIEW_DIR/data/persona.sqlite3" <<'PY'
             from pathlib import Path
-            import json, os, sqlite3, subprocess, sys
-            import psycopg
-            from psycopg.rows import dict_row
-            import server, script_library_store
-            prod_dir=Path(sys.argv[1])
-            def envfile(p):
-                out={}
-                if p.exists():
-                    for raw in p.read_text(encoding='utf-8').splitlines():
-                        s=raw.strip()
-                        if s and not s.startswith('#') and '=' in s:
-                            k,v=s.split('=',1); out[k.strip()]=v.strip().strip('"').strip("'")
-                return out
-            prod={}; prod.update(envfile(prod_dir/'.env')); prod.update(envfile(prod_dir/'.env.rds'))
-            mapping={'DB_HOST':'AIA_RDS_HOST','DB_PORT':'AIA_RDS_PORT','DB_NAME':'AIA_RDS_NAME','DB_USER':'AIA_RDS_USER','DB_PASSWORD':'AIA_RDS_PASSWORD','DB_SSLMODE':'AIA_RDS_SSLMODE'}
-            for k,s in mapping.items():
-                if os.getenv(s,'').strip(): prod[k]=os.getenv(s).strip()
-            missing=[k for k in ['DB_HOST','DB_NAME','DB_USER','DB_PASSWORD'] if not prod.get(k)]
-            if missing: raise SystemExit('Preview baseline blocked: missing '+','.join(missing))
-            args=dict(host=prod['DB_HOST'],port=int(prod.get('DB_PORT','5432')),dbname=prod['DB_NAME'],user=prod['DB_USER'],password=prod['DB_PASSWORD'],sslmode=prod.get('DB_SSLMODE','prefer') or 'prefer',row_factory=dict_row)
-            with psycopg.connect(**args) as pg:
-                scripts=[dict(r) for r in pg.execute("SELECT batch,level1_tag,level2_tag,title_1,title_2,title_3,body,word_count,estimated_minutes,is_hot,reviewed_at,status,content_hash FROM public.script_library WHERE status='active' ORDER BY script_id").fetchall()]
-                agents=[dict(r) for r in pg.execute('SELECT agent_id,name,survey_json,imported_at FROM public.agents ORDER BY agent_id').fetchall()]
-                profiles=[dict(r) for r in pg.execute('SELECT agent_id,profile_json,updated_at FROM public.saved_profiles ORDER BY agent_id').fetchall()]
-                reviews=[dict(r) for r in pg.execute('SELECT agent_id,reviewer_nickname,relationship,traits,topics,roles,intro,imported_at FROM public.peer_reviews ORDER BY id').fetchall()]
-            if not scripts or not agents: raise SystemExit('Production baseline unexpectedly empty')
-            server.load_local_env()
-            if server.database_engine()!='sqlite': raise SystemExit('Preview safety guard failed')
-            server.initialize_database(); script_library_store.initialize_script_library(server.database,server.database_engine); script_library_store.upsert_scripts(server.database,scripts)
-            with sqlite3.connect(server.DB_PATH) as db:
-                db.execute('PRAGMA foreign_keys=ON')
-                db.execute('''CREATE TABLE IF NOT EXISTS peer_reviews (id INTEGER PRIMARY KEY AUTOINCREMENT, agent_id TEXT NOT NULL, reviewer_nickname TEXT, relationship TEXT, traits TEXT, topics TEXT, roles TEXT, intro TEXT, imported_at TEXT NOT NULL, FOREIGN KEY(agent_id) REFERENCES agents(agent_id))''')
-                db.execute('CREATE INDEX IF NOT EXISTS idx_peer_reviews_agent_id ON peer_reviews(agent_id)')
-                for r in agents:
-                    db.execute('''INSERT INTO agents(agent_id,name,survey_json,imported_at) VALUES(?,?,?,?) ON CONFLICT(agent_id) DO UPDATE SET name=excluded.name,survey_json=excluded.survey_json,imported_at=excluded.imported_at''',(str(r['agent_id']),r['name'],r['survey_json'] if isinstance(r['survey_json'],str) else json.dumps(r['survey_json'] or {},ensure_ascii=False),str(r['imported_at'])))
-                for r in profiles:
-                    db.execute('''INSERT INTO saved_profiles(agent_id,profile_json,updated_at) VALUES(?,?,?) ON CONFLICT(agent_id) DO UPDATE SET profile_json=excluded.profile_json,updated_at=excluded.updated_at''',(str(r['agent_id']),r['profile_json'] if isinstance(r['profile_json'],str) else json.dumps(r['profile_json'] or {},ensure_ascii=False),str(r['updated_at'])))
-                db.execute('DELETE FROM peer_reviews')
-                for r in reviews:
-                    db.execute('INSERT INTO peer_reviews(agent_id,reviewer_nickname,relationship,traits,topics,roles,intro,imported_at) VALUES(?,?,?,?,?,?,?,?)',(str(r['agent_id']),r['reviewer_nickname'],r['relationship'],r['traits'],r['topics'],r['roles'],r['intro'],str(r['imported_at'])))
-                db.commit()
-            print(f'Preview baseline ready: scripts={len(scripts)}, agents={len(agents)}, profiles={len(profiles)}, peer_reviews={len(reviews)}')
+            import os, sqlite3, sys
+
+            src = Path(sys.argv[1])
+            dst = Path(sys.argv[2])
+            tmp = dst.with_suffix(dst.suffix + '.tmp')
+            if not src.exists():
+                raise SystemExit(f'Production SQLite missing: {src}')
+            if tmp.exists():
+                tmp.unlink()
+            with sqlite3.connect(f'file:{src}?mode=ro', uri=True) as source, sqlite3.connect(tmp) as target:
+                source.backup(target)
+                target.execute('PRAGMA integrity_check')
+                counts = {
+                    table: target.execute(f'SELECT COUNT(*) FROM {table}').fetchone()[0]
+                    for table in ('agents','saved_profiles','peer_reviews','proposals','current_ip_outputs')
+                }
+            os.replace(tmp, dst)
+            print('Preview SQLite baseline copied from Production:', counts)
+            if counts['agents'] < 117 or counts['current_ip_outputs'] < 98:
+                raise SystemExit('Preview baseline unexpectedly older than verified Production SQLite')
             PY
+
             cat > "$PREVIEW_SERVICE" <<'UNIT'
             [Unit]
             Description=AIA Auto IP Preview

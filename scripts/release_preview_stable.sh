@@ -6,7 +6,7 @@ PREVIEW_DIR="${AIA_PREVIEW_DIR:-/opt/AIA-Auto-IP-preview}"
 SERVICE="${AIA_PREVIEW_SERVICE:-aia-auto-ip-preview}"
 PORT="${AIA_PREVIEW_PORT:-8001}"
 EXPECTED_STABLE="${AIA_EXPECTED_STABLE:-57}"
-CACHE_VERSION="20260826-release1"
+CACHE_VERSION="20260903-rc1"
 
 log(){ printf '\n[%s] %s\n' "$(date '+%F %T')" "$*"; }
 fail(){ echo "❌ $*" >&2; exit 1; }

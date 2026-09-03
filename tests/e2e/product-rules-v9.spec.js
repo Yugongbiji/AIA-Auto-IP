@@ -1,9 +1,9 @@
 const { test, expect } = require('@playwright/test');
 
-test.describe('产品规则 V9 回归', () => {
+test.describe('产品规则 V9 兼容回归', () => {
   test.beforeEach(async ({ page }) => { await page.goto('/'); });
 
-  test('匹配资料缺少自媒体目的时先问 purpose，不直接跳到城市', async ({ page }) => {
+  test('匹配资料缺少唯一主目标时先问拓客或增员，不直接跳到城市', async ({ page }) => {
     await page.evaluate(() => {
       startWorkspace({
         name: '测试用户',
@@ -13,11 +13,11 @@ test.describe('产品规则 V9 回归', () => {
       }, true, [], [], [], [], []);
     });
     const lastAssistant = page.locator('#messages .message.assistant').last();
-    await expect(lastAssistant).toContainText('你做自媒体主要想实现什么');
-    await expect(page.locator('#chat-input')).toHaveAttribute('placeholder', /做自媒体目的/);
+    await expect(lastAssistant).toContainText(/优先帮你|拓客.*增员/);
+    await expect(page.locator('#chat-input')).toHaveAttribute('placeholder', /账号优先目标/);
   });
 
-  test('已有 purpose 时跳过 purpose，继续询问下一个缺失字段', async ({ page }) => {
+  test('历史 purpose 为单一拓客目标时可标准化为 primaryGoal，并继续询问下一个缺失字段', async ({ page }) => {
     await page.evaluate(() => {
       startWorkspace({
         name: '测试用户',
@@ -28,23 +28,31 @@ test.describe('产品规则 V9 回归', () => {
     });
     const lastAssistant = page.locator('#messages .message.assistant').last();
     await expect(lastAssistant).toContainText('最希望服务哪些人群');
+    const goal = await page.evaluate(() => state.profile.primaryGoal);
+    expect(goal).toBe('customer_acquisition');
   });
 
-  test('IP 资料卡不展示生成偏好和个人介绍', async ({ page }) => {
+  test('当前我的资料展示个人介绍且不展示内部生成偏好', async ({ page }) => {
+    await page.getByRole('button', { name: '我不在名单中，直接开始' }).click();
     await page.evaluate(() => {
       state.profile = {
         name: '测试用户',
         agentId: '123456789',
-        purpose: '拓客',
+        primaryGoal: 'customer_acquisition',
         city: '成都',
         selfIntro: '这里是历史个人介绍',
         generationNotes: '昵称更活泼',
       };
       renderProfile();
     });
-    await expect(page.locator('#profile-card')).not.toContainText('生成偏好');
-    await expect(page.locator('#profile-card')).not.toContainText('个人介绍');
-    await expect(page.locator('#profile-card')).not.toContainText('自我介绍');
-    await expect(page.locator('#profile-card')).toContainText('做自媒体目的');
+    await page.locator('#aia-ip-owner-profile-button').click();
+    const drawer = page.locator('#aia-ip-owner-profile-drawer');
+    await expect(drawer).toBeVisible();
+    await expect(drawer).toContainText('个人介绍');
+    await expect(drawer).toContainText('这里是历史个人介绍');
+    await expect(drawer).toContainText('做自媒体目的');
+    await expect(drawer).toContainText('拓客');
+    await expect(drawer).not.toContainText('生成偏好');
+    await expect(drawer).not.toContainText('昵称更活泼');
   });
 });

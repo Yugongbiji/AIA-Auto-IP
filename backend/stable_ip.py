@@ -43,12 +43,6 @@ def _lines(value) -> list[str]:
 
 
 def semantic_key(text: str) -> str:
-    """Cheap deterministic semantic key for obvious duplicate facts.
-
-    This is intentionally conservative: it only collapses punctuation, common vague
-    duration words and a few equivalent suffixes. AI semantic comparison can happen
-    later, but deterministic duplicates must never overwrite stronger facts.
-    """
     value = re.sub(r"[\s｜|、，,；;：:。.!！?？（）()]+", "", str(text or "").lower())
     value = value.replace("工作经验", "经历").replace("从业经验", "经历").replace("从业经历", "经历")
     value = value.replace("长期", "").replace("多年", "")
@@ -83,9 +77,9 @@ def validate_output(output: dict) -> list[str]:
     headline = str(output.get("headline") or "").strip()
     xhs = "\n".join(_lines(output.get("xiaohongshuBio")))
     video = "\n".join(_lines(output.get("videoDouyinBio")))
-    if not who: errors.append("missing_who")
-    if not adv: errors.append("missing_advantage")
-    if not value: errors.append("missing_value")
+    # Highest 2026-09-03 rule: when truth only supports one or two person lines,
+    # preserve the sparse approved bio instead of fabricating missing dimensions.
+    if not (who or adv or value): errors.append("missing_person_content")
     if not headline: errors.append("missing_headline")
     if "｜" in headline or "|" in headline: errors.append("headline_vertical_bar")
     if any(term in "\n".join(value) for term in MECHANICAL_VALUE): errors.append("mechanical_value")
@@ -140,11 +134,6 @@ def current_output(conn, agent_id: str):
 
 
 def promote_output(conn, agent_id: str, output: dict, source: str, *, approved: bool = False) -> dict:
-    """Write immutable proposal history, then promote only when gate allows it.
-
-    Human-approved baseline can establish V1 even when score equality is irrelevant.
-    Automatic later candidates must be strictly better than the current score.
-    """
     errors = validate_output(output)
     if errors:
         return {"promoted": False, "errors": errors, "qualityScore": 0}

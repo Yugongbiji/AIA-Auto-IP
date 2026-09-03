@@ -1,9 +1,10 @@
 const { test, expect } = require('@playwright/test');
 
 const fullProfile = {
-  name: '课堂测试用户', agentId: '123456789', purpose: '拓客', city: '成都', customerGroups: ['宝爸宝妈'],
+  name: '课堂测试用户', agentId: '123456789', primaryGoal: 'customer_acquisition', city: '成都', customerGroups: ['宝爸宝妈'],
   customerAges: ['35–45 岁'], insuranceYears: '8年', strengths: ['专业靠谱'], honors: ['MDRT'],
-  education: '本科', schoolTier: '985', overseas: '没有', contentTone: '自然真实', department: '成都一部',
+  education: '本科', schoolTier: '985', overseas: '没有', contentTone: '生活化真诚', department: '成都一部',
+  previousCareer: ['企业经营'], lifeRoles: ['宝爸'], hobbies: ['骑行'], services: ['保障规划', '养老规划'],
   selfIntro: '平时喜欢骑行，也长期关注家庭规划。',
 };
 
@@ -55,9 +56,13 @@ test.describe('真实课堂连续使用回归', () => {
     await expect(page.locator('#tool-tabs [data-tool="planning"]')).toHaveCount(0);
     await expect(page.locator('#messages')).toContainText('你的专属 IP 方案', { timeout: 5000 });
     await page.locator('#messages').getByRole('button', { name: '查看 IP 方案' }).click();
-    await expect(page.locator('#proposal-content')).toContainText('懂家庭规划的成都靠谱搭子');
-    await expect(page.locator('.ip-content-strategy')).toContainText('保险专业主线');
-    await expect(page.locator('.ip-content-strategy')).toContainText('泛内容支线 · 骑行');
+    const proposal = page.locator('#proposal-content');
+    await expect(proposal).toContainText('你的个人 IP 方案');
+    await expect(proposal).toContainText('养老规划');
+    const strategy = page.locator('.ip-content-strategy');
+    await expect(strategy).toContainText('保险主线');
+    await expect(strategy).toContainText('内容支线');
+    await expect(strategy).toContainText('育儿');
     await page.locator('#proposal-close').click();
 
     await page.locator('#tool-tabs').getByRole('button', { name: /脚本改写/ }).click();

@@ -3,22 +3,46 @@ const { test, expect } = require('@playwright/test');
 test.describe('账号表达风格', () => {
   test.beforeEach(async ({ page }) => { await page.goto('/'); });
 
-  test('页面加载 V11 表达风格规则', async ({ page }) => {
-    await expect(page.locator('script[src="product-rules-v11.js"]')).toHaveCount(1);
+  test('页面最终加载问卷契约', async ({ page }) => {
+    await expect(page.locator('script[src^="ip-onboarding-contract-v1.js"]')).toHaveCount(1);
   });
 
-  test('contentTone 改为账号表达风格并支持多选', async ({ page }) => {
+  test('contentTone 使用最高有效文案、支持多选且缺失必问', async ({ page }) => {
     const style = await page.evaluate(() => {
       const question = questions.find((item) => item.key === 'contentTone');
-      return { label: labels.contentTone, ask: question.ask, chips: question.chips, multiple: question.multiple };
+      return {
+        label: labels.contentTone,
+        ask: question.ask,
+        chips: question.chips,
+        multiple: question.multiple,
+        collectIfMissing: question.collectIfMissing,
+      };
     });
     expect(style.label).toBe('账号表达风格');
     expect(style.ask).toContain('内容说起话来是什么感觉');
     expect(style.ask).toContain('1～2 个');
+    expect(style.ask).toContain('影响后续的脚本改写风格');
     expect(style.multiple).toBe(true);
-    expect(style.chips).toEqual(expect.arrayContaining(['专业理性', '亲和温暖', '风趣幽默', '干练直接', '自然真实', '观点鲜明', '沉稳可信', '犀利敢说']));
-    expect(style.chips).not.toContain('生活化真诚');
-    expect(style.chips).not.toContain('轻松有梗');
+    expect(style.collectIfMissing).toBe(true);
+    expect(style.chips).toEqual(expect.arrayContaining([
+      '专业理性', '亲和温暖', '风趣幽默', '干练直接', '犀利直接',
+      '生活化真诚', '观点鲜明', '沉稳可信', '轻松有梗',
+    ]));
+  });
+
+  test('已有资料但 contentTone 缺失时仍定位到该缺失问题', async ({ page }) => {
+    const result = await page.evaluate(() => {
+      const original = state.profile;
+      state.profile = {};
+      questions.forEach((question) => {
+        if (question.key !== 'contentTone') state.profile[question.key] = '已填写';
+      });
+      const index = window.aiaIpOnboardingContract.firstMissingIndex();
+      const key = index >= 0 ? questions[index].key : '';
+      state.profile = original;
+      return { index, key };
+    });
+    expect(result.key).toBe('contentTone');
   });
 
   test('普通题材正常带入已选表达风格', async ({ page }) => {
@@ -66,17 +90,14 @@ test.describe('账号表达风格', () => {
     expect(result.guide).toContain('犀利只用于澄清误区');
   });
 
-  test('旧版风格值自动兼容到新风格名称', async ({ page }) => {
+  test('旧版风格值仍可兼容进入脚本改写', async ({ page }) => {
     await page.evaluate(() => {
       window.fetch = () => new Promise(() => {});
       state.profile = { contentTone: '生活化真诚、轻松有梗' };
       runScriptRewrite('这是一个普通生活话题。');
     });
     const guide = await page.evaluate(() => state.profile.scriptStyleGuide);
-    expect(guide).toContain('自然真实');
-    expect(guide).toContain('风趣幽默');
-    expect(guide).not.toContain('生活化真诚');
-    expect(guide).not.toContain('轻松有梗');
+    expect(guide).toBeTruthy();
   });
 
   test('没有确认表达风格时不生成内部风格指令', async ({ page }) => {
