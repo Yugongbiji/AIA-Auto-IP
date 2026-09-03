@@ -1,7 +1,7 @@
 const { test, expect } = require('@playwright/test');
 
 test.describe('脚本推荐 V1', () => {
-  test('读取 IP 内容方向并可从详情一键带入脚本改写', async ({ page }) => {
+  test('读取 canonical IP 内容方向并可从详情一键带入脚本改写', async ({ page }) => {
     let requestedDirections = [];
     const activityEvents = [];
 
@@ -41,13 +41,29 @@ test.describe('脚本推荐 V1', () => {
     await page.goto('/');
     await page.getByRole('button', { name: '我不在名单中，直接开始' }).click();
     await page.evaluate(() => {
-      state.profile = { purpose: '拓客', customerGroups: ['宝爸宝妈'], selfIntro: '长期关注养老规划' };
-      state.proposals = [{ proposal: { headline: '家庭规划顾问', subheadline: '把复杂问题讲清楚', tags: ['养老', '家庭', '专业'], advantages: [] } }];
+      state.profile = {
+        primaryGoal: 'customer_acquisition',
+        customerGroups: ['宝爸宝妈'],
+        services: ['养老规划'],
+        hobbies: ['骑行'],
+        selfIntro: '长期关注养老规划，也喜欢骑行',
+      };
+      state.proposals = [{ proposal: {
+        primaryGoal: 'customer_acquisition',
+        headline: '家庭规划顾问',
+        subheadline: '把复杂问题讲清楚',
+        tags: ['养老', '家庭', '专业'],
+        advantages: [],
+        contentMainline: ['养老规划'],
+        secondaryContent: ['骑行'],
+        secondaryContentSource: '个人爱好',
+      } }];
     });
 
     await page.locator('#tool-tabs').getByRole('button', { name: /脚本推荐/ }).click();
     await expect(page.locator('#script-recommendation-panel')).toBeVisible();
-    await expect(page.locator('.script-direction-section')).toContainText('养老规划');
+    await expect(page.locator('.script-section-insurance')).toContainText('保险主线');
+    await expect(page.locator('.script-section-insurance')).toContainText('养老规划');
     await expect(page.locator('.script-hot-badge')).toHaveText('热点');
     await expect(page.locator('.script-card-meta')).toHaveText('养老 · 政策 · 486字 · 1.9min');
     expect(requestedDirections).toContain('养老规划');
