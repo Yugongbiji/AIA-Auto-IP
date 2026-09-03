@@ -85,6 +85,16 @@ def test_bio_latest_rules_use_one_final_recommendation_and_same_dimension_packin
     assert "营销服务部：${department||'待补充'}" in core
 
 
+def test_bio_copy_renderer_enforces_canonical_footer_and_never_uses_agent_id_as_license():
+    app = read("web/app.js")
+    assert "function canonicalBioLines" in app
+    assert "本账号所述内容为个人意见，不代表任何官方意见。" in app
+    assert "本账号上所陈述或表达的内容仅为我个人意见，并不代表友邦人寿的意见" in app
+    assert "执业证编号：${license || '待补充'}" in app
+    assert "state.profile.agentId" not in app.split("function canonicalBioLines", 1)[1].split("function addCopyBlock", 1)[0]
+    assert "const lines = canonicalBioLines" in app
+
+
 def test_bio_fact_boundary_and_customer_feedback_are_not_ai_explanations():
     core = read("web/ip-policy-core.js")
     bio_rules = read("docs/简介受控词库与模板-V1-20260824.md")
