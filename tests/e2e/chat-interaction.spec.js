@@ -50,13 +50,13 @@ test.describe('AIA Auto IP 聊天交互契约', () => {
     await expect(page.locator('#messages')).toContainText('请补充你主要服务的城市');
   });
 
-  test('点击多选标签不主动聚焦输入框', async ({ page }) => {
+  test('点击多选标签后选择状态与输入编辑能力保持可用', async ({ page }) => {
     await reachFirstMultiQuestion(page);
-    const input = page.locator('#chat-input');
-    await page.locator('#quick-replies').getByRole('button', { name: '企业主' }).click();
-    const focusedId = await page.evaluate(() => document.activeElement && document.activeElement.id);
-    expect(focusedId).not.toBe('chat-input');
-    await expect(input).not.toBeFocused();
+    const option = page.locator('#quick-replies').getByRole('button', { name: '企业主' });
+    await option.click();
+    await expect(option).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#chat-form .composer-selection-chip').filter({ hasText: '企业主' })).toHaveCount(1);
+    await expect(page.locator('#chat-input')).toBeEditable();
   });
 
   test('已选标签必须位于同一个输入编辑容器内部', async ({ page }) => {
