@@ -190,5 +190,6 @@ def test_script_recommendation_errors_preserve_diagnostic_context():
 def test_ip_profile_drawer_exposes_canonical_goal_and_expression_style():
     profile = read("web/profile-float.js")
     assert "function primaryGoalLabel" in profile
-    assert "['账号优先目标', primaryGoalLabel(p.primaryGoal)]" in profile
+    assert "['做自媒体目的', primaryGoalLabel(p.primaryGoal)]" in profile
     assert "['账号表达风格', p.contentTone]" in profile
+    assert "['做自媒体目的', p.purpose]" not in profile
