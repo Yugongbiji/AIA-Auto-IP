@@ -45,7 +45,6 @@ def test_nickname_rules_keep_people_anchor_and_reject_mechanical_templates():
     assert "function aiFallbackOptions" in owner
     assert "function safeName" in owner
     assert "GENERIC_SUFFIXES" in owner
-    # 过往职业、学历、城市、荣誉不再是新昵称生成路线。
     assert "function career(" not in owner
     assert "function educationAsset" not in owner
     assert "function achievementAsset" not in owner
@@ -186,3 +185,10 @@ def test_script_recommendation_errors_preserve_diagnostic_context():
     assert "脚本库接口返回" in recommendation
     assert "推荐接口返回" in recommendation
     assert "请刷新后重试。';" not in recommendation
+
+
+def test_ip_profile_drawer_exposes_canonical_goal_and_expression_style():
+    profile = read("web/profile-float.js")
+    assert "function primaryGoalLabel" in profile
+    assert "['账号优先目标', primaryGoalLabel(p.primaryGoal)]" in profile
+    assert "['账号表达风格', p.contentTone]" in profile
