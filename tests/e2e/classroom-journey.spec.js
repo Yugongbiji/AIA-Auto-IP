@@ -1,9 +1,10 @@
 const { test, expect } = require('@playwright/test');
 
 const fullProfile = {
-  name: '课堂测试用户', agentId: '123456789', purpose: '拓客', city: '成都', customerGroups: ['宝爸宝妈'],
+  name: '课堂测试用户', agentId: '123456789', primaryGoal: 'customer_acquisition', city: '成都', customerGroups: ['宝爸宝妈'],
   customerAges: ['35–45 岁'], insuranceYears: '8年', strengths: ['专业靠谱'], honors: ['MDRT'],
-  education: '本科', schoolTier: '985', overseas: '没有', contentTone: '自然真实', department: '成都一部',
+  education: '本科', schoolTier: '985', overseas: '没有', contentTone: '生活化真诚', department: '成都一部',
+  previousCareer: ['企业经营'], lifeRoles: ['宝爸'], hobbies: ['骑行'], services: ['保障规划', '养老规划'],
   selfIntro: '平时喜欢骑行，也长期关注家庭规划。',
 };
 
