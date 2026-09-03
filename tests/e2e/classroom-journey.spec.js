@@ -56,9 +56,13 @@ test.describe('真实课堂连续使用回归', () => {
     await expect(page.locator('#tool-tabs [data-tool="planning"]')).toHaveCount(0);
     await expect(page.locator('#messages')).toContainText('你的专属 IP 方案', { timeout: 5000 });
     await page.locator('#messages').getByRole('button', { name: '查看 IP 方案' }).click();
-    await expect(page.locator('#proposal-content')).toContainText('懂家庭规划的成都靠谱搭子');
-    await expect(page.locator('.ip-content-strategy')).toContainText('保险专业主线');
-    await expect(page.locator('.ip-content-strategy')).toContainText('泛内容支线 · 骑行');
+    const proposal = page.locator('#proposal-content');
+    await expect(proposal).toContainText('你的个人 IP 方案');
+    await expect(proposal).toContainText('养老规划');
+    const strategy = page.locator('.ip-content-strategy');
+    await expect(strategy).toContainText('保险主线');
+    await expect(strategy).toContainText('内容支线');
+    await expect(strategy).toContainText('育儿');
     await page.locator('#proposal-close').click();
 
     await page.locator('#tool-tabs').getByRole('button', { name: /脚本改写/ }).click();
