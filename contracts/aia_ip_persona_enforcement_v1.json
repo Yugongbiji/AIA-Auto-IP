@@ -1,0 +1,771 @@
+{
+  "schemaVersion": 1,
+  "meaning": "Harness V1 enforcement inventory; pending is explicit and must never be interpreted as PASS.",
+  "summary": {
+    "total": 152,
+    "enforcedV1": 11,
+    "pendingV1": 141
+  },
+  "rules": {
+    "GOV-001": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "GOV-002": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "GOV-003": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "GOV-004": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "GOV-005": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "GOV-006": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "GOV-007": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "DATA-001": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "DATA-002": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "DATA-003": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "DATA-004": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "DATA-005": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "DATA-006": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "DATA-007": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "DATA-008": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "DATA-009": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "DATA-010": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "DATA-011": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "DATA-012": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "DATA-013": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "DATA-014": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "DATA-015": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "DATA-016": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "DATA-017": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "DATA-018": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "DATA-019": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "DATA-020": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "EVID-001": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "EVID-002": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "EVID-003": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "EVID-004": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "EVID-005": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "EVID-006": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "EVID-007": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "EVID-008": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "EVID-009": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "STABLE-001": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "STABLE-002": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "STABLE-003": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "STABLE-004": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "STABLE-005": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "STABLE-006": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "STABLE-007": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "STABLE-008": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "STABLE-009": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "STABLE-010": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "STABLE-011": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "NICK-001": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "NICK-002": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "NICK-003": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "NICK-004": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "NICK-005": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "NICK-006": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "NICK-007": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "NICK-008": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "NICK-009": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "NICK-010": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "NICK-011": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "NICK-012": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "NICK-013": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "NICK-014": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "NICK-015": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "NICK-016": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "NICK-017": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "NICK-018": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "NICK-019": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "NICK-020": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "NICK-021": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "NICK-022": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "NICK-023": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "NICK-024": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "NICK-025": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "NICK-026": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "NICK-027": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "NICK-028": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "NICK-029": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "NICK-030": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "HEAD-001": {
+      "status": "enforced-v1",
+      "owner": "backend/persona_contract.py",
+      "assertion": "missing headline"
+    },
+    "HEAD-002": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "HEAD-003": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "HEAD-004": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "HEAD-005": {
+      "status": "enforced-v1",
+      "owner": "backend/persona_contract.py",
+      "assertion": "vertical bar / agent-id anchor"
+    },
+    "HEAD-006": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "HEAD-007": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "HEAD-008": {
+      "status": "enforced-v1",
+      "owner": "backend/persona_contract.py",
+      "assertion": "canonical headline placement"
+    },
+    "HEAD-009": {
+      "status": "enforced-v1",
+      "owner": "backend/persona_contract.py",
+      "assertion": "headline XHS gate"
+    },
+    "HEAD-010": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "HEAD-011": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "HEAD-012": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "HEAD-013": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "BIO-001": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "BIO-002": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "BIO-003": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "BIO-004": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "BIO-005": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "BIO-006": {
+      "status": "enforced-v1",
+      "owner": "backend/persona_contract.py",
+      "assertion": "forbidden peer-review source prefixes"
+    },
+    "BIO-007": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "BIO-008": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "BIO-009": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "BIO-010": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "BIO-011": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "BIO-012": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "BIO-013": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "BIO-014": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "BIO-015": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "BIO-016": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "BIO-017": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "COMP-001": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "COMP-002": {
+      "status": "enforced-v1",
+      "owner": "backend/persona_contract.py",
+      "assertion": "XHS body sensitive/direct-contact gate"
+    },
+    "COMP-003": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "COMP-004": {
+      "status": "enforced-v1",
+      "owner": "backend/persona_contract.py",
+      "assertion": "exact XHS final footer"
+    },
+    "COMP-005": {
+      "status": "enforced-v1",
+      "owner": "backend/persona_contract.py",
+      "assertion": "exact video footer structure"
+    },
+    "COMP-006": {
+      "status": "enforced-v1",
+      "owner": "backend/persona_contract.py",
+      "assertion": "agentId cannot be license"
+    },
+    "COMP-007": {
+      "status": "enforced-v1",
+      "owner": "backend/persona_contract.py",
+      "assertion": "Production placeholders blocked"
+    },
+    "COMP-008": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "COMP-009": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "COMP-010": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "UI-001": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "UI-002": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "UI-003": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "UI-004": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "UI-005": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "UI-006": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "UI-007": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "UI-008": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "UI-009": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "UI-010": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "UI-011": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "UI-012": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "UI-013": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "UI-014": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "CONTENT-001": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "CONTENT-002": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "CONTENT-003": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "CONTENT-004": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "CONTENT-005": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "CONTENT-006": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "CONTENT-007": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "CONTENT-008": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "CONTENT-009": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "ENG-001": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "ENG-002": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "ENG-003": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "ENG-004": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "ENG-005": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "ENG-006": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "ENG-007": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "ACC-001": {
+      "status": "enforced-v1",
+      "owner": "tests/test_persona_contract_v1.py",
+      "assertion": "deterministic contract regression slice"
+    },
+    "ACC-002": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "ACC-003": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "ACC-004": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    },
+    "ACC-005": {
+      "status": "pending-v1",
+      "owner": null,
+      "assertion": null
+    }
+  }
+}
