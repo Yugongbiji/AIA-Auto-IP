@@ -20,3 +20,12 @@ def test_import_harness_is_non_production_by_default():
     assert contract["policy"]["productionMutation"] is False
     assert contract["importHarnessV1"]["productionWrite"]=="disabled"
     assert contract["importHarnessV1"]["releaseBehavior"]=="fail_closed"
+
+
+def test_every_prd_rule_has_explicit_enforcement_status():
+    contract=json.loads((ROOT/"contracts/aia_ip_persona_contract_v1.json").read_text(encoding="utf-8"))
+    enforcement=json.loads((ROOT/"contracts/aia_ip_persona_enforcement_v1.json").read_text(encoding="utf-8"))
+    expected={x for s in contract["scopes"].values() for x in s["ids"]}
+    assert set(enforcement["rules"])==expected
+    assert all(v["status"] in {"enforced-v1","pending-v1"} for v in enforcement["rules"].values())
+    assert all(v["owner"] for v in enforcement["rules"].values() if v["status"]=="enforced-v1")
