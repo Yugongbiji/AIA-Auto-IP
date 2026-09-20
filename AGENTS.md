@@ -10,11 +10,11 @@
 
 开发前必须先读取并遵守：
 
-1. `docs/product/CURRENT_EFFECTIVE_REQUIREMENTS_LEDGER_20260825.md`
-2. 对应专项规则与审计文件，例如 `docs/product/FINAL_OUTPUT_RULE_AUDIT_20260826.md`
-3. 当前 OpenSpec change 下的 spec/design/tasks
+1. `docs/product/AIA_IP_PERSONA_PRD_V1.md`（IP 人设子系统唯一产品事实源；冻结版本由 `contracts/aia_ip_persona_contract_v1.json` 锁定）
+2. 当前 OpenSpec change 下的 spec/design/tasks；不得与冻结 PRD 冲突
+3. 对应专项审计/历史规则文件仅用于追溯和发现遗漏，不拥有当前规则权威
 4. 未冲突的历史 baseline
-5. 当前代码只能作为实现现状，不得反推或覆盖最高有效产品规则
+5. 当前代码、Prompt、Validator 只能作为实现现状，不得反推或覆盖冻结 PRD
 
 若规则冲突，以更高优先级、更晚确认且明确覆盖旧规则的文档为准。
 
@@ -49,7 +49,7 @@
 2. **Playwright 用户旅程**：登录 → IP资料 → 缺失项询问 → IP方案 → 脚本推荐 → 脚本改写 → 小红书排版。
 3. **UI/视觉回归**：关键入口、抽屉/弹窗、响应式、错误态和历史已验收交互。
 
-已确认的业务规则必须尽量变成自动化 contract；不得只写在 Markdown 里。
+已确认的业务规则必须进入机器 Contract；IP 人设规则先执行 `python tools/aia_prd_contract_check.py`，任何 PRD Rule ID 缺失、未知、重复或冻结 PRD 漂移都必须 fail closed。不得只写在 Markdown 里。
 
 ## 5. 产品规则 Owner
 
