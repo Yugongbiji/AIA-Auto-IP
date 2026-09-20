@@ -3,20 +3,7 @@
 from __future__ import annotations
 import argparse, json, sys
 from pathlib import Path
-from backend.stable_ip import validate_output
-
-ERROR_RULES={
- "missing_person_content":["BIO-001","BIO-010"],
- "missing_headline":["HEAD-001"],
- "headline_vertical_bar":["HEAD-005"],
- "mechanical_value":["BIO-001","BIO-002"],
- "isolated_career_value":["BIO-001","BIO-002"],
- "xhs_compliance":["COMP-002","HEAD-009"],
- "xhs_headline_drift":["HEAD-008","BIO-009"],
- "video_headline_drift":["HEAD-008","BIO-009"],
- "xhs_footer":["COMP-004"],
- "video_footer":["COMP-005"],
-}
+from backend.persona_contract import validate_output
 
 def ids(items):
     out=[]
@@ -37,9 +24,9 @@ def main():
     skipped=data.get("skippedReviews") or []
     invalid={}
     for aid,out in stable.items():
-        errs=validate_output(out)
+        errs=validate_output(out,agent_id=aid,production=False)
         if errs:
-            invalid[aid]=[{"error":e,"ruleIds":ERROR_RULES.get(e,["ACC-001"])} for e in errs]
+            invalid[aid]=errs
     duplicate_roster=sorted({x for x in roster if roster.count(x)>1})
     skipped_ids=ids(skipped)
     unmatched_created=sorted(set(skipped_ids)&set(roster))
