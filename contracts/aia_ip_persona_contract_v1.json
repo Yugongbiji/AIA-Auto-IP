@@ -1,0 +1,242 @@
+{
+  "schemaVersion": 1,
+  "prd": {
+    "path": "docs/product/AIA_IP_PERSONA_PRD_V1.md",
+    "frozenCommit": "c0255a6467e9deaa5daf1c522ab3cecdb603063d",
+    "gitBlobSha": "6cac1ca714ac7fe72ddc1796aed3a1d43e55fdd6"
+  },
+  "policy": {
+    "unknownRule": "block",
+    "missingContractRule": "block",
+    "productionMutation": false
+  },
+  "scopes": {
+    "governance": {
+      "mode": "process",
+      "ids": [
+        "GOV-001",
+        "GOV-002",
+        "GOV-003",
+        "GOV-004",
+        "GOV-005",
+        "GOV-006",
+        "GOV-007"
+      ]
+    },
+    "data": {
+      "mode": "mixed",
+      "ids": [
+        "DATA-001",
+        "DATA-002",
+        "DATA-003",
+        "DATA-004",
+        "DATA-005",
+        "DATA-006",
+        "DATA-007",
+        "DATA-008",
+        "DATA-009",
+        "DATA-010",
+        "DATA-011",
+        "DATA-012",
+        "DATA-013",
+        "DATA-014",
+        "DATA-015",
+        "DATA-016",
+        "DATA-017",
+        "DATA-018",
+        "DATA-019",
+        "DATA-020"
+      ]
+    },
+    "evidence": {
+      "mode": "mixed",
+      "ids": [
+        "EVID-001",
+        "EVID-002",
+        "EVID-003",
+        "EVID-004",
+        "EVID-005",
+        "EVID-006",
+        "EVID-007",
+        "EVID-008",
+        "EVID-009"
+      ]
+    },
+    "stable": {
+      "mode": "deterministic",
+      "ids": [
+        "STABLE-001",
+        "STABLE-002",
+        "STABLE-003",
+        "STABLE-004",
+        "STABLE-005",
+        "STABLE-006",
+        "STABLE-007",
+        "STABLE-008",
+        "STABLE-009",
+        "STABLE-010",
+        "STABLE-011"
+      ]
+    },
+    "nickname": {
+      "mode": "mixed",
+      "ids": [
+        "NICK-001",
+        "NICK-002",
+        "NICK-003",
+        "NICK-004",
+        "NICK-005",
+        "NICK-006",
+        "NICK-007",
+        "NICK-008",
+        "NICK-009",
+        "NICK-010",
+        "NICK-011",
+        "NICK-012",
+        "NICK-013",
+        "NICK-014",
+        "NICK-015",
+        "NICK-016",
+        "NICK-017",
+        "NICK-018",
+        "NICK-019",
+        "NICK-020",
+        "NICK-021",
+        "NICK-022",
+        "NICK-023",
+        "NICK-024",
+        "NICK-025",
+        "NICK-026",
+        "NICK-027",
+        "NICK-028",
+        "NICK-029",
+        "NICK-030"
+      ]
+    },
+    "headline": {
+      "mode": "mixed",
+      "ids": [
+        "HEAD-001",
+        "HEAD-002",
+        "HEAD-003",
+        "HEAD-004",
+        "HEAD-005",
+        "HEAD-006",
+        "HEAD-007",
+        "HEAD-008",
+        "HEAD-009",
+        "HEAD-010",
+        "HEAD-011",
+        "HEAD-012",
+        "HEAD-013"
+      ]
+    },
+    "bio": {
+      "mode": "mixed",
+      "ids": [
+        "BIO-001",
+        "BIO-002",
+        "BIO-003",
+        "BIO-004",
+        "BIO-005",
+        "BIO-006",
+        "BIO-007",
+        "BIO-008",
+        "BIO-009",
+        "BIO-010",
+        "BIO-011",
+        "BIO-012",
+        "BIO-013",
+        "BIO-014",
+        "BIO-015",
+        "BIO-016",
+        "BIO-017"
+      ]
+    },
+    "compliance": {
+      "mode": "deterministic",
+      "ids": [
+        "COMP-001",
+        "COMP-002",
+        "COMP-003",
+        "COMP-004",
+        "COMP-005",
+        "COMP-006",
+        "COMP-007",
+        "COMP-008",
+        "COMP-009",
+        "COMP-010"
+      ]
+    },
+    "ui": {
+      "mode": "journey",
+      "ids": [
+        "UI-001",
+        "UI-002",
+        "UI-003",
+        "UI-004",
+        "UI-005",
+        "UI-006",
+        "UI-007",
+        "UI-008",
+        "UI-009",
+        "UI-010",
+        "UI-011",
+        "UI-012",
+        "UI-013",
+        "UI-014"
+      ]
+    },
+    "content": {
+      "mode": "mixed",
+      "ids": [
+        "CONTENT-001",
+        "CONTENT-002",
+        "CONTENT-003",
+        "CONTENT-004",
+        "CONTENT-005",
+        "CONTENT-006",
+        "CONTENT-007",
+        "CONTENT-008",
+        "CONTENT-009"
+      ]
+    },
+    "engine": {
+      "mode": "architecture",
+      "ids": [
+        "ENG-001",
+        "ENG-002",
+        "ENG-003",
+        "ENG-004",
+        "ENG-005",
+        "ENG-006",
+        "ENG-007"
+      ]
+    },
+    "acceptance": {
+      "mode": "test",
+      "ids": [
+        "ACC-001",
+        "ACC-002",
+        "ACC-003",
+        "ACC-004",
+        "ACC-005"
+      ]
+    }
+  },
+  "importHarnessV1": {
+    "requiredScopes": [
+      "data",
+      "evidence",
+      "stable",
+      "nickname",
+      "headline",
+      "bio",
+      "compliance",
+      "engine",
+      "acceptance"
+    ],
+    "releaseBehavior": "fail_closed",
+    "productionWrite": "disabled"
+  }
+}
