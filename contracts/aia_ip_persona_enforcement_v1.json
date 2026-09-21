@@ -3,8 +3,8 @@
   "meaning": "Harness V1 enforcement inventory; pending is explicit and must never be interpreted as PASS.",
   "summary": {
     "total": 152,
-    "enforcedV1": 11,
-    "pendingV1": 141
+    "enforcedV1": 27,
+    "pendingV1": 125
   },
   "rules": {
     "GOV-001": {
@@ -53,19 +53,19 @@
       "assertion": null
     },
     "DATA-003": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "enforced-v1",
+      "owner": "backend/import_contract.py",
+      "assertion": "self-media performance excluded from generated persona output"
     },
     "DATA-004": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "enforced-v1",
+      "owner": "backend/import_contract.py",
+      "assertion": "primaryGoal restricted to two canonical values"
     },
     "DATA-005": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "enforced-v1",
+      "owner": "backend/import_contract.py",
+      "assertion": "peer-review aggregates cannot live in first-party facts"
     },
     "DATA-006": {
       "status": "pending-v1",
@@ -98,9 +98,9 @@
       "assertion": null
     },
     "DATA-012": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "enforced-v1",
+      "owner": "backend/import_contract.py",
+      "assertion": "agentId exactly 9 digits and never license via persona gate"
     },
     "DATA-013": {
       "status": "pending-v1",
@@ -138,9 +138,9 @@
       "assertion": null
     },
     "DATA-020": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "enforced-v1",
+      "owner": "backend/import_contract.py",
+      "assertion": "unmatched reviews cannot enter matched roster path"
     },
     "EVID-001": {
       "status": "pending-v1",
@@ -168,9 +168,9 @@
       "assertion": null
     },
     "EVID-006": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "enforced-v1",
+      "owner": "backend/import_contract.py",
+      "assertion": "known internal jargon blocked from persona output"
     },
     "EVID-007": {
       "status": "pending-v1",
@@ -198,9 +198,9 @@
       "assertion": null
     },
     "STABLE-003": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "enforced-v1",
+      "owner": "backend/import_contract.py",
+      "assertion": "package cannot overwrite/delete proposal history"
     },
     "STABLE-004": {
       "status": "pending-v1",
@@ -208,9 +208,9 @@
       "assertion": null
     },
     "STABLE-005": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "enforced-v1",
+      "owner": "backend/import_contract.py",
+      "assertion": "preflight cannot directly overwrite current output or write Production"
     },
     "STABLE-006": {
       "status": "pending-v1",
@@ -418,9 +418,9 @@
       "assertion": "vertical bar / agent-id anchor"
     },
     "HEAD-006": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "enforced-v1",
+      "owner": "backend/persona_contract.py",
+      "assertion": "known frozen mechanical headline phrases blocked"
     },
     "HEAD-007": {
       "status": "pending-v1",
@@ -488,9 +488,9 @@
       "assertion": "forbidden peer-review source prefixes"
     },
     "BIO-007": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "enforced-v1",
+      "owner": "backend/persona_contract.py",
+      "assertion": "structured service item hard max width 6"
     },
     "BIO-008": {
       "status": "pending-v1",
@@ -498,19 +498,19 @@
       "assertion": null
     },
     "BIO-009": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "enforced-v1",
+      "owner": "backend/persona_contract.py",
+      "assertion": "body → canonical headline → exact footer structure"
     },
     "BIO-010": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "enforced-v1",
+      "owner": "backend/persona_contract.py",
+      "assertion": "three-line default with explicit evidence-insufficient exception"
     },
     "BIO-011": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "enforced-v1",
+      "owner": "backend/persona_contract.py",
+      "assertion": "body line absolute width 25 gate"
     },
     "BIO-012": {
       "status": "pending-v1",
@@ -528,9 +528,9 @@
       "assertion": null
     },
     "BIO-015": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "enforced-v1",
+      "owner": "backend/persona_contract.py",
+      "assertion": "complete platform bio 100 Chinese-equivalent width gate"
     },
     "BIO-016": {
       "status": "pending-v1",
@@ -553,9 +553,9 @@
       "assertion": "XHS body sensitive/direct-contact gate"
     },
     "COMP-003": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "enforced-v1",
+      "owner": "backend/persona_contract.py",
+      "assertion": "XHS license number forbidden"
     },
     "COMP-004": {
       "status": "enforced-v1",
@@ -583,9 +583,9 @@
       "assertion": null
     },
     "COMP-009": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "enforced-v1",
+      "owner": "tools/aia_import_harness.py",
+      "assertion": "all candidate outputs gated before import readiness"
     },
     "COMP-010": {
       "status": "pending-v1",
