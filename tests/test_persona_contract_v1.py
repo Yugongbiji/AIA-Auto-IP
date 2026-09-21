@@ -81,3 +81,11 @@ def test_peer_review_conclusion_must_not_expose_source_phrase():
         o["evidenceLedger"].append({"claim":phrase})
         o["evidenceMap"]["body.0"]=[phrase]
         assert "BIO-006" in rules(validate_output(o,agent_id="150000001"))
+
+
+def test_headline_blocks_unsupported_expert_and_vague_duration_language():
+    for phrase in ["多年工作经验，做值得信赖的顾问","长期从业经验，持续分享"]:
+        o=valid_output(); o["headline"]=phrase
+        o["xiaohongshuBio"][-2]=phrase; o["videoDouyinBio"][-4]=phrase
+        o["evidenceLedger"].append({"claim":phrase}); o["evidenceMap"]["headline"]=[phrase]
+        assert "HEAD-004" in rules(validate_output(o,agent_id="150000001"))
