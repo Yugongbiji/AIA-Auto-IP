@@ -12,7 +12,7 @@ VIDEO_OPINION="本账号上所陈述或表达的内容仅为我个人意见，�
 XHS_BANNED=re.compile(r"保险|金融|理财|贷款|股票|基金|医疗|护理|教育|玄学|友邦|\bAIA\b|微信|手机号|电话|QQ|二维码|https?://|www\.",re.I)
 SOURCE_PREFIXES=("客户高频评价","客户都评价我","大家眼中的我","多位客户认为","多人评价","多人反馈")
 EMPTY_LICENSE={"","000","待补充","【待补充】","xxx","XXX"}
-MECHANICAL_HEADLINE=("是我的标签","是我的专业底色","做一个让人记得住的人","从")
+MECHANICAL_HEADLINE=("是我的标签","是我的专业底色","做一个让人记得住的人")
 LOW_VALUE_TIME=re.compile(r"(多年|长期).*(经验|从业|工作)")
 LICENSE_TEXT=re.compile(r"执业证编号[:：]")
 
@@ -49,7 +49,7 @@ def validate_output(output:dict,*,agent_id="",production=False):
     if "|" in headline or "｜" in headline: errors.append(_err("HEAD-005","headline_vertical_bar"))
     if agent_id and agent_id in headline: errors.append(_err("HEAD-005","headline_contains_agent_id"))
     if headline and XHS_BANNED.search(headline): errors.append(_err("HEAD-009","headline_xhs_compliance"))
-    if any(p in headline for p in MECHANICAL_HEADLINE[1:]) or ("从" in headline and "跨界" in headline):
+    if any(p in headline for p in MECHANICAL_HEADLINE) or ("从" in headline and "跨界" in headline):
         errors.append(_err("HEAD-006","mechanical_headline"))
     body=_body_lines(output)
     if body and len(body)<3 and not output.get("evidenceInsufficient"):
