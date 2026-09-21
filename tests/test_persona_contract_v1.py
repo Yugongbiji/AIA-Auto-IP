@@ -98,3 +98,20 @@ def test_cross_platform_body_must_be_same_source():
 def test_rendered_body_must_match_structured_canonical_body():
     o=valid_output(); o["xiaohongshuBio"][0]="🏗️ 页面二次改写"; o["videoDouyinBio"][0]="🏗️ 页面二次改写"
     assert "BIO-009" in rules(validate_output(o,agent_id="150000001"))
+
+
+def test_headline_may_not_map_more_than_three_memory_assets():
+    o=valid_output()
+    o["evidenceLedger"].append({"claim":"第四个资产"})
+    o["evidenceMap"]["headline"]=["十年工程经历","长期跑步","持续分享真实经验","第四个资产"]
+    assert "HEAD-002" in rules(validate_output(o,agent_id="150000001"))
+
+def test_body_line_requires_emoji_anchor():
+    o=valid_output()
+    o["whoLines"][0]="十年工程经历"
+    o["xiaohongshuBio"][0]="十年工程经历"; o["videoDouyinBio"][0]="十年工程经历"
+    assert "BIO-014" in rules(validate_output(o,agent_id="150000001"))
+
+def test_body_dimension_alignment_when_declared():
+    o=valid_output(); o["bodyDimensions"]=["who","advantage"]
+    assert "BIO-013" in rules(validate_output(o,agent_id="150000001"))
