@@ -10,7 +10,7 @@ def candidate(headline="🌊 十年工程经历，也是一名长期跑者"):
       "evidenceMap":{"headline":["十年工程经历","长期跑步"],"body.0":["十年工程经历"],"body.1":["长期跑步"],"body.2":["持续分享真实经验"]},
       "evidenceLedger":[
         {"claim":"十年工程经历","sourceText":"十年工程经历","sourceGrade":"A","sourceField":"previousCareer","factKey":"career","assetType":"numeric_experience"},
-        {"claim":"长期跑步","sourceText":"长期跑步","sourceGrade":"B","sourceField":"selfIntro","factKey":"running","assetType":"interest"}],
+        {"claim":"长期跑步","sourceText":"长期跑步","sourceGrade":"B","sourceField":"selfIntro","factKey":"running","assetType":"interest"},\n        {"claim":"持续分享真实经验","sourceText":"持续分享真实经验","sourceGrade":"B","sourceField":"selfIntro","factKey":"sharing","assetType":"interest"}],
     }
 
 def test_invalid_candidate_can_never_promote():
