@@ -3,8 +3,8 @@
   "meaning": "Harness V1 enforcement inventory; pending is explicit and must never be interpreted as PASS.",
   "summary": {
     "total": 152,
-    "deterministicEnforced": 53,
-    "executorEnforced": 99,
+    "deterministicEnforced": 61,
+    "executorEnforced": 91,
     "executable": 152,
     "pendingV1": 0
   },
@@ -290,9 +290,9 @@
       "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-010": {
-      "status": "executable-v1",
-      "owner": "backend/prd_rule_executor.py",
-      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
+      "status": "enforced-v1",
+      "owner": "backend/nickname_contract.py",
+      "assertion": "universal nickname templates blocked unless mature protected original"
     },
     "NICK-011": {
       "status": "executable-v1",
@@ -300,9 +300,9 @@
       "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-012": {
-      "status": "executable-v1",
-      "owner": "backend/prd_rule_executor.py",
-      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
+      "status": "enforced-v1",
+      "owner": "backend/nickname_contract.py",
+      "assertion": "bare name/call-sign cannot be primary when a valid distinctive candidate exists"
     },
     "NICK-013": {
       "status": "executable-v1",
@@ -310,14 +310,14 @@
       "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-014": {
-      "status": "executable-v1",
-      "owner": "backend/prd_rule_executor.py",
-      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
+      "status": "enforced-v1",
+      "owner": "backend/nickname_contract.py",
+      "assertion": "Memory Score is machine-computed and declared score must match"
     },
     "NICK-015": {
-      "status": "executable-v1",
-      "owner": "backend/prd_rule_executor.py",
-      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
+      "status": "enforced-v1",
+      "owner": "backend/nickname_contract.py",
+      "assertion": "primary must respect highest machine score and distinctive-over-bare priority"
     },
     "NICK-016": {
       "status": "executable-v1",
@@ -325,9 +325,9 @@
       "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-017": {
-      "status": "executable-v1",
-      "owner": "backend/prd_rule_executor.py",
-      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
+      "status": "enforced-v1",
+      "owner": "backend/nickname_contract.py",
+      "assertion": "missing-value tokens cannot become nicknames"
     },
     "NICK-018": {
       "status": "executable-v1",
@@ -355,9 +355,9 @@
       "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-023": {
-      "status": "executable-v1",
-      "owner": "backend/prd_rule_executor.py",
-      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
+      "status": "enforced-v1",
+      "owner": "backend/nickname_contract.py",
+      "assertion": "new nickname brand/business terms blocked"
     },
     "NICK-024": {
       "status": "executable-v1",
@@ -375,9 +375,9 @@
       "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-027": {
-      "status": "executable-v1",
-      "owner": "backend/prd_rule_executor.py",
-      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
+      "status": "enforced-v1",
+      "owner": "backend/nickname_contract.py",
+      "assertion": "candidate set must retain a safe real-name/call-sign backup"
     },
     "NICK-028": {
       "status": "executable-v1",
@@ -385,9 +385,9 @@
       "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-029": {
-      "status": "executable-v1",
-      "owner": "backend/prd_rule_executor.py",
-      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
+      "status": "enforced-v1",
+      "owner": "backend/nickname_contract.py",
+      "assertion": "decorative emoji is blocked from recommended nickname candidates"
     },
     "NICK-030": {
       "status": "executable-v1",
@@ -487,7 +487,7 @@
     "BIO-006": {
       "status": "enforced-v1",
       "owner": "backend/persona_contract.py",
-      "assertion": "forbidden peer-review source prefixes"
+      "assertion": "peer-review conclusions may appear, but source-prefix phrasing is deterministically blocked"
     },
     "BIO-007": {
       "status": "enforced-v1",
