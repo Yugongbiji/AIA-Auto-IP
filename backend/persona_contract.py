@@ -14,6 +14,8 @@ SOURCE_PREFIXES=("客户高频评价","客户都评价我","大家眼中的我",
 EMPTY_LICENSE={"","000","待补充","【待补充】","xxx","XXX"}
 MECHANICAL_HEADLINE=("是我的标签","是我的专业底色","做一个让人记得住的人")
 LOW_VALUE_TIME=re.compile(r"(多年|长期).*(经验|从业|工作)")
+UNSUPPORTED_HEADLINE=re.compile(r"(专家|导师|顾问|0人脉|零人脉)")
+GENERIC_REVIEW_ONLY={"靠谱","专业","真诚","细致","有耐心","暖心","行动派"}
 LICENSE_TEXT=re.compile(r"执业证编号[:：]")
 
 def _lines(value):
