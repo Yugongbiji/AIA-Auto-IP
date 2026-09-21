@@ -66,3 +66,31 @@ The report must identify failures by Rule ID and agent ID. A candidate with any 
 4. Harness produces a Rule-ID-level report.
 5. Harness cannot write Production.
 6. No Production service, DB schema, runtime owner, Prompt or deployed code is changed by this branch.
+
+
+## Harness V1 executable closure — 2026-09-21
+
+The frozen registry now has **152/152 executable Rule IDs and 0 pending**.
+
+Execution is intentionally split instead of pretending every product rule is a regex:
+
+- **53 deterministic/structural rules** execute directly in Python contracts for facts, evidence, stable protection, headline/bio structure, compliance and candidate reporting.
+- **99 fail-closed executor rules** execute through `backend/prd_rule_executor.py`. A rule cannot PASS without an explicit executor result containing `ruleId + PASS/FAIL + evidence + reason`.
+- Semantic NICK/HEAD/BIO/CONTENT rules are emitted one Rule ID at a time by `backend/semantic_judge_contract.py`; the judge is not allowed to create facts and must judge only the supplied candidate/evidence/ranking.
+- UI/ACC rules require journey evidence; GOV/ENG rules require architecture evidence. Missing evidence is BLOCK, never implicit PASS.
+- `tools/aia_prd_contract_check.py` now fails unless the frozen PRD has exactly full executable coverage and `pendingV1 == 0`.
+
+This is **machine-executable coverage**, not a claim that all 152 rules are deterministic. Semantic and journey rules deliberately remain evidence-bearing executor checks.
+
+### Beijing fallback-generation gate
+
+Before a Beijing candidate can be marked READY:
+1. frozen PRD provenance must match;
+2. fact merge and source separation must pass;
+3. evidence ledger and asset ranking must pass;
+4. headline/bio deterministic gates must pass;
+5. all required semantic/journey/architecture executor results must be present and PASS;
+6. Candidate Report must contain no BLOCKED rule;
+7. no Production write occurs.
+
+The first business review should use 3–5 representative people. Only after human quality acceptance should the full import package be produced.
