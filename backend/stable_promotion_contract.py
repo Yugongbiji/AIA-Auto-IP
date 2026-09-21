@@ -8,18 +8,31 @@ from backend.evidence_contract import validate_evidence_ledger
 
 ALLOWED_REASONS={"fact_correction","rule_or_compliance_fix","stronger_asset","explicit_user_request"}
 
+def resolve_current(current_output,generated_candidate=None):
+    """STABLE-001/002: reads always return current; generation cannot replace it."""
+    if current_output:
+        return {"source":"current_ip_outputs","output":current_output,"regenerationAllowed":False}
+    return {"source":"candidate","output":generated_candidate,"regenerationAllowed":True}
+
+def build_proposal_history(existing,candidate):
+    """STABLE-003/009: append only; never overwrite historical proposal objects."""
+    history=list(existing or [])
+    return history+[candidate]
+
 def _norm(v):
     if isinstance(v,dict): return {k:_norm(x) for k,x in sorted(v.items()) if k not in {"generatedAt","model","proposalId"}}
     if isinstance(v,list): return [_norm(x) for x in v]
     return str(v or "").strip()
 
-def decide_promotion(current,candidate,*,agent_id="",reason="",quality=None):
+def decide_promotion(current,candidate,*,agent_id="",reason="",quality=None,incremental=True):
     errors=[]
     ledger=(candidate or {}).get("evidenceLedger") or []
     errors.extend(validate_evidence_ledger(ledger))
     errors.extend(validate_output(candidate or {},agent_id=agent_id,production=True))
     if errors:
         return {"decision":"BLOCK","ruleIds":sorted({e["ruleId"] for e in errors}),"errors":errors}
+    if current and not incremental:
+        return {"decision":"BLOCK","ruleIds":["STABLE-008"],"reason":"existing_stable_requires_incremental_optimization"}
     if current and reason not in ALLOWED_REASONS:
         return {"decision":"KEEP","ruleIds":["STABLE-007"],"reason":"no_allowed_change_reason"}
     if current and _norm(current)==_norm(candidate):
