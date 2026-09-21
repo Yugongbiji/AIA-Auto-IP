@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "batch": "beijing-20260922-pilot",
   "productionWrite": false,
-  "note": "Ten-person Beijing fallback preview. Five original pilot + five additional roster members. No Production write. Operational lead metrics excluded. Missing primaryGoal/credentials remain import blockers. Low-evidence fallback copy must remain user-facing bio copy; internal process/status language is forbidden in rendered bios.",
+  "note": "Twenty-person Beijing fallback preview. No Production write. Operational lead metrics excluded. Low-evidence status stays in report only, never rendered into bios.",
   "candidates": [
     {
       "agentId": "110082604",
@@ -755,6 +755,414 @@
           "☀️ 暖心｜行动派",
           "🏡 生活家｜细节控",
           "靠谱、暖心，也愿意把事情认真做好",
+          "本账号上所陈述或表达的内容仅为我个人意见，并不代表友邦人寿的意见",
+          "营销服务部：待源数据补充",
+          "执业证编号：待源数据补充"
+        ]
+      }
+    },
+    {
+      "agentId": "110985895",
+      "name": "洪伟",
+      "state": "FALLBACK_PREVIEW_BLOCKED_FOR_IMPORT",
+      "blockers": [
+        "DATA-004 primaryGoal missing",
+        "no self-registration source"
+      ],
+      "facts": [],
+      "peerSummary": {
+        "reviews": 43
+      },
+      "fallback": {
+        "nicknamePrimary": "Vicky",
+        "nicknameBackups": [
+          "洪伟",
+          "V姐"
+        ],
+        "headline": "专业、靠谱，也有很强的行动力",
+        "body": [
+          "🧭 专业｜靠谱",
+          "⚡ 行动派｜社牛",
+          "💡 人间清醒｜学习力强"
+        ],
+        "xiaohongshuBio": [
+          "🧭 专业｜靠谱",
+          "⚡ 行动派｜社牛",
+          "💡 人间清醒｜学习力强",
+          "专业、靠谱，也有很强的行动力",
+          "本账号所述内容为个人意见，不代表任何官方意见。"
+        ],
+        "videoDouyinPreview": [
+          "🧭 专业｜靠谱",
+          "⚡ 行动派｜社牛",
+          "💡 人间清醒｜学习力强",
+          "专业、靠谱，也有很强的行动力",
+          "本账号上所陈述或表达的内容仅为我个人意见，并不代表友邦人寿的意见",
+          "营销服务部：待源数据补充",
+          "执业证编号：待源数据补充"
+        ]
+      }
+    },
+    {
+      "agentId": "110225665",
+      "name": "李丽伟",
+      "state": "FALLBACK_PREVIEW_BLOCKED_FOR_IMPORT",
+      "blockers": [
+        "DATA-004 primaryGoal missing"
+      ],
+      "facts": [],
+      "peerSummary": {
+        "reviews": 20
+      },
+      "fallback": {
+        "nicknamePrimary": "丽伟在北京",
+        "nicknameBackups": [
+          "丽伟",
+          "李丽伟"
+        ],
+        "headline": "13年服务经历之外，也把旅行和生活装进镜头",
+        "body": [
+          "🏃 体育学院毕业，喜欢运动",
+          "📷 爱旅行、摄影，也爱记录观点",
+          "☕ 一杯拿铁，是生活里的小爱好"
+        ],
+        "xiaohongshuBio": [
+          "🏃 体育学院毕业，喜欢运动",
+          "📷 爱旅行、摄影，也爱记录观点",
+          "☕ 一杯拿铁，是生活里的小爱好",
+          "13年服务经历之外，也把旅行和生活装进镜头",
+          "本账号所述内容为个人意见，不代表任何官方意见。"
+        ],
+        "videoDouyinPreview": [
+          "🏃 体育学院毕业，喜欢运动",
+          "📷 爱旅行、摄影，也爱记录观点",
+          "☕ 一杯拿铁，是生活里的小爱好",
+          "13年服务经历之外，也把旅行和生活装进镜头",
+          "本账号上所陈述或表达的内容仅为我个人意见，并不代表友邦人寿的意见",
+          "营销服务部：待源数据补充",
+          "执业证编号：待源数据补充"
+        ]
+      }
+    },
+    {
+      "agentId": "111063583",
+      "name": "秦郡婕",
+      "state": "FALLBACK_PREVIEW_BLOCKED_FOR_IMPORT",
+      "blockers": [
+        "DATA-004 primaryGoal missing",
+        "no self-registration source"
+      ],
+      "facts": [],
+      "peerSummary": {
+        "reviews": 3
+      },
+      "fallback": {
+        "nicknamePrimary": "郡郡",
+        "nicknameBackups": [
+          "秦郡婕"
+        ],
+        "headline": "靠谱、暖心，做事也很有行动力",
+        "body": [
+          "🧭 靠谱｜行动派",
+          "☀️ 暖心｜情绪稳定"
+        ],
+        "xiaohongshuBio": [
+          "🧭 靠谱｜行动派",
+          "☀️ 暖心｜情绪稳定",
+          "靠谱、暖心，做事也很有行动力",
+          "本账号所述内容为个人意见，不代表任何官方意见。"
+        ],
+        "videoDouyinPreview": [
+          "🧭 靠谱｜行动派",
+          "☀️ 暖心｜情绪稳定",
+          "靠谱、暖心，做事也很有行动力",
+          "本账号上所陈述或表达的内容仅为我个人意见，并不代表友邦人寿的意见",
+          "营销服务部：待源数据补充",
+          "执业证编号：待源数据补充"
+        ]
+      }
+    },
+    {
+      "agentId": "111075255",
+      "name": "许樱子",
+      "state": "FALLBACK_PREVIEW_BLOCKED_FOR_IMPORT",
+      "blockers": [
+        "DATA-004 primaryGoal missing",
+        "no self-registration source"
+      ],
+      "facts": [],
+      "peerSummary": {
+        "reviews": 35
+      },
+      "fallback": {
+        "nicknamePrimary": "樱子",
+        "nicknameBackups": [
+          "许樱子"
+        ],
+        "headline": "靠谱之外，也有自己的生活感和行动力",
+        "body": [
+          "🧭 靠谱｜专业",
+          "☀️ 暖心｜行动派",
+          "🏡 生活家｜情绪稳定"
+        ],
+        "xiaohongshuBio": [
+          "🧭 靠谱｜专业",
+          "☀️ 暖心｜行动派",
+          "🏡 生活家｜情绪稳定",
+          "靠谱之外，也有自己的生活感和行动力",
+          "本账号所述内容为个人意见，不代表任何官方意见。"
+        ],
+        "videoDouyinPreview": [
+          "🧭 靠谱｜专业",
+          "☀️ 暖心｜行动派",
+          "🏡 生活家｜情绪稳定",
+          "靠谱之外，也有自己的生活感和行动力",
+          "本账号上所陈述或表达的内容仅为我个人意见，并不代表友邦人寿的意见",
+          "营销服务部：待源数据补充",
+          "执业证编号：待源数据补充"
+        ]
+      }
+    },
+    {
+      "agentId": "110279718",
+      "name": "贾媛媛",
+      "state": "FALLBACK_PREVIEW_BLOCKED_FOR_IMPORT",
+      "blockers": [
+        "DATA-004 primaryGoal missing",
+        "no self-registration source"
+      ],
+      "facts": [],
+      "peerSummary": {
+        "reviews": 56
+      },
+      "fallback": {
+        "nicknamePrimary": "媛媛",
+        "nicknameBackups": [
+          "贾媛媛",
+          "媛姐"
+        ],
+        "headline": "做事专业靠谱，生活也有自己的精致感",
+        "body": [
+          "🧭 专业｜靠谱",
+          "⚡ 行动派｜学习力强",
+          "🏡 生活家｜人间清醒"
+        ],
+        "xiaohongshuBio": [
+          "🧭 专业｜靠谱",
+          "⚡ 行动派｜学习力强",
+          "🏡 生活家｜人间清醒",
+          "做事专业靠谱，生活也有自己的精致感",
+          "本账号所述内容为个人意见，不代表任何官方意见。"
+        ],
+        "videoDouyinPreview": [
+          "🧭 专业｜靠谱",
+          "⚡ 行动派｜学习力强",
+          "🏡 生活家｜人间清醒",
+          "做事专业靠谱，生活也有自己的精致感",
+          "本账号上所陈述或表达的内容仅为我个人意见，并不代表友邦人寿的意见",
+          "营销服务部：待源数据补充",
+          "执业证编号：待源数据补充"
+        ]
+      }
+    },
+    {
+      "agentId": "110169491",
+      "name": "许春燕",
+      "state": "FALLBACK_PREVIEW_BLOCKED_FOR_IMPORT",
+      "blockers": [
+        "DATA-004 primaryGoal missing",
+        "no self-registration source"
+      ],
+      "facts": [],
+      "peerSummary": {
+        "reviews": 16
+      },
+      "fallback": {
+        "nicknamePrimary": "春燕",
+        "nicknameBackups": [
+          "许春燕",
+          "许许"
+        ],
+        "headline": "做事细致靠谱，也一直保持行动力",
+        "body": [
+          "🧭 靠谱｜专业",
+          "🔎 细节控｜行动派",
+          "☀️ 暖心｜生活家"
+        ],
+        "xiaohongshuBio": [
+          "🧭 靠谱｜专业",
+          "🔎 细节控｜行动派",
+          "☀️ 暖心｜生活家",
+          "做事细致靠谱，也一直保持行动力",
+          "本账号所述内容为个人意见，不代表任何官方意见。"
+        ],
+        "videoDouyinPreview": [
+          "🧭 靠谱｜专业",
+          "🔎 细节控｜行动派",
+          "☀️ 暖心｜生活家",
+          "做事细致靠谱，也一直保持行动力",
+          "本账号上所陈述或表达的内容仅为我个人意见，并不代表友邦人寿的意见",
+          "营销服务部：待源数据补充",
+          "执业证编号：待源数据补充"
+        ]
+      }
+    },
+    {
+      "agentId": "110763897",
+      "name": "宋亚珍",
+      "state": "FALLBACK_PREVIEW_BLOCKED_FOR_IMPORT",
+      "blockers": [
+        "DATA-004 primaryGoal missing",
+        "no self-registration source"
+      ],
+      "facts": [],
+      "peerSummary": {
+        "reviews": 29
+      },
+      "fallback": {
+        "nicknamePrimary": "亚珍",
+        "nicknameBackups": [
+          "宋亚珍",
+          "亚珍姐"
+        ],
+        "headline": "专业靠谱之外，也是一位很暖心的人",
+        "body": [
+          "🧭 靠谱｜专业",
+          "☀️ 暖心｜情绪稳定",
+          "⚡ 行动派｜细节控"
+        ],
+        "xiaohongshuBio": [
+          "🧭 靠谱｜专业",
+          "☀️ 暖心｜情绪稳定",
+          "⚡ 行动派｜细节控",
+          "专业靠谱之外，也是一位很暖心的人",
+          "本账号所述内容为个人意见，不代表任何官方意见。"
+        ],
+        "videoDouyinPreview": [
+          "🧭 靠谱｜专业",
+          "☀️ 暖心｜情绪稳定",
+          "⚡ 行动派｜细节控",
+          "专业靠谱之外，也是一位很暖心的人",
+          "本账号上所陈述或表达的内容仅为我个人意见，并不代表友邦人寿的意见",
+          "营销服务部：待源数据补充",
+          "执业证编号：待源数据补充"
+        ]
+      }
+    },
+    {
+      "agentId": "110867201",
+      "name": "张艳",
+      "state": "FALLBACK_PREVIEW_BLOCKED_FOR_IMPORT",
+      "blockers": [
+        "DATA-004 primaryGoal missing"
+      ],
+      "facts": [],
+      "peerSummary": {
+        "reviews": 20
+      },
+      "fallback": {
+        "nicknamePrimary": "心心宝贝舒心妈妈",
+        "nicknameBackups": [
+          "舒心妈妈",
+          "张艳"
+        ],
+        "headline": "从集团公司副总到舒心妈妈，人生不只一条路",
+        "body": [
+          "📡 曾任通信行业集团公司副总",
+          "👩‍👧 高级家庭教育指导师",
+          "🎥 喜欢记录家庭与亲子生活"
+        ],
+        "xiaohongshuBio": [
+          "📡 曾任通信行业集团公司副总",
+          "👩‍👧 高级家庭教育指导师",
+          "🎥 喜欢记录家庭与亲子生活",
+          "从集团公司副总到舒心妈妈，人生不只一条路",
+          "本账号所述内容为个人意见，不代表任何官方意见。"
+        ],
+        "videoDouyinPreview": [
+          "📡 曾任通信行业集团公司副总",
+          "👩‍👧 高级家庭教育指导师",
+          "🎥 喜欢记录家庭与亲子生活",
+          "从集团公司副总到舒心妈妈，人生不只一条路",
+          "本账号上所陈述或表达的内容仅为我个人意见，并不代表友邦人寿的意见",
+          "营销服务部：待源数据补充",
+          "执业证编号：待源数据补充"
+        ]
+      }
+    },
+    {
+      "agentId": "110258409",
+      "name": "安永彤",
+      "state": "FALLBACK_PREVIEW_BLOCKED_FOR_IMPORT",
+      "blockers": [
+        "DATA-004 primaryGoal missing",
+        "no self-registration source"
+      ],
+      "facts": [],
+      "peerSummary": {
+        "reviews": 22
+      },
+      "fallback": {
+        "nicknamePrimary": "安总",
+        "nicknameBackups": [
+          "安姐",
+          "安彤",
+          "安永彤"
+        ],
+        "headline": "专业靠谱，也是一位有行动力的长期主义者",
+        "body": [
+          "🧭 专业｜靠谱",
+          "⚡ 行动派｜细节控",
+          "📚 学习力强｜人间清醒"
+        ],
+        "xiaohongshuBio": [
+          "🧭 专业｜靠谱",
+          "⚡ 行动派｜细节控",
+          "📚 学习力强｜人间清醒",
+          "专业靠谱，也是一位有行动力的长期主义者",
+          "本账号所述内容为个人意见，不代表任何官方意见。"
+        ],
+        "videoDouyinPreview": [
+          "🧭 专业｜靠谱",
+          "⚡ 行动派｜细节控",
+          "📚 学习力强｜人间清醒",
+          "专业靠谱，也是一位有行动力的长期主义者",
+          "本账号上所陈述或表达的内容仅为我个人意见，并不代表友邦人寿的意见",
+          "营销服务部：待源数据补充",
+          "执业证编号：待源数据补充"
+        ]
+      }
+    },
+    {
+      "agentId": "110532659",
+      "name": "李稳",
+      "state": "FALLBACK_PREVIEW_BLOCKED_FOR_IMPORT",
+      "blockers": [
+        "DATA-004 primaryGoal missing",
+        "no self-registration source"
+      ],
+      "facts": [],
+      "peerSummary": {
+        "reviews": 3
+      },
+      "fallback": {
+        "nicknamePrimary": "李稳",
+        "nicknameBackups": [],
+        "headline": "靠谱、专业，做事让人觉得踏实",
+        "body": [
+          "🧭 靠谱｜专业",
+          "🌿 情绪稳定｜暖心"
+        ],
+        "xiaohongshuBio": [
+          "🧭 靠谱｜专业",
+          "🌿 情绪稳定｜暖心",
+          "靠谱、专业，做事让人觉得踏实",
+          "本账号所述内容为个人意见，不代表任何官方意见。"
+        ],
+        "videoDouyinPreview": [
+          "🧭 靠谱｜专业",
+          "🌿 情绪稳定｜暖心",
+          "靠谱、专业，做事让人觉得踏实",
           "本账号上所陈述或表达的内容仅为我个人意见，并不代表友邦人寿的意见",
           "营销服务部：待源数据补充",
           "执业证编号：待源数据补充"
