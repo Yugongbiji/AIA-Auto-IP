@@ -13,6 +13,7 @@ SELF_MEDIA_TERMS=("粉丝","播放量","点赞量","作品量","留资量","自�
 INTERNAL_JARGON=("A1","PA转任","团队1+2")
 FACT_FIELDS={"services","education","previousCareer","hobbies","familyIdentity","currentIndustryYears","honors","city"}
 PEER_DERIVED_FIELDS={"peerReviewSummary","peerReviewKeywords"}
+OUTPUT_FIELDS={"headline","xiaohongshuBio","videoDouyinBio","nicknameOptions","recommendedNickname","bios"}
 
 def err(rule,code,agent_id="",detail=""):
     x={"ruleId":rule,"code":code}
@@ -53,6 +54,15 @@ def validate_package(data:dict):
                     errors.append(err("DATA-005","peer_review_stored_inside_first_party_facts",agent_id,k))
 
     roster=set(roster_ids)
+
+    profiles=data.get("savedProfiles") or data.get("profiles") or {}
+    profile_rows=profiles.values() if isinstance(profiles,dict) else profiles
+    for row in profile_rows or []:
+        if not isinstance(row,dict): continue
+        agent_id=aid(row)
+        leaked=sorted(OUTPUT_FIELDS.intersection(row))
+        if leaked:
+            errors.append(err("STABLE-004","generated_output_leaked_into_saved_profile",agent_id,",".join(leaked)))
     reviews=data.get("reviews") or data.get("peerReviews") or []
     skipped=data.get("skippedReviews") or []
     for row in reviews:
@@ -68,6 +78,16 @@ def validate_package(data:dict):
     # contain operational social-media performance or internal rank jargon.
     stable=data.get("stableOutputs") or {}
     for agent_id,out in stable.items():
+        ledger=(out or {}).get("evidenceLedger") if isinstance(out,dict) else None
+        if not isinstance(ledger,list) or not ledger:
+            errors.append(err("EVID-001","missing_evidence_ledger",str(agent_id)))
+        else:
+            for item in ledger:
+                grade=str((item or {}).get("sourceGrade") or "").upper()
+                if grade not in {"A","B","C"}:
+                    errors.append(err("EVID-001","non_admissible_evidence_grade",str(agent_id),grade or "<missing>"))
+                if not str((item or {}).get("claim") or "").strip() or not str((item or {}).get("sourceField") or "").strip():
+                    errors.append(err("EVID-001","evidence_entry_not_traceable",str(agent_id)))
         rendered=text_of(out)
         for term in SELF_MEDIA_TERMS:
             if term in rendered:
@@ -78,7 +98,14 @@ def validate_package(data:dict):
 
     # Import preparation may append proposals, but cannot request destructive
     # replacement of stable/history. Promotion remains a later explicit action.
+    existing=data.get("existingCurrentOutputs") or {}
+    for agent_id,new_out in stable.items():
+        if agent_id in existing and existing[agent_id]!=new_out:
+            errors.append(err("STABLE-005","existing_current_output_changed_in_import_package",str(agent_id)))
+
     policy=data.get("writePolicy") or {}
+    if policy.get("profileMergeMode")!="merge_preserve_existing":
+        errors.append(err("DATA-011","profile_merge_mode_not_fail_safe"))
     if policy.get("overwriteProposal") is True or policy.get("deleteHistoricalProposals") is True:
         errors.append(err("STABLE-003","proposal_history_mutation_requested"))
     if policy.get("overwriteCurrent") is True:
