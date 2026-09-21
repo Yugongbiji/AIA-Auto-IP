@@ -6,9 +6,9 @@ def valid_output():
       "headline":headline,
       "whoLines":["🏗️ 十年工程经历"],
       "advantageLines":["🏃 长期跑步"],
-      "valueLines":[],
-      "xiaohongshuBio":["🏗️ 十年工程经历","🏃 长期跑步",headline,XHS_FOOTER],
-      "videoDouyinBio":["🏗️ 十年工程经历","🏃 长期跑步",headline,VIDEO_OPINION,"营销服务部：天津第一营销服务部","执业证编号：LICENSE-123"],
+      "valueLines":["📚 持续分享真实经验"],
+      "xiaohongshuBio":["🏗️ 十年工程经历","🏃 长期跑步","📚 持续分享真实经验",headline,XHS_FOOTER],
+      "videoDouyinBio":["🏗️ 十年工程经历","🏃 长期跑步","📚 持续分享真实经验",headline,VIDEO_OPINION,"营销服务部：天津第一营销服务部","执业证编号：LICENSE-123"],
     }
 
 def codes(errors): return {x["code"] for x in errors}
