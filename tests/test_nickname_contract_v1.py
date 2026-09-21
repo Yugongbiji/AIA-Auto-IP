@@ -27,3 +27,23 @@ def test_real_anchor_backup_is_mandatory():
 def test_declared_memory_score_must_match_machine_score():
     bare=row("波姐",isBareAnchor=True); bare["memoryScore"]=99
     assert "NICK-014" in rules(validate_nickname_output({"nicknamePrimary":"波姐","nicknameCandidates":[bare]}))
+
+
+def test_approved_primary_cannot_be_overridden():
+    approved=row("娟娟",isBareAnchor=True); approved["sourceTier"]="approved-primary"
+    other=row("滑雪娟娟",hasDistinctiveModifier=True,hasCurrentDistinctiveTrait=True); other["sourceTier"]="controlled"
+    o={"nicknamePrimary":"滑雪娟娟","nicknamePreset":{"status":"approved","primary":"娟娟"},"nicknameCandidates":[approved,other]}
+    assert "NICK-005" in rules(validate_nickname_output(o))
+
+def test_past_career_and_unproven_interest_routes_block():
+    a=row("物流娟娟"); a.update(sourceType="pastCareer",sourceTier="controlled")
+    b=row("滑雪娟娟"); b.update(route="interest",sourceTier="controlled",evidenceRefs=[])
+    o={"nicknamePrimary":"物流娟娟","nicknameCandidates":[a,b,row("娟娟",isBareAnchor=True)]}
+    rs=rules(validate_nickname_output(o))
+    assert "NICK-007" in rs and "NICK-013" in rs
+
+def test_ai_cannot_jump_ahead_of_controlled_candidates():
+    ai=row("行动派波姐",hasEvidenceDistinctiveModifier=True); ai.update(sourceTier="ai",controlledCandidatesInsufficient=False)
+    safe=row("波姐",isBareAnchor=True,isRealHighFrequencyAnchor=True); safe["sourceTier"]="controlled"; safe["memoryScore"]=memory_score(safe)
+    rs=rules(validate_nickname_output({"nicknamePrimary":"行动派波姐","nicknameCandidates":[ai,safe]}))
+    assert "NICK-022" in rs and "NICK-026" in rs
