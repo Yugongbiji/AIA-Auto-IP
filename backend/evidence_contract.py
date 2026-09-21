@@ -22,12 +22,13 @@ def _e(rule,code,detail=""): return {"ruleId":rule,"code":code,"detail":detail}
 def _norm(s): return re.sub(r"[\s，。；、|｜]+","",str(s or "")).lower()
 
 def validate_evidence_ledger(ledger):
-    errors=[]; seen={}; conflicts={}
+    errors=[]; seen={}; conflicts={}; source_by_key={}
     for item in ledger or []:
         claim=str((item or {}).get("claim") or "").strip()
         source=str((item or {}).get("sourceText") or claim).strip()
         grade=str((item or {}).get("sourceGrade") or "").upper()
         key=str((item or {}).get("factKey") or _norm(claim))
+        source_by_key.setdefault(key,[]).append(source)
         if grade not in {"A","B","C"}: errors.append(_e("EVID-001","inadmissible_grade",grade))
         # Exact numeric duration cannot be weakened into vague duration.
         m=YEAR_EXACT.search(source)
@@ -35,6 +36,8 @@ def validate_evidence_ledger(ledger):
             errors.append(_e("EVID-003","numeric_duration_weakened",claim))
         if not YEAR_EXACT.search(source) and not any(v in source for v in VAGUE_TIME) and any(v in claim for v in VAGUE_TIME):
             errors.append(_e("EVID-003","duration_invented",claim))
+        if str((item or {}).get("derivedFrom") or "").lower() in {"keyword","category","ai","inference"} and grade in {"A","B","C"}:
+            errors.append(_e("EVID-002","inference_or_category_upgraded_to_fact",claim))
         for category,specifics in SPECIFIC_UPGRADES:
             if category in source and any(x in claim and x not in source for x in specifics):
                 errors.append(_e("EVID-009","category_upgraded_to_specific_fact",claim))
@@ -45,6 +48,13 @@ def validate_evidence_ledger(ledger):
             seen[nk]={"claim":claim,"sources":[(item or {}).get("sourceField")]}
         if key:
             conflicts.setdefault(key,set()).add(_norm(claim))
+    # If a claim is more specific than every source text for the same fact key,
+    # require an explicit source match rather than accepting model embellishment.
+    for item in ledger or []:
+        claim=str((item or {}).get("claim") or "").strip(); key=str((item or {}).get("factKey") or _norm(claim))
+        if claim and source_by_key.get(key) and not any(_norm(claim) in _norm(src) or _norm(src) in _norm(claim) for src in source_by_key[key] if src):
+            if (item or {}).get("specificity")=="upgraded":
+                errors.append(_e("EVID-002","fact_specificity_upgraded",claim))
     for key,vals in conflicts.items():
         if len({v for v in vals if v})>1:
             errors.append(_e("EVID-007","conflicting_fact_requires_human_resolution",key))
