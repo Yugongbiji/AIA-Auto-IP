@@ -6,6 +6,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path: sys.path.insert(0,str(ROOT))
 from backend.persona_contract import validate_output
+from backend.import_contract import validate_package
 
 def ids(items):
     out=[]
@@ -24,9 +25,10 @@ def main():
     roster=ids(data.get("agents"))
     stable=data.get("stableOutputs") or {}
     skipped=data.get("skippedReviews") or []
+    package_errors=validate_package(data)
     invalid={}
     for aid,out in stable.items():
-        errs=validate_output(out,agent_id=aid,production=False)
+        errs=validate_output(out,agent_id=aid,production=True)
         if errs:
             invalid[aid]=errs
     duplicate_roster=sorted({x for x in roster if roster.count(x)>1})
@@ -35,6 +37,7 @@ def main():
     report={
       "mode":"read-only-preflight",
       "productionWrite":False,
+      "packageErrors":package_errors,
       "counts":data.get("counts",{}),
       "rosterRows":len(roster),
       "stableOutputs":len(stable),
@@ -43,7 +46,7 @@ def main():
       "invalidStable":invalid,
     }
     print(json.dumps(report,ensure_ascii=False,indent=2))
-    if duplicate_roster or unmatched_created or invalid:
+    if duplicate_roster or unmatched_created or package_errors or invalid:
         print("IMPORT HARNESS BLOCKED",file=sys.stderr); return 2
     print("IMPORT HARNESS PREFLIGHT PASS"); return 0
 
