@@ -1,6 +1,6 @@
 from backend.candidate_report import build_candidate_report
 from backend.persona_contract import XHS_FOOTER, VIDEO_OPINION
-from backend.prd_rule_executor import MANIFEST
+from backend.rule_scope_contract import rules_for_scope
 
 def good():
     h="🌊 十年工程经历，也是一名长期跑者"
@@ -18,8 +18,23 @@ def test_candidate_report_is_read_only_and_rule_linked():
        "agents":[{"agentId":"150000001","primaryGoal":"customer_acquisition"}],"reviews":[],"skippedReviews":[],
        "writePolicy":{"productionWrite":False,"overwriteProposal":False,"deleteHistoricalProposals":False,"overwriteCurrent":False,"profileMergeMode":"merge_preserve_existing"},
        "stableOutputs":{"150000001":good()},
-       "ruleExecutorResults":{"150000001":[{"ruleId":rid,"status":"PASS","evidence":"synthetic evidence","reason":"synthetic pass"} for rid in MANIFEST["rules"]]}}
+       "releaseRuleExecutorResults":[{"ruleId":rid,"status":"PASS","evidence":"release evidence","reason":"release pass"} for rid in rules_for_scope("release")],
+       "batchRuleExecutorResults":[{"ruleId":rid,"status":"PASS","evidence":"batch evidence","reason":"batch pass"} for rid in rules_for_scope("batch")],
+       "ruleExecutorResults":{"150000001":[{"ruleId":rid,"status":"PASS","evidence":"candidate evidence","reason":"candidate pass"} for rid in rules_for_scope("candidate")]}}
     r=build_candidate_report(d)
     assert r["productionWrite"] is False
     assert r["summary"]=={"candidates":1,"ready":1,"keep":0,"blocked":0}
     assert r["candidates"][0]["topAssets"][0]=="十年工程经历"
+
+
+def test_missing_release_evidence_blocks_candidate_without_repeating_it_per_person():
+    d={"contract":{"prdCommit":"c0255a6467e9deaa5daf1c522ab3cecdb603063d","prdBlobSha":"6cac1ca714ac7fe72ddc1796aed3a1d43e55fdd6"},
+       "agents":[{"agentId":"150000001","primaryGoal":"customer_acquisition"}],"reviews":[],"skippedReviews":[],
+       "writePolicy":{"productionWrite":False,"overwriteProposal":False,"deleteHistoricalProposals":False,"overwriteCurrent":False,"profileMergeMode":"merge_preserve_existing"},
+       "stableOutputs":{"150000001":good()},
+       "releaseRuleExecutorResults":[],
+       "batchRuleExecutorResults":[{"ruleId":rid,"status":"PASS","evidence":"batch","reason":"pass"} for rid in rules_for_scope("batch")],
+       "ruleExecutorResults":{"150000001":[{"ruleId":rid,"status":"PASS","evidence":"candidate","reason":"pass"} for rid in rules_for_scope("candidate")]}}
+    r=build_candidate_report(d)
+    assert r["summary"]["blocked"]==1
+    assert r["candidates"][0]["releaseExecutorErrors"]
