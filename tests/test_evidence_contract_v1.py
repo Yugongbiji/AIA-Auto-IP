@@ -28,3 +28,8 @@ def test_asset_competition_dedupes_and_ranks():
 def test_under_five_year_current_industry_loses_asset_competition():
     x=[{"claim":"3年当前行业","sourceGrade":"A","sourceField":"form","factKey":"current","assetType":"numeric_experience","isCurrentIndustry":True}]
     assert rank_assets(x,3)[0]["score"]==-1
+
+
+def test_inference_cannot_be_upgraded_to_abc_fact():
+    x=[{"claim":"高级养老规划师","sourceText":"大家愿意聊养老","sourceGrade":"C","sourceField":"peer","factKey":"service","derivedFrom":"inference"}]
+    assert "EVID-002" in rules(validate_evidence_ledger(x))
