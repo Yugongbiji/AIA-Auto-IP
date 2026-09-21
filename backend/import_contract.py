@@ -4,6 +4,7 @@ Side-effect free: validates normalized batch JSON only. No DB connection and no 
 """
 from __future__ import annotations
 import re
+from backend.evidence_contract import validate_evidence_ledger, rank_assets
 
 FROZEN_PRD_COMMIT="c0255a6467e9deaa5daf1c522ab3cecdb603063d"
 FROZEN_PRD_BLOB="6cac1ca714ac7fe72ddc1796aed3a1d43e55fdd6"
@@ -82,12 +83,33 @@ def validate_package(data:dict):
         if not isinstance(ledger,list) or not ledger:
             errors.append(err("EVID-001","missing_evidence_ledger",str(agent_id)))
         else:
+            for ev in validate_evidence_ledger(ledger):
+                errors.append(err(ev["ruleId"],ev["code"],str(agent_id),ev.get("detail","")))
+            ranked=rank_assets(ledger,(out or {}).get("currentIndustryYears"))
+            declared=(out or {}).get("assetRanking")
+            if declared is not None:
+                actual=[x["claim"] for x in ranked if x["score"]>=0]
+                declared_claims=[str(x.get("claim") if isinstance(x,dict) else x) for x in declared]
+                if declared_claims!=actual[:len(declared_claims)]:
+                    errors.append(err("EVID-008","declared_asset_ranking_not_canonical",str(agent_id)))
             for item in ledger:
                 grade=str((item or {}).get("sourceGrade") or "").upper()
                 if grade not in {"A","B","C"}:
                     errors.append(err("EVID-001","non_admissible_evidence_grade",str(agent_id),grade or "<missing>"))
                 if not str((item or {}).get("claim") or "").strip() or not str((item or {}).get("sourceField") or "").strip():
                     errors.append(err("EVID-001","evidence_entry_not_traceable",str(agent_id)))
+        # Current-industry experience under five years is not a default headline/bio asset.
+        years=(out or {}).get("currentIndustryYears")
+        if years is not None:
+            try:
+                if float(years)<5:
+                    industry_claims=[str(x.get("claim") or "") for x in ledger or [] if x.get("isCurrentIndustry")]
+                    rendered_pre=text_of(out)
+                    for claim in industry_claims:
+                        if claim and claim in rendered_pre:
+                            errors.append(err("EVID-005","under_five_year_current_industry_used_as_selling_point",str(agent_id),claim))
+            except (TypeError,ValueError):
+                pass
         rendered=text_of(out)
         for term in SELF_MEDIA_TERMS:
             if term in rendered:
