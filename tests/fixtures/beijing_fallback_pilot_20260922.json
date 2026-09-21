@@ -1,0 +1,318 @@
+{
+  "schemaVersion": 1,
+  "batch": "beijing-20260922-pilot",
+  "productionWrite": false,
+  "note": "Fallback pilot generated only from uploaded Beijing roster/self-registration/peer-review sources. Operational lead metrics excluded. primaryGoal is absent in source files, so import promotion remains BLOCKED.",
+  "candidates": [
+    {
+      "agentId": "110082604",
+      "name": "唐运富",
+      "state": "FALLBACK_PREVIEW_BLOCKED_FOR_IMPORT",
+      "blockers": [
+        "DATA-004 primaryGoal missing"
+      ],
+      "facts": [
+        "大学毕业后短暂实习后加入友邦，报名表自述21年",
+        "连续达标14年MDRT",
+        "本人自述经手过很多理赔",
+        "喜欢跑步",
+        "参与公益"
+      ],
+      "peerSummary": {
+        "reviews": 66,
+        "callSigns": [
+          [
+            "唐总",
+            17
+          ],
+          [
+            "小唐",
+            13
+          ],
+          [
+            "唐老师",
+            7
+          ]
+        ],
+        "traits": [
+          [
+            "专业",
+            63
+          ],
+          [
+            "靠谱",
+            62
+          ],
+          [
+            "暖心",
+            32
+          ],
+          [
+            "情绪稳定",
+            31
+          ],
+          [
+            "行动派",
+            19
+          ]
+        ]
+      },
+      "fallback": {
+        "nicknamePrimary": "跑步的小唐",
+        "nicknameBackups": [
+          "小唐",
+          "唐老师",
+          "唐运富"
+        ],
+        "headline": "21年一路坚持，跑步如此，做事也是如此",
+        "body": [
+          "🏃 跑步，是坚持多年的生活习惯",
+          "🏅 连续14年达标MDRT",
+          "🧾 21年经历，见过很多家庭风险时刻"
+        ]
+      }
+    },
+    {
+      "agentId": "110952886",
+      "name": "陈娟",
+      "state": "FALLBACK_PREVIEW_BLOCKED_FOR_IMPORT",
+      "blockers": [
+        "DATA-004 primaryGoal missing"
+      ],
+      "facts": [
+        "毕业于西南大学",
+        "重庆人，毕业后来北京",
+        "曾从事10年电商物流大客户经理",
+        "保险从业3年有余",
+        "有女儿",
+        "喜欢户外、运动、软笔、滑雪、亲子活动",
+        "业余做公益",
+        "喜欢听故事和讲故事"
+      ],
+      "peerSummary": {
+        "reviews": 30,
+        "callSigns": [
+          [
+            "陈娟",
+            10
+          ],
+          [
+            "娟娟",
+            7
+          ],
+          [
+            "娟儿",
+            4
+          ]
+        ],
+        "traits": [
+          [
+            "靠谱",
+            24
+          ],
+          [
+            "专业",
+            22
+          ],
+          [
+            "暖心",
+            16
+          ],
+          [
+            "行动派",
+            13
+          ],
+          [
+            "情绪稳定",
+            10
+          ]
+        ]
+      },
+      "fallback": {
+        "nicknamePrimary": "爱滑雪的娟娟",
+        "nicknameBackups": [
+          "娟娟",
+          "陈娟"
+        ],
+        "headline": "10年大客户经历后，在北京重新打开人生下一程",
+        "body": [
+          "🏙️ 重庆妹子，在北京生活多年",
+          "📦 做过10年电商物流大客户经理",
+          "⛷️ 爱滑雪、户外，也喜欢听故事和讲故事"
+        ]
+      }
+    },
+    {
+      "agentId": "111061705",
+      "name": "虞璐",
+      "state": "FALLBACK_PREVIEW_BLOCKED_FOR_IMPORT",
+      "blockers": [
+        "DATA-004 primaryGoal missing"
+      ],
+      "facts": [
+        "超过15年市场公关经验",
+        "保险从业17个月",
+        "喜欢打羽毛球、瑜伽",
+        "本人现用视频号昵称Luna虞"
+      ],
+      "peerSummary": {
+        "reviews": 11,
+        "callSigns": [
+          [
+            "虞璐",
+            3
+          ],
+          [
+            "Luna",
+            1
+          ],
+          [
+            "璐璐",
+            1
+          ]
+        ],
+        "traits": [
+          [
+            "靠谱",
+            9
+          ],
+          [
+            "行动派",
+            8
+          ],
+          [
+            "专业",
+            7
+          ],
+          [
+            "情绪稳定",
+            4
+          ],
+          [
+            "社牛",
+            4
+          ]
+        ]
+      },
+      "fallback": {
+        "nicknamePrimary": "Luna虞",
+        "nicknameBackups": [
+          "虞璐",
+          "璐璐"
+        ],
+        "headline": "15+年市场公关经历，习惯先理解人，再表达观点",
+        "body": [
+          "📣 15+年市场公关经历",
+          "🏸 平时喜欢羽毛球和瑜伽",
+          "🧭 做事靠谱，行动力强"
+        ]
+      }
+    },
+    {
+      "agentId": "110922683",
+      "name": "饶奋波",
+      "state": "FALLBACK_PREVIEW_BLOCKED_FOR_IMPORT",
+      "blockers": [
+        "DATA-004 primaryGoal missing",
+        "no self-registration source; persona limited to C-level peer evidence"
+      ],
+      "facts": [],
+      "peerSummary": {
+        "reviews": 88,
+        "callSigns": [
+          [
+            "波姐",
+            53
+          ],
+          [
+            "饶奋波",
+            8
+          ],
+          [
+            "波波",
+            7
+          ]
+        ],
+        "traits": [
+          [
+            "靠谱",
+            72
+          ],
+          [
+            "专业",
+            67
+          ],
+          [
+            "行动派",
+            46
+          ],
+          [
+            "暖心",
+            34
+          ],
+          [
+            "社牛",
+            30
+          ],
+          [
+            "人间清醒",
+            26
+          ]
+        ]
+      },
+      "fallback": {
+        "nicknamePrimary": "行动派波姐",
+        "nicknameBackups": [
+          "波姐",
+          "饶奋波"
+        ],
+        "headline": "做事有行动力，也让身边的人觉得靠谱",
+        "body": [
+          "⚡ 行动派｜靠谱",
+          "📚 专业｜细节控",
+          "🧭 情绪稳定｜学习力强"
+        ]
+      }
+    },
+    {
+      "agentId": "110384739",
+      "name": "王颖博",
+      "state": "BLOCKED_EVIDENCE_INSUFFICIENT",
+      "blockers": [
+        "DATA-004 primaryGoal missing",
+        "no self-registration source",
+        "only 1 matched peer review; insufficient for stable peer-trait conclusion"
+      ],
+      "facts": [],
+      "peerSummary": {
+        "reviews": 1,
+        "callSigns": [
+          [
+            "王颖博儿",
+            1
+          ]
+        ],
+        "traits": [
+          [
+            "专业",
+            1
+          ],
+          [
+            "行动派",
+            1
+          ],
+          [
+            "学习狂魔",
+            1
+          ]
+        ]
+      },
+      "fallback": {
+        "nicknamePrimary": "王颖博",
+        "nicknameBackups": [],
+        "headline": null,
+        "body": []
+      }
+    }
+  ]
+}
