@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Read-only AIA batch import preflight. Never writes Production."""
 from __future__ import annotations
-import argparse, json, sys
+import argparse, json, subprocess, sys
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path: sys.path.insert(0,str(ROOT))
@@ -21,6 +21,7 @@ def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--input",required=True)
     args=ap.parse_args()
+    coverage=subprocess.run([sys.executable,str(ROOT/"tools/aia_prd_contract_check.py")],cwd=ROOT,text=True,capture_output=True)
     data=json.loads(Path(args.input).read_text(encoding="utf-8"))
     roster=ids(data.get("agents"))
     stable=data.get("stableOutputs") or {}
@@ -36,6 +37,7 @@ def main():
     unmatched_created=sorted(set(skipped_ids)&set(roster))
     report={
       "mode":"read-only-preflight",
+      "prdContractCoverage":"PASS" if coverage.returncode==0 else "FAIL",
       "productionWrite":False,
       "packageErrors":package_errors,
       "counts":data.get("counts",{}),
@@ -46,7 +48,7 @@ def main():
       "invalidStable":invalid,
     }
     print(json.dumps(report,ensure_ascii=False,indent=2))
-    if duplicate_roster or unmatched_created or package_errors or invalid:
+    if coverage.returncode!=0 or duplicate_roster or unmatched_created or package_errors or invalid:
         print("IMPORT HARNESS BLOCKED",file=sys.stderr); return 2
     print("IMPORT HARNESS PREFLIGHT PASS"); return 0
 
