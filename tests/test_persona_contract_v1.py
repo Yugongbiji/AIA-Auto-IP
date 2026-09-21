@@ -6,7 +6,7 @@ def valid_output():
       "headline":headline,
       "whoLines":["🏗️ 十年工程经历"],
       "advantageLines":["🏃 长期跑步"],
-      "valueLines":["📚 持续分享真实经验"],
+      "valueLines":["📚 持续分享真实经验"],\n      "evidenceLedger":[{"claim":"十年工程经历"},{"claim":"长期跑步"},{"claim":"持续分享真实经验"}],\n      "evidenceMap":{"headline":["十年工程经历","长期跑步"],"body.0":["十年工程经历"],"body.1":["长期跑步"],"body.2":["持续分享真实经验"]},
       "evidenceLedger":[{"claim":"十年工程经历"},{"claim":"长期跑步"},{"claim":"持续分享真实经验"}],
       "evidenceMap":{"headline":["十年工程经历","长期跑步"],"body.0":["十年工程经历"],"body.1":["长期跑步"],"body.2":["持续分享真实经验"]},
       "xiaohongshuBio":["🏗️ 十年工程经历","🏃 长期跑步","📚 持续分享真实经验",headline,XHS_FOOTER],
