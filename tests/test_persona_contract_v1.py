@@ -70,3 +70,14 @@ def test_bio_line_absolute_width_gate():
 def test_service_item_width_gate():
     o=valid_output(); o["services"]=["家庭长期综合规划服务"]
     assert "BIO-007" in rules(validate_output(o,agent_id="150000001"))
+
+
+def test_peer_review_conclusion_must_not_expose_source_phrase():
+    for phrase in ["大家常说我靠谱","客户认为我专业","朋友都说我有耐心","身边人说我行动力强"]:
+        o=valid_output()
+        o["whoLines"][0]=phrase
+        o["xiaohongshuBio"][0]=phrase
+        o["videoDouyinBio"][0]=phrase
+        o["evidenceLedger"].append({"claim":phrase})
+        o["evidenceMap"]["body.0"]=[phrase]
+        assert "BIO-006" in rules(validate_output(o,agent_id="150000001"))
