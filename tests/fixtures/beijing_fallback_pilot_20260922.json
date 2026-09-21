@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "batch": "beijing-20260922-pilot",
   "productionWrite": false,
-  "note": "Ten-person Beijing fallback preview. Five original pilot + five additional roster members. No Production write. Operational lead metrics excluded. Missing primaryGoal/credentials remain import blockers.",
+  "note": "Ten-person Beijing fallback preview. Five original pilot + five additional roster members. No Production write. Operational lead metrics excluded. Missing primaryGoal/credentials remain import blockers. Low-evidence fallback copy must remain user-facing bio copy; internal process/status language is forbidden in rendered bios.",
   "candidates": [
     {
       "agentId": "110082604",
@@ -374,24 +374,21 @@
       "fallback": {
         "nicknamePrimary": "王颖博",
         "nicknameBackups": [],
-        "headline": "从真实分享开始，慢慢让大家认识我",
+        "headline": "认真做事，也认真对待每一次交流",
         "body": [
-          "📝 先从真实经历和日常开始记录",
-          "💬 内容以本人确认的信息为准",
-          "🌱 资料逐步完善，再增加更多个人记忆点"
+          "🧭 专业｜行动派",
+          "📚 爱学习，也愿意持续成长"
         ],
         "xiaohongshuBio": [
-          "📝 先从真实经历和日常开始记录",
-          "💬 内容以本人确认的信息为准",
-          "🌱 资料逐步完善，再增加更多个人记忆点",
-          "从真实分享开始，慢慢让大家认识我",
+          "🧭 专业｜行动派",
+          "📚 爱学习，也愿意持续成长",
+          "认真做事，也认真对待每一次交流",
           "本账号所述内容为个人意见，不代表任何官方意见。"
         ],
         "videoDouyinPreview": [
-          "📝 先从真实经历和日常开始记录",
-          "💬 内容以本人确认的信息为准",
-          "🌱 资料逐步完善，再增加更多个人记忆点",
-          "从真实分享开始，慢慢让大家认识我",
+          "🧭 专业｜行动派",
+          "📚 爱学习，也愿意持续成长",
+          "认真做事，也认真对待每一次交流",
           "本账号上所陈述或表达的内容仅为我个人意见，并不代表友邦人寿的意见",
           "营销服务部：待源数据补充",
           "执业证编号：待源数据补充"
@@ -666,24 +663,21 @@
       "fallback": {
         "nicknamePrimary": "张英",
         "nicknameBackups": [],
-        "headline": "从真实分享开始，慢慢让大家认识我",
+        "headline": "做事靠谱，也给人专业踏实的感觉",
         "body": [
-          "📝 当前可确认的个人资料较少",
-          "🧭 已有评价集中在靠谱、专业",
-          "🌱 后续用本人资料补充更多记忆点"
+          "🧭 靠谱｜专业",
+          "🌿 情绪稳定｜暖心"
         ],
         "xiaohongshuBio": [
-          "📝 当前可确认的个人资料较少",
-          "🧭 已有评价集中在靠谱、专业",
-          "🌱 后续用本人资料补充更多记忆点",
-          "从真实分享开始，慢慢让大家认识我",
+          "🧭 靠谱｜专业",
+          "🌿 情绪稳定｜暖心",
+          "做事靠谱，也给人专业踏实的感觉",
           "本账号所述内容为个人意见，不代表任何官方意见。"
         ],
         "videoDouyinPreview": [
-          "📝 当前可确认的个人资料较少",
-          "🧭 已有评价集中在靠谱、专业",
-          "🌱 后续用本人资料补充更多记忆点",
-          "从真实分享开始，慢慢让大家认识我",
+          "🧭 靠谱｜专业",
+          "🌿 情绪稳定｜暖心",
+          "做事靠谱，也给人专业踏实的感觉",
           "本账号上所陈述或表达的内容仅为我个人意见，并不代表友邦人寿的意见",
           "营销服务部：待源数据补充",
           "执业证编号：待源数据补充"
