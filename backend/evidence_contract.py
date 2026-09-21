@@ -7,7 +7,7 @@ import re
 
 RANK={"rare_specific":80,"numeric_experience":70,"contrast_transition":60,"credential_honor":50,
       "peer_stable_trait":40,"life_identity":30,"interest":20,"generic_adjective":10}
-SPECIFIC_UPGRADES=(("QS前100",("清华","北大","复旦","交大","大学")),
+SPECIFIC_UPGRADES=(("QS前100",("清华","北大","复旦","交大")),
                    ("985",("清华","北大","复旦","交大","大学")),
                    ("211",("清华","北大","复旦","交大","大学")),
                    ("留学",("美国","英国","澳洲","加拿大","日本","新加坡")),
