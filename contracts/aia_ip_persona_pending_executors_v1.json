@@ -1,0 +1,1397 @@
+{
+  "schemaVersion": 1,
+  "policy": {
+    "missingResult": "BLOCK",
+    "semanticJudge": "independent_rule_scoped",
+    "journeyEvidence": "required",
+    "productionWrite": false
+  },
+  "rules": {
+    "GOV-001": {
+      "executor": "architecture_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "GOV-002": {
+      "executor": "architecture_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "GOV-003": {
+      "executor": "architecture_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "GOV-004": {
+      "executor": "architecture_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "GOV-005": {
+      "executor": "architecture_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "GOV-006": {
+      "executor": "architecture_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "GOV-007": {
+      "executor": "architecture_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "DATA-001": {
+      "executor": "data_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "DATA-002": {
+      "executor": "data_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "DATA-006": {
+      "executor": "data_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "DATA-007": {
+      "executor": "data_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "DATA-008": {
+      "executor": "data_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "DATA-009": {
+      "executor": "data_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "DATA-013": {
+      "executor": "data_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "DATA-016": {
+      "executor": "data_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "STABLE-011": {
+      "executor": "data_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "NICK-001": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "NICK-002": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "NICK-003": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "NICK-004": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "NICK-005": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "NICK-006": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "NICK-007": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "NICK-008": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "NICK-009": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "NICK-010": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "NICK-011": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "NICK-012": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "NICK-013": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "NICK-014": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "NICK-015": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "NICK-016": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "NICK-017": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "NICK-018": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "NICK-019": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "NICK-020": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "NICK-021": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "NICK-022": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "NICK-023": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "NICK-024": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "NICK-025": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "NICK-026": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "NICK-027": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "NICK-028": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "NICK-029": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "NICK-030": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "HEAD-002": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "HEAD-003": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "HEAD-004": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "HEAD-007": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "HEAD-010": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "HEAD-012": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "HEAD-013": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "BIO-001": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "BIO-002": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "BIO-003": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "BIO-004": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "BIO-005": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "BIO-008": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "BIO-012": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "BIO-013": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "BIO-017": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "COMP-001": {
+      "executor": "compliance_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "COMP-008": {
+      "executor": "compliance_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "COMP-010": {
+      "executor": "compliance_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "UI-001": {
+      "executor": "journey_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "UI-002": {
+      "executor": "journey_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "UI-003": {
+      "executor": "journey_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "UI-004": {
+      "executor": "journey_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "UI-005": {
+      "executor": "journey_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "UI-006": {
+      "executor": "journey_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "UI-007": {
+      "executor": "journey_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "UI-008": {
+      "executor": "journey_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "UI-009": {
+      "executor": "journey_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "UI-010": {
+      "executor": "journey_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "UI-011": {
+      "executor": "journey_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "UI-012": {
+      "executor": "journey_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "UI-013": {
+      "executor": "journey_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "UI-014": {
+      "executor": "journey_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "CONTENT-001": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "CONTENT-002": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "CONTENT-003": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "CONTENT-004": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "CONTENT-005": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "CONTENT-006": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "CONTENT-007": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "CONTENT-008": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "CONTENT-009": {
+      "executor": "semantic_judge",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "ENG-001": {
+      "executor": "architecture_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "ENG-002": {
+      "executor": "architecture_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "ENG-003": {
+      "executor": "architecture_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "ENG-004": {
+      "executor": "architecture_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "ENG-005": {
+      "executor": "architecture_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "ENG-006": {
+      "executor": "architecture_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "ENG-007": {
+      "executor": "architecture_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "ACC-002": {
+      "executor": "journey_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "ACC-003": {
+      "executor": "journey_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "ACC-004": {
+      "executor": "journey_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "ACC-005": {
+      "executor": "journey_contract",
+      "required": true,
+      "resultSchema": [
+        "ruleId",
+        "status",
+        "evidence",
+        "reason"
+      ],
+      "allowedStatus": [
+        "PASS",
+        "FAIL"
+      ]
+    }
+  }
+}
