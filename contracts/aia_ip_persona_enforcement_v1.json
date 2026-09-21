@@ -3,8 +3,8 @@
   "meaning": "Harness V1 enforcement inventory; pending is explicit and must never be interpreted as PASS.",
   "summary": {
     "total": 152,
-    "deterministicEnforced": 61,
-    "executorEnforced": 91,
+    "deterministicEnforced": 69,
+    "executorEnforced": 83,
     "executable": 152,
     "pendingV1": 0
   },
@@ -265,9 +265,9 @@
       "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-005": {
-      "status": "executable-v1",
-      "owner": "backend/prd_rule_executor.py",
-      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
+      "status": "enforced-v1",
+      "owner": "backend/nickname_contract.py",
+      "assertion": "deterministic frozen-PRD gate with negative regression coverage"
     },
     "NICK-006": {
       "status": "executable-v1",
@@ -275,9 +275,9 @@
       "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-007": {
-      "status": "executable-v1",
-      "owner": "backend/prd_rule_executor.py",
-      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
+      "status": "enforced-v1",
+      "owner": "backend/nickname_contract.py",
+      "assertion": "deterministic frozen-PRD gate with negative regression coverage"
     },
     "NICK-008": {
       "status": "executable-v1",
@@ -305,9 +305,9 @@
       "assertion": "bare name/call-sign cannot be primary when a valid distinctive candidate exists"
     },
     "NICK-013": {
-      "status": "executable-v1",
-      "owner": "backend/prd_rule_executor.py",
-      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
+      "status": "enforced-v1",
+      "owner": "backend/nickname_contract.py",
+      "assertion": "deterministic frozen-PRD gate with negative regression coverage"
     },
     "NICK-014": {
       "status": "enforced-v1",
@@ -335,14 +335,14 @@
       "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-019": {
-      "status": "executable-v1",
-      "owner": "backend/prd_rule_executor.py",
-      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
+      "status": "enforced-v1",
+      "owner": "backend/nickname_contract.py",
+      "assertion": "deterministic frozen-PRD gate with negative regression coverage"
     },
     "NICK-020": {
-      "status": "executable-v1",
-      "owner": "backend/prd_rule_executor.py",
-      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
+      "status": "enforced-v1",
+      "owner": "backend/nickname_contract.py",
+      "assertion": "deterministic frozen-PRD gate with negative regression coverage"
     },
     "NICK-021": {
       "status": "executable-v1",
@@ -350,9 +350,9 @@
       "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-022": {
-      "status": "executable-v1",
-      "owner": "backend/prd_rule_executor.py",
-      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
+      "status": "enforced-v1",
+      "owner": "backend/nickname_contract.py",
+      "assertion": "deterministic frozen-PRD gate with negative regression coverage"
     },
     "NICK-023": {
       "status": "enforced-v1",
@@ -370,9 +370,9 @@
       "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-026": {
-      "status": "executable-v1",
-      "owner": "backend/prd_rule_executor.py",
-      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
+      "status": "enforced-v1",
+      "owner": "backend/nickname_contract.py",
+      "assertion": "deterministic frozen-PRD gate with negative regression coverage"
     },
     "NICK-027": {
       "status": "enforced-v1",
@@ -410,9 +410,9 @@
       "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "HEAD-004": {
-      "status": "executable-v1",
-      "owner": "backend/prd_rule_executor.py",
-      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
+      "status": "enforced-v1",
+      "owner": "backend/persona_contract.py",
+      "assertion": "deterministic frozen-PRD gate with negative regression coverage"
     },
     "HEAD-005": {
       "status": "enforced-v1",
