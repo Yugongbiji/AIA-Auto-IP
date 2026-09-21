@@ -3,8 +3,8 @@
   "meaning": "Harness V1 enforcement inventory; pending is explicit and must never be interpreted as PASS.",
   "summary": {
     "total": 152,
-    "enforcedV1": 40,
-    "pendingV1": 112
+    "enforcedV1": 44,
+    "pendingV1": 108
   },
   "rules": {
     "GOV-001": {
@@ -188,14 +188,14 @@
       "assertion": "category-to-specific upgrades blocked"
     },
     "STABLE-001": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "enforced-v1",
+      "owner": "backend/stable_promotion_contract.py",
+      "assertion": "current_ip_outputs resolves as current official output"
     },
     "STABLE-002": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "enforced-v1",
+      "owner": "backend/stable_promotion_contract.py",
+      "assertion": "existing current disables regeneration on read"
     },
     "STABLE-003": {
       "status": "enforced-v1",
@@ -223,14 +223,14 @@
       "assertion": "existing stable changes require frozen allowed reason"
     },
     "STABLE-008": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "enforced-v1",
+      "owner": "backend/stable_promotion_contract.py",
+      "assertion": "existing stable requires incremental optimization mode"
     },
     "STABLE-009": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "enforced-v1",
+      "owner": "backend/stable_promotion_contract.py",
+      "assertion": "proposal history builder is append-only"
     },
     "STABLE-010": {
       "status": "enforced-v1",
