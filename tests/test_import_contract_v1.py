@@ -67,3 +67,8 @@ def test_existing_current_output_cannot_be_changed_by_import_package():
     new={"headline":"新候选","evidenceLedger":[{"claim":"事实","sourceGrade":"A","sourceField":"profile"}]}
     d["existingCurrentOutputs"]={"150000001":old}; d["stableOutputs"]={"150000001":new}
     assert "STABLE-005" in rules(validate_package(d))
+
+
+def test_peer_reviews_preserve_one_to_many_raw_rows():
+    d=base(); d["reviews"]=[{"agentId":"150000001","review":"靠谱"},{"agentId":"150000001","review":"靠谱"}]
+    assert "DATA-019" in rules(validate_package(d))
