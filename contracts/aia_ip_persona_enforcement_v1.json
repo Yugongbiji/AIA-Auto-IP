@@ -3,54 +3,56 @@
   "meaning": "Harness V1 enforcement inventory; pending is explicit and must never be interpreted as PASS.",
   "summary": {
     "total": 152,
-    "enforcedV1": 53,
-    "pendingV1": 99
+    "deterministicEnforced": 53,
+    "executorEnforced": 99,
+    "executable": 152,
+    "pendingV1": 0
   },
   "rules": {
     "GOV-001": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed architecture_contract; PASS requires non-empty evidence and reason"
     },
     "GOV-002": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed architecture_contract; PASS requires non-empty evidence and reason"
     },
     "GOV-003": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed architecture_contract; PASS requires non-empty evidence and reason"
     },
     "GOV-004": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed architecture_contract; PASS requires non-empty evidence and reason"
     },
     "GOV-005": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed architecture_contract; PASS requires non-empty evidence and reason"
     },
     "GOV-006": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed architecture_contract; PASS requires non-empty evidence and reason"
     },
     "GOV-007": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed architecture_contract; PASS requires non-empty evidence and reason"
     },
     "DATA-001": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed data_contract; PASS requires non-empty evidence and reason"
     },
     "DATA-002": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed data_contract; PASS requires non-empty evidence and reason"
     },
     "DATA-003": {
       "status": "enforced-v1",
@@ -68,24 +70,24 @@
       "assertion": "peer-review aggregates cannot live in first-party facts"
     },
     "DATA-006": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed data_contract; PASS requires non-empty evidence and reason"
     },
     "DATA-007": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed data_contract; PASS requires non-empty evidence and reason"
     },
     "DATA-008": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed data_contract; PASS requires non-empty evidence and reason"
     },
     "DATA-009": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed data_contract; PASS requires non-empty evidence and reason"
     },
     "DATA-010": {
       "status": "enforced-v1",
@@ -103,9 +105,9 @@
       "assertion": "agentId exactly 9 digits and never license via persona gate"
     },
     "DATA-013": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed data_contract; PASS requires non-empty evidence and reason"
     },
     "DATA-014": {
       "status": "enforced-v1",
@@ -118,9 +120,9 @@
       "assertion": "escape-option values rejected from persisted multi fields"
     },
     "DATA-016": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed data_contract; PASS requires non-empty evidence and reason"
     },
     "DATA-017": {
       "status": "enforced-v1",
@@ -238,159 +240,159 @@
       "assertion": "per-agent hard gates and promotion decision reported together"
     },
     "STABLE-011": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed data_contract; PASS requires non-empty evidence and reason"
     },
     "NICK-001": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-002": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-003": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-004": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-005": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-006": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-007": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-008": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-009": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-010": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-011": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-012": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-013": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-014": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-015": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-016": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-017": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-018": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-019": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-020": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-021": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-022": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-023": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-024": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-025": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-026": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-027": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-028": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-029": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "NICK-030": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "HEAD-001": {
       "status": "enforced-v1",
@@ -398,19 +400,19 @@
       "assertion": "missing headline"
     },
     "HEAD-002": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "HEAD-003": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "HEAD-004": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "HEAD-005": {
       "status": "enforced-v1",
@@ -423,9 +425,9 @@
       "assertion": "known frozen mechanical headline phrases blocked"
     },
     "HEAD-007": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "HEAD-008": {
       "status": "enforced-v1",
@@ -438,9 +440,9 @@
       "assertion": "headline XHS gate"
     },
     "HEAD-010": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "HEAD-011": {
       "status": "enforced-v1",
@@ -448,39 +450,39 @@
       "assertion": "headline requires explicit mapping to admitted evidence claims"
     },
     "HEAD-012": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "HEAD-013": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "BIO-001": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "BIO-002": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "BIO-003": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "BIO-004": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "BIO-005": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "BIO-006": {
       "status": "enforced-v1",
@@ -493,9 +495,9 @@
       "assertion": "structured service item hard max width 6"
     },
     "BIO-008": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "BIO-009": {
       "status": "enforced-v1",
@@ -513,14 +515,14 @@
       "assertion": "body line absolute width 25 gate"
     },
     "BIO-012": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "BIO-013": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "BIO-014": {
       "status": "enforced-v1",
@@ -538,14 +540,14 @@
       "assertion": "every body line requires explicit admitted evidence mapping"
     },
     "BIO-017": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "COMP-001": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed compliance_contract; PASS requires non-empty evidence and reason"
     },
     "COMP-002": {
       "status": "enforced-v1",
@@ -578,9 +580,9 @@
       "assertion": "Production placeholders blocked"
     },
     "COMP-008": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed compliance_contract; PASS requires non-empty evidence and reason"
     },
     "COMP-009": {
       "status": "enforced-v1",
@@ -588,159 +590,159 @@
       "assertion": "all candidate outputs gated before import readiness"
     },
     "COMP-010": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed compliance_contract; PASS requires non-empty evidence and reason"
     },
     "UI-001": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed journey_contract; PASS requires non-empty evidence and reason"
     },
     "UI-002": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed journey_contract; PASS requires non-empty evidence and reason"
     },
     "UI-003": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed journey_contract; PASS requires non-empty evidence and reason"
     },
     "UI-004": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed journey_contract; PASS requires non-empty evidence and reason"
     },
     "UI-005": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed journey_contract; PASS requires non-empty evidence and reason"
     },
     "UI-006": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed journey_contract; PASS requires non-empty evidence and reason"
     },
     "UI-007": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed journey_contract; PASS requires non-empty evidence and reason"
     },
     "UI-008": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed journey_contract; PASS requires non-empty evidence and reason"
     },
     "UI-009": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed journey_contract; PASS requires non-empty evidence and reason"
     },
     "UI-010": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed journey_contract; PASS requires non-empty evidence and reason"
     },
     "UI-011": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed journey_contract; PASS requires non-empty evidence and reason"
     },
     "UI-012": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed journey_contract; PASS requires non-empty evidence and reason"
     },
     "UI-013": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed journey_contract; PASS requires non-empty evidence and reason"
     },
     "UI-014": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed journey_contract; PASS requires non-empty evidence and reason"
     },
     "CONTENT-001": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "CONTENT-002": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "CONTENT-003": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "CONTENT-004": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "CONTENT-005": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "CONTENT-006": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "CONTENT-007": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "CONTENT-008": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "CONTENT-009": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed semantic_judge; PASS requires non-empty evidence and reason"
     },
     "ENG-001": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed architecture_contract; PASS requires non-empty evidence and reason"
     },
     "ENG-002": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed architecture_contract; PASS requires non-empty evidence and reason"
     },
     "ENG-003": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed architecture_contract; PASS requires non-empty evidence and reason"
     },
     "ENG-004": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed architecture_contract; PASS requires non-empty evidence and reason"
     },
     "ENG-005": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed architecture_contract; PASS requires non-empty evidence and reason"
     },
     "ENG-006": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed architecture_contract; PASS requires non-empty evidence and reason"
     },
     "ENG-007": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed architecture_contract; PASS requires non-empty evidence and reason"
     },
     "ACC-001": {
       "status": "enforced-v1",
@@ -748,24 +750,24 @@
       "assertion": "deterministic contract regression slice"
     },
     "ACC-002": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed journey_contract; PASS requires non-empty evidence and reason"
     },
     "ACC-003": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed journey_contract; PASS requires non-empty evidence and reason"
     },
     "ACC-004": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed journey_contract; PASS requires non-empty evidence and reason"
     },
     "ACC-005": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "executable-v1",
+      "owner": "backend/prd_rule_executor.py",
+      "assertion": "fail-closed journey_contract; PASS requires non-empty evidence and reason"
     }
   }
 }
