@@ -6,7 +6,7 @@ def valid_output():
       "headline":headline,
       "whoLines":["🏗️ 十年工程经历"],
       "advantageLines":["🏃 长期跑步"],
-      "valueLines":["📚 持续分享真实经验"],\n      "evidenceLedger":[{"claim":"十年工程经历"},{"claim":"长期跑步"},{"claim":"持续分享真实经验"}],\n      "evidenceMap":{"headline":["十年工程经历","长期跑步"],"body.0":["十年工程经历"],"body.1":["长期跑步"],"body.2":["持续分享真实经验"]},
+      "valueLines":["📚 持续分享真实经验"],
       "evidenceLedger":[{"claim":"十年工程经历"},{"claim":"长期跑步"},{"claim":"持续分享真实经验"}],
       "evidenceMap":{"headline":["十年工程经历","长期跑步"],"body.0":["十年工程经历"],"body.1":["长期跑步"],"body.2":["持续分享真实经验"]},
       "xiaohongshuBio":["🏗️ 十年工程经历","🏃 长期跑步","📚 持续分享真实经验",headline,XHS_FOOTER],
@@ -89,3 +89,12 @@ def test_headline_blocks_unsupported_expert_and_vague_duration_language():
         o["xiaohongshuBio"][-2]=phrase; o["videoDouyinBio"][-4]=phrase
         o["evidenceLedger"].append({"claim":phrase}); o["evidenceMap"]["headline"]=[phrase]
         assert "HEAD-004" in rules(validate_output(o,agent_id="150000001"))
+
+
+def test_cross_platform_body_must_be_same_source():
+    o=valid_output(); o["videoDouyinBio"][0]="🏗️ 被二次改写的正文"
+    assert "BIO-008" in rules(validate_output(o,agent_id="150000001"))
+
+def test_rendered_body_must_match_structured_canonical_body():
+    o=valid_output(); o["xiaohongshuBio"][0]="🏗️ 页面二次改写"; o["videoDouyinBio"][0]="🏗️ 页面二次改写"
+    assert "BIO-009" in rules(validate_output(o,agent_id="150000001"))
