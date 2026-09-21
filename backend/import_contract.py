@@ -65,6 +65,13 @@ def validate_package(data:dict):
         if leaked:
             errors.append(err("STABLE-004","generated_output_leaked_into_saved_profile",agent_id,",".join(leaked)))
     reviews=data.get("reviews") or data.get("peerReviews") or []
+    seen_review_rows=set()
+    for row in reviews:
+        review_id=aid(row); review_text=str((row or {}).get("review") or (row or {}).get("text") or "").strip()
+        key=(review_id,review_text)
+        if key in seen_review_rows:
+            errors.append(err("DATA-019","peer_review_row_flattened_or_duplicated",review_id))
+        seen_review_rows.add(key)
     skipped=data.get("skippedReviews") or []
     for row in reviews:
         review_id=aid(row)
