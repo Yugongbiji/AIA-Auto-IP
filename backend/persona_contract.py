@@ -15,7 +15,6 @@ EMPTY_LICENSE={"","000","待补充","【待补充】","xxx","XXX"}
 MECHANICAL_HEADLINE=("是我的标签","是我的专业底色","做一个让人记得住的人")
 LOW_VALUE_TIME=re.compile(r"(多年|长期).*(经验|从业|工作)")
 UNSUPPORTED_HEADLINE=re.compile(r"(专家|导师|顾问|0人脉|零人脉)")
-UNSUPPORTED_HEADLINE=re.compile(r"(专家|导师|顾问|0人脉|零人脉)")
 GENERIC_REVIEW_ONLY={"靠谱","专业","真诚","细致","有耐心","暖心","行动派"}
 LICENSE_TEXT=re.compile(r"执业证编号[:：]")
 
@@ -77,6 +76,8 @@ def validate_output(output:dict,*,agent_id="",production=False):
         refs=mapping.get("headline") or []
         if not isinstance(refs,list) or not (1<=len(refs)<=3) or any(_norm_ev(x) not in claims for x in refs):
             errors.append(_err("HEAD-011","headline_evidence_mapping_missing_or_invalid"))
+        if isinstance(refs,list) and len(refs)>3:
+            errors.append(_err("HEAD-002","headline_uses_more_than_three_memory_assets"))
     for i,line in enumerate(body):
         refs=mapping.get(f"body.{i}") or []
         if not isinstance(refs,list) or not refs or any(_norm_ev(x) not in claims for x in refs):
@@ -87,11 +88,19 @@ def validate_output(output:dict,*,agent_id="",production=False):
     for line in body:
         first=str(line).strip()[:1]
         if first: emojis.append(first)
+        if not first or ord(first)<128:
+            errors.append(_err("BIO-014","body_line_missing_emoji_anchor",line))
         if first=="👤": errors.append(_err("BIO-014","deprecated_person_emoji",line))
         if _width(line)>25:
             errors.append(_err("BIO-011","bio_line_over_25_width",line))
     if len(emojis)!=len(set(emojis)):
         errors.append(_err("BIO-014","duplicate_body_emoji"))
+    # Structured body dimensions are kept explicit so a downstream formatter
+    # cannot silently turn the bio back into a resume/tag wall.
+    dimensions=output.get("bodyDimensions")
+    if dimensions is not None:
+        if not isinstance(dimensions,list) or len(dimensions)!=len(body) or any(x not in {"who","advantage","value"} for x in dimensions):
+            errors.append(_err("BIO-013","invalid_or_missing_body_dimension_alignment"))
     services=output.get("services") or []
     if isinstance(services,str):
         services=[x.strip() for x in re.split(r"[｜|,，、]",services) if x.strip()]
