@@ -559,17 +559,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -604,17 +624,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -649,17 +689,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -694,17 +754,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -739,17 +819,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -784,17 +884,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -829,17 +949,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -874,17 +1014,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -919,17 +1079,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -964,17 +1144,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -1009,17 +1209,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -1054,17 +1274,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -1099,17 +1339,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -1144,17 +1404,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -1189,17 +1469,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -1234,17 +1534,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -1279,17 +1599,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -1324,17 +1664,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -1369,17 +1729,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -1414,17 +1794,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -1459,17 +1859,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -1504,17 +1924,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -1549,17 +1989,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -1594,17 +2054,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -1639,17 +2119,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -1684,17 +2184,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -1729,17 +2249,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -1774,17 +2314,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -1819,17 +2379,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -1864,17 +2444,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -1909,17 +2509,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -1954,17 +2574,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -1999,17 +2639,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -2044,17 +2704,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -2089,17 +2769,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -2134,17 +2834,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -2179,17 +2899,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -2224,17 +2964,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -2269,17 +3029,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -2314,17 +3094,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -2359,17 +3159,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -2404,17 +3224,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -2449,17 +3289,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -2494,17 +3354,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -2539,17 +3419,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -2584,17 +3484,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -2629,17 +3549,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -2674,17 +3614,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -2719,17 +3679,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     },
@@ -2764,17 +3744,37 @@
         {
           "claim": "十年工程经历",
           "sourceGrade": "A",
-          "sourceField": "previousCareer"
+          "sourceField": "previousCareer",
+          "sourceText": "十年工程经历",
+          "factKey": "previousCareer",
+          "assetType": "numeric_experience"
         },
         {
           "claim": "长期跑步",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "长期跑步",
+          "factKey": "selfIntro",
+          "assetType": "interest"
         },
         {
           "claim": "持续分享真实经验",
           "sourceGrade": "B",
-          "sourceField": "selfIntro"
+          "sourceField": "selfIntro",
+          "sourceText": "持续分享真实经验",
+          "factKey": "selfIntro",
+          "assetType": "interest"
+        }
+      ],
+      "assetRanking": [
+        {
+          "claim": "十年工程经历"
+        },
+        {
+          "claim": "长期跑步"
+        },
+        {
+          "claim": "持续分享真实经验"
         }
       ]
     }
