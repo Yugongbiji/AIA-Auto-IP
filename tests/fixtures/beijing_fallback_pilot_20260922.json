@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "batch": "beijing-20260922-pilot",
   "productionWrite": false,
-  "note": "Fallback pilot generated only from uploaded Beijing roster/self-registration/peer-review sources. Operational lead metrics excluded. primaryGoal is absent in source files, so import promotion remains BLOCKED.",
+  "note": "Ten-person Beijing fallback preview. Five original pilot + five additional roster members. No Production write. Operational lead metrics excluded. Missing primaryGoal/credentials remain import blockers.",
   "candidates": [
     {
       "agentId": "110082604",
@@ -341,7 +341,7 @@
     {
       "agentId": "110384739",
       "name": "王颖博",
-      "state": "BLOCKED_EVIDENCE_INSUFFICIENT",
+      "state": "FALLBACK_PREVIEW_LOW_EVIDENCE",
       "blockers": [
         "DATA-004 primaryGoal missing",
         "no self-registration source",
@@ -374,8 +374,397 @@
       "fallback": {
         "nicknamePrimary": "王颖博",
         "nicknameBackups": [],
-        "headline": null,
-        "body": []
+        "headline": "从真实分享开始，慢慢让大家认识我",
+        "body": [
+          "📝 先从真实经历和日常开始记录",
+          "💬 内容以本人确认的信息为准",
+          "🌱 资料逐步完善，再增加更多个人记忆点"
+        ],
+        "xiaohongshuBio": [
+          "📝 先从真实经历和日常开始记录",
+          "💬 内容以本人确认的信息为准",
+          "🌱 资料逐步完善，再增加更多个人记忆点",
+          "从真实分享开始，慢慢让大家认识我",
+          "本账号所述内容为个人意见，不代表任何官方意见。"
+        ],
+        "videoDouyinPreview": [
+          "📝 先从真实经历和日常开始记录",
+          "💬 内容以本人确认的信息为准",
+          "🌱 资料逐步完善，再增加更多个人记忆点",
+          "从真实分享开始，慢慢让大家认识我",
+          "本账号上所陈述或表达的内容仅为我个人意见，并不代表友邦人寿的意见",
+          "营销服务部：待源数据补充",
+          "执业证编号：待源数据补充"
+        ]
+      }
+    },
+    {
+      "agentId": "110399782",
+      "name": "原思敏",
+      "state": "FALLBACK_PREVIEW_BLOCKED_FOR_IMPORT",
+      "blockers": [
+        "DATA-004 primaryGoal missing",
+        "no self-registration source"
+      ],
+      "facts": [],
+      "peerSummary": {
+        "reviews": 15,
+        "callSigns": [
+          [
+            "小K/小k",
+            10
+          ],
+          [
+            "思敏",
+            2
+          ]
+        ],
+        "traits": [
+          [
+            "专业",
+            15
+          ],
+          [
+            "靠谱",
+            13
+          ],
+          [
+            "暖心",
+            8
+          ],
+          [
+            "行动派",
+            8
+          ],
+          [
+            "情绪稳定",
+            8
+          ]
+        ]
+      },
+      "fallback": {
+        "nicknamePrimary": "小K",
+        "nicknameBackups": [
+          "思敏",
+          "原思敏"
+        ],
+        "headline": "专业和靠谱，是身边人对她最集中的印象",
+        "body": [
+          "🧭 专业｜靠谱",
+          "☀️ 暖心｜行动派",
+          "🌿 情绪稳定｜细节控"
+        ],
+        "xiaohongshuBio": [
+          "🧭 专业｜靠谱",
+          "☀️ 暖心｜行动派",
+          "🌿 情绪稳定｜细节控",
+          "专业和靠谱，是身边人对她最集中的印象",
+          "本账号所述内容为个人意见，不代表任何官方意见。"
+        ],
+        "videoDouyinPreview": [
+          "🧭 专业｜靠谱",
+          "☀️ 暖心｜行动派",
+          "🌿 情绪稳定｜细节控",
+          "专业和靠谱，是身边人对她最集中的印象",
+          "本账号上所陈述或表达的内容仅为我个人意见，并不代表友邦人寿的意见",
+          "营销服务部：待源数据补充",
+          "执业证编号：待源数据补充"
+        ]
+      }
+    },
+    {
+      "agentId": "110310978",
+      "name": "孙智丰",
+      "state": "FALLBACK_PREVIEW_BLOCKED_FOR_IMPORT",
+      "blockers": [
+        "DATA-004 primaryGoal missing",
+        "no self-registration source"
+      ],
+      "facts": [],
+      "peerSummary": {
+        "reviews": 11,
+        "callSigns": [
+          [
+            "智丰",
+            4
+          ],
+          [
+            "双双",
+            3
+          ],
+          [
+            "Melody/melody",
+            2
+          ]
+        ],
+        "traits": [
+          [
+            "专业",
+            11
+          ],
+          [
+            "情绪稳定",
+            9
+          ],
+          [
+            "靠谱",
+            8
+          ],
+          [
+            "细节控",
+            4
+          ],
+          [
+            "暖心",
+            4
+          ]
+        ]
+      },
+      "fallback": {
+        "nicknamePrimary": "智丰",
+        "nicknameBackups": [
+          "双双",
+          "孙智丰"
+        ],
+        "headline": "专业之外，也给人稳定、靠谱的感觉",
+        "body": [
+          "📚 专业｜细节控",
+          "🌿 情绪稳定｜靠谱",
+          "☀️ 暖心｜行动派"
+        ],
+        "xiaohongshuBio": [
+          "📚 专业｜细节控",
+          "🌿 情绪稳定｜靠谱",
+          "☀️ 暖心｜行动派",
+          "专业之外，也给人稳定、靠谱的感觉",
+          "本账号所述内容为个人意见，不代表任何官方意见。"
+        ],
+        "videoDouyinPreview": [
+          "📚 专业｜细节控",
+          "🌿 情绪稳定｜靠谱",
+          "☀️ 暖心｜行动派",
+          "专业之外，也给人稳定、靠谱的感觉",
+          "本账号上所陈述或表达的内容仅为我个人意见，并不代表友邦人寿的意见",
+          "营销服务部：待源数据补充",
+          "执业证编号：待源数据补充"
+        ]
+      }
+    },
+    {
+      "agentId": "110739165",
+      "name": "杨悦",
+      "state": "FALLBACK_PREVIEW_BLOCKED_FOR_IMPORT",
+      "blockers": [
+        "DATA-004 primaryGoal missing",
+        "no self-registration source"
+      ],
+      "facts": [],
+      "peerSummary": {
+        "reviews": 22,
+        "callSigns": [
+          [
+            "悦悦",
+            8
+          ],
+          [
+            "杨悦",
+            6
+          ]
+        ],
+        "traits": [
+          [
+            "靠谱",
+            22
+          ],
+          [
+            "专业",
+            19
+          ],
+          [
+            "行动派",
+            13
+          ],
+          [
+            "细节控",
+            13
+          ],
+          [
+            "人间清醒",
+            9
+          ]
+        ]
+      },
+      "fallback": {
+        "nicknamePrimary": "悦悦",
+        "nicknameBackups": [
+          "杨悦"
+        ],
+        "headline": "靠谱、专业，也是一位很有行动力的人",
+        "body": [
+          "🧭 靠谱｜专业",
+          "⚡ 行动派｜细节控",
+          "💡 人间清醒｜学习力强"
+        ],
+        "xiaohongshuBio": [
+          "🧭 靠谱｜专业",
+          "⚡ 行动派｜细节控",
+          "💡 人间清醒｜学习力强",
+          "靠谱、专业，也是一位很有行动力的人",
+          "本账号所述内容为个人意见，不代表任何官方意见。"
+        ],
+        "videoDouyinPreview": [
+          "🧭 靠谱｜专业",
+          "⚡ 行动派｜细节控",
+          "💡 人间清醒｜学习力强",
+          "靠谱、专业，也是一位很有行动力的人",
+          "本账号上所陈述或表达的内容仅为我个人意见，并不代表友邦人寿的意见",
+          "营销服务部：待源数据补充",
+          "执业证编号：待源数据补充"
+        ]
+      }
+    },
+    {
+      "agentId": "110566861",
+      "name": "张英",
+      "state": "FALLBACK_PREVIEW_LOW_EVIDENCE",
+      "blockers": [
+        "DATA-004 primaryGoal missing",
+        "no self-registration source; peer evidence sparse"
+      ],
+      "facts": [],
+      "peerSummary": {
+        "reviews": 2,
+        "callSigns": [
+          [
+            "张英",
+            1
+          ],
+          [
+            "开心妈妈",
+            1
+          ]
+        ],
+        "traits": [
+          [
+            "靠谱",
+            2
+          ],
+          [
+            "专业",
+            2
+          ],
+          [
+            "情绪稳定",
+            1
+          ],
+          [
+            "暖心",
+            1
+          ]
+        ]
+      },
+      "fallback": {
+        "nicknamePrimary": "张英",
+        "nicknameBackups": [],
+        "headline": "从真实分享开始，慢慢让大家认识我",
+        "body": [
+          "📝 当前可确认的个人资料较少",
+          "🧭 已有评价集中在靠谱、专业",
+          "🌱 后续用本人资料补充更多记忆点"
+        ],
+        "xiaohongshuBio": [
+          "📝 当前可确认的个人资料较少",
+          "🧭 已有评价集中在靠谱、专业",
+          "🌱 后续用本人资料补充更多记忆点",
+          "从真实分享开始，慢慢让大家认识我",
+          "本账号所述内容为个人意见，不代表任何官方意见。"
+        ],
+        "videoDouyinPreview": [
+          "📝 当前可确认的个人资料较少",
+          "🧭 已有评价集中在靠谱、专业",
+          "🌱 后续用本人资料补充更多记忆点",
+          "从真实分享开始，慢慢让大家认识我",
+          "本账号上所陈述或表达的内容仅为我个人意见，并不代表友邦人寿的意见",
+          "营销服务部：待源数据补充",
+          "执业证编号：待源数据补充"
+        ]
+      }
+    },
+    {
+      "agentId": "110971320",
+      "name": "尚思思",
+      "state": "FALLBACK_PREVIEW_BLOCKED_FOR_IMPORT",
+      "blockers": [
+        "DATA-004 primaryGoal missing",
+        "no self-registration source"
+      ],
+      "facts": [],
+      "peerSummary": {
+        "reviews": 40,
+        "callSigns": [
+          [
+            "思思",
+            21
+          ],
+          [
+            "尚思思",
+            9
+          ],
+          [
+            "思",
+            2
+          ]
+        ],
+        "traits": [
+          [
+            "靠谱",
+            34
+          ],
+          [
+            "专业",
+            26
+          ],
+          [
+            "暖心",
+            24
+          ],
+          [
+            "行动派",
+            18
+          ],
+          [
+            "生活家",
+            13
+          ]
+        ]
+      },
+      "fallback": {
+        "nicknamePrimary": "思思",
+        "nicknameBackups": [
+          "尚思思"
+        ],
+        "headline": "靠谱、暖心，也愿意把事情认真做好",
+        "body": [
+          "🧭 靠谱｜专业",
+          "☀️ 暖心｜行动派",
+          "🏡 生活家｜细节控"
+        ],
+        "xiaohongshuBio": [
+          "🧭 靠谱｜专业",
+          "☀️ 暖心｜行动派",
+          "🏡 生活家｜细节控",
+          "靠谱、暖心，也愿意把事情认真做好",
+          "本账号所述内容为个人意见，不代表任何官方意见。"
+        ],
+        "videoDouyinPreview": [
+          "🧭 靠谱｜专业",
+          "☀️ 暖心｜行动派",
+          "🏡 生活家｜细节控",
+          "靠谱、暖心，也愿意把事情认真做好",
+          "本账号上所陈述或表达的内容仅为我个人意见，并不代表友邦人寿的意见",
+          "营销服务部：待源数据补充",
+          "执业证编号：待源数据补充"
+        ]
       }
     }
   ]
