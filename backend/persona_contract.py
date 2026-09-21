@@ -15,6 +15,7 @@ EMPTY_LICENSE={"","000","待补充","【待补充】","xxx","XXX"}
 MECHANICAL_HEADLINE=("是我的标签","是我的专业底色","做一个让人记得住的人")
 LOW_VALUE_TIME=re.compile(r"(多年|长期).*(经验|从业|工作)")
 UNSUPPORTED_HEADLINE=re.compile(r"(专家|导师|顾问|0人脉|零人脉)")
+UNSUPPORTED_HEADLINE=re.compile(r"(专家|导师|顾问|0人脉|零人脉)")
 GENERIC_REVIEW_ONLY={"靠谱","专业","真诚","细致","有耐心","暖心","行动派"}
 LICENSE_TEXT=re.compile(r"执业证编号[:：]")
 
@@ -64,6 +65,10 @@ def validate_output(output:dict,*,agent_id="",production=False):
     if headline and XHS_BANNED.search(headline): errors.append(_err("HEAD-009","headline_xhs_compliance"))
     if any(p in headline for p in MECHANICAL_HEADLINE) or ("从" in headline and "跨界" in headline):
         errors.append(_err("HEAD-006","mechanical_headline"))
+    if headline and UNSUPPORTED_HEADLINE.search(headline):
+        errors.append(_err("HEAD-004","unsupported_headline_claim",headline))
+    if headline and LOW_VALUE_TIME.search(headline):
+        errors.append(_err("HEAD-004","vague_duration_in_headline",headline))
     body=_body_lines(output)
     claims=_evidence_claims(output); mapping=_mapped_claims(output)
     # HEAD/BIO evidence mapping is explicit: every rendered semantic line must
@@ -105,8 +110,14 @@ def validate_output(output:dict,*,agent_id="",production=False):
         errors.append(_err("COMP-002","xhs_body_compliance"))
     if _width("\n".join(xhs))>100:
         errors.append(_err("BIO-015","xhs_complete_bio_over_100_width"))
-    if any(str(x).startswith(SOURCE_PREFIXES) for x in xhs_body):
-        errors.append(_err("BIO-006","peer_review_source_prefix"))
+    forbidden_source_lines=[x for x in body+xhs_body if any(p in str(x) for p in SOURCE_PREFIXES)]
+    if forbidden_source_lines:
+        errors.append(_err("BIO-006","peer_review_source_prefix","；".join(forbidden_source_lines)))
+    video_body=video[:max(0,len(video)-4)] if headline and len(video)>=4 and video[-4]==headline else []
+    if xhs_body != video_body:
+        errors.append(_err("BIO-008","cross_platform_body_drift"))
+    if xhs_body != body:
+        errors.append(_err("BIO-009","bio_body_structure_drift"))
 
     if len(video)<3 or video[-3]!=VIDEO_OPINION or not video[-2].startswith("营销服务部：") or not video[-1].startswith("执业证编号："):
         errors.append(_err("COMP-005","video_footer_structure"))
