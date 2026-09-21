@@ -24,6 +24,7 @@ def test_sanitized_tianjin_fixture_passes_read_only_harness():
     assert p.returncode==0, p.stdout+"\n"+p.stderr
     report=json.loads(p.stdout.split("IMPORT HARNESS PREFLIGHT PASS")[0])
     assert report["productionWrite"] is False
+    assert report["prdContractCoverage"]=="PASS"
     assert report["rosterRows"]==69
     assert report["stableOutputs"]==50
     assert report["invalidStable"]=={}
