@@ -30,10 +30,12 @@ def main() -> int:
             "expectedPrdBlob":expected,"prdFrozen":blob==expected,
             "enforcementMissing":sorted(set(prd_ids)-set(enforcement_ids)),
             "enforcementUnknown":sorted(set(enforcement_ids)-set(prd_ids)),
-            "enforcedV1":sum(1 for x in enforcement["rules"].values() if x.get("status")=="enforced-v1"),
+            "deterministicEnforced":sum(1 for x in enforcement["rules"].values() if x.get("status")=="enforced-v1"),
+            "executorEnforced":sum(1 for x in enforcement["rules"].values() if x.get("status")=="executable-v1"),
+            "executable":sum(1 for x in enforcement["rules"].values() if x.get("status") in {"enforced-v1","executable-v1"}),
             "pendingV1":sum(1 for x in enforcement["rules"].values() if x.get("status")=="pending-v1")}
     print(json.dumps(report,ensure_ascii=False,indent=2))
-    if missing or unknown or duplicates or report["enforcementMissing"] or report["enforcementUnknown"] or blob!=expected:
+    if missing or unknown or duplicates or report["enforcementMissing"] or report["enforcementUnknown"] or report["executable"]!=len(prd_ids) or report["pendingV1"]!=0 or blob!=expected:
         print("PRD CONTRACT COVERAGE FAILED",file=sys.stderr)
         return 2
     print("PRD CONTRACT COVERAGE PASS")
