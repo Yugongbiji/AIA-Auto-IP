@@ -7,6 +7,7 @@ def candidate(headline="🌊 十年工程经历，也是一名长期跑者"):
       "whoLines":["🏗️ 十年工程经历"],"advantageLines":["🏃 长期跑步"],"valueLines":["📚 持续分享真实经验"],
       "xiaohongshuBio":["🏗️ 十年工程经历","🏃 长期跑步","📚 持续分享真实经验",headline,XHS_FOOTER],
       "videoDouyinBio":["🏗️ 十年工程经历","🏃 长期跑步","📚 持续分享真实经验",headline,VIDEO_OPINION,"营销服务部：测试部","执业证编号：LICENSE-1"],
+      "evidenceMap":{"headline":["十年工程经历","长期跑步"],"body.0":["十年工程经历"],"body.1":["长期跑步"],"body.2":["持续分享真实经验"]},
       "evidenceLedger":[
         {"claim":"十年工程经历","sourceText":"十年工程经历","sourceGrade":"A","sourceField":"previousCareer","factKey":"career","assetType":"numeric_experience"},
         {"claim":"长期跑步","sourceText":"长期跑步","sourceGrade":"B","sourceField":"selfIntro","factKey":"running","assetType":"interest"}],
