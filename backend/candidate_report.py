@@ -6,6 +6,7 @@ from backend.evidence_contract import rank_assets
 from backend.stable_promotion_contract import decide_promotion
 from backend.prd_rule_executor import validate_executor_results
 from backend.semantic_judge_contract import build_tasks
+from backend.nickname_contract import validate_nickname_output
 
 def build_candidate_report(data):
     package_errors=validate_package(data)
@@ -16,7 +17,7 @@ def build_candidate_report(data):
     executor_results=data.get("ruleExecutorResults") or {}
     rows=[]
     for agent_id,candidate in stable.items():
-        hard=validate_output(candidate,agent_id=str(agent_id),production=True)
+        hard=validate_output(candidate,agent_id=str(agent_id),production=True) + validate_nickname_output(candidate)
         assets=rank_assets(candidate.get("evidenceLedger") or [],candidate.get("currentIndustryYears"))
         current=existing.get(agent_id)
         promotion=decide_promotion(current,candidate,agent_id=str(agent_id),
