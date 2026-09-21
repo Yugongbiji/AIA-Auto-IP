@@ -34,6 +34,17 @@ def _body_lines(output):
         merged.extend(_lines(output.get(key)))
     return merged
 
+def _evidence_claims(output):
+    ledger=(output or {}).get("evidenceLedger") or []
+    return {_norm_ev(x.get("claim")) for x in ledger if isinstance(x,dict) and x.get("claim")}
+
+def _norm_ev(v):
+    return re.sub(r"[\s，。；、|｜]+","",str(v or "")).lower()
+
+def _mapped_claims(output):
+    mapping=(output or {}).get("evidenceMap") or {}
+    return mapping if isinstance(mapping,dict) else {}
+
 def _err(rule_id,code,detail=""):
     return {"ruleId":rule_id,"code":code,"detail":detail}
 
@@ -52,11 +63,28 @@ def validate_output(output:dict,*,agent_id="",production=False):
     if any(p in headline for p in MECHANICAL_HEADLINE) or ("从" in headline and "跨界" in headline):
         errors.append(_err("HEAD-006","mechanical_headline"))
     body=_body_lines(output)
+    claims=_evidence_claims(output); mapping=_mapped_claims(output)
+    # HEAD/BIO evidence mapping is explicit: every rendered semantic line must
+    # point to one or more admitted evidence claims. Headline can map to 2–3.
+    if headline:
+        refs=mapping.get("headline") or []
+        if not isinstance(refs,list) or not (1<=len(refs)<=3) or any(_norm_ev(x) not in claims for x in refs):
+            errors.append(_err("HEAD-011","headline_evidence_mapping_missing_or_invalid"))
+    for i,line in enumerate(body):
+        refs=mapping.get(f"body.{i}") or []
+        if not isinstance(refs,list) or not refs or any(_norm_ev(x) not in claims for x in refs):
+            errors.append(_err("BIO-016","bio_line_evidence_mapping_missing_or_invalid",line))
     if body and len(body)<3 and not output.get("evidenceInsufficient"):
         errors.append(_err("BIO-010","bio_under_three_lines_without_evidence_exception"))
+    emojis=[]
     for line in body:
+        first=str(line).strip()[:1]
+        if first: emojis.append(first)
+        if first=="👤": errors.append(_err("BIO-014","deprecated_person_emoji",line))
         if _width(line)>25:
             errors.append(_err("BIO-011","bio_line_over_25_width",line))
+    if len(emojis)!=len(set(emojis)):
+        errors.append(_err("BIO-014","duplicate_body_emoji"))
     services=output.get("services") or []
     if isinstance(services,str):
         services=[x.strip() for x in re.split(r"[｜|,，、]",services) if x.strip()]
