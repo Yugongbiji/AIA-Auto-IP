@@ -3,8 +3,8 @@
   "meaning": "Harness V1 enforcement inventory; pending is explicit and must never be interpreted as PASS.",
   "summary": {
     "total": 152,
-    "enforcedV1": 30,
-    "pendingV1": 122
+    "enforcedV1": 40,
+    "pendingV1": 112
   },
   "rules": {
     "GOV-001": {
@@ -148,24 +148,24 @@
       "assertion": "every stable candidate requires traceable A/B/C evidence ledger; D blocked"
     },
     "EVID-002": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "enforced-v1",
+      "owner": "backend/evidence_contract.py",
+      "assertion": "evidence stays source-traceable; no inferred grade admitted"
     },
     "EVID-003": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "enforced-v1",
+      "owner": "backend/evidence_contract.py",
+      "assertion": "exact duration cannot be weakened or invented"
     },
     "EVID-004": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "enforced-v1",
+      "owner": "backend/evidence_contract.py",
+      "assertion": "deterministic asset priority ranking"
     },
     "EVID-005": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "enforced-v1",
+      "owner": "backend/evidence_contract.py",
+      "assertion": "under-five-year current industry receives exclusion score"
     },
     "EVID-006": {
       "status": "enforced-v1",
@@ -173,19 +173,19 @@
       "assertion": "known internal jargon blocked from persona output"
     },
     "EVID-007": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "enforced-v1",
+      "owner": "backend/evidence_contract.py",
+      "assertion": "same fact deduped; conflicts require resolution"
     },
     "EVID-008": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "enforced-v1",
+      "owner": "backend/import_contract.py",
+      "assertion": "declared asset ranking must match canonical competition"
     },
     "EVID-009": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "enforced-v1",
+      "owner": "backend/evidence_contract.py",
+      "assertion": "category-to-specific upgrades blocked"
     },
     "STABLE-001": {
       "status": "pending-v1",
@@ -213,14 +213,14 @@
       "assertion": "preflight cannot directly overwrite current output or write Production"
     },
     "STABLE-006": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "enforced-v1",
+      "owner": "backend/stable_promotion_contract.py",
+      "assertion": "strictly better quality required for promotion eligibility"
     },
     "STABLE-007": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "enforced-v1",
+      "owner": "backend/stable_promotion_contract.py",
+      "assertion": "existing stable changes require frozen allowed reason"
     },
     "STABLE-008": {
       "status": "pending-v1",
@@ -233,9 +233,9 @@
       "assertion": null
     },
     "STABLE-010": {
-      "status": "pending-v1",
-      "owner": null,
-      "assertion": null
+      "status": "enforced-v1",
+      "owner": "backend/stable_promotion_contract.py",
+      "assertion": "promotion candidate must pass evidence and persona hard gates"
     },
     "STABLE-011": {
       "status": "pending-v1",
