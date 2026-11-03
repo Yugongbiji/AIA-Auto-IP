@@ -50,6 +50,7 @@ jobs:
             import os
             from pathlib import Path
             import psycopg
+            import sqlite3
 
             # Read existing application configuration without echoing secrets.
             for filename in (".env", ".env.rds"):
@@ -70,6 +71,19 @@ jobs:
             )
             any_failed = False
             for label, prefix in sources:
+                if label == "main" and os.getenv("DB_ENGINE", "sqlite").strip().lower() == "sqlite":
+                    try:
+                        db_path = Path("data/persona.sqlite3").resolve()
+                        with sqlite3.connect(f"file:{db_path}?mode=ro", uri=True, timeout=5) as conn:
+                            tables = conn.execute(
+                                "SELECT COUNT(*) FROM sqlite_master WHERE type='table'"
+                            ).fetchone()[0]
+                        print(f"MAIN_DB=sqlite_readonly_ok tables_present={str(tables > 0).lower()}")
+                        any_failed |= tables == 0
+                    except Exception as exc:
+                        print(f"MAIN_DB=sqlite_failed error_type={type(exc).__name__}")
+                        any_failed = True
+                    continue
                 required = [prefix + "_" + key for key in ("HOST", "NAME", "USER", "PASSWORD")]
                 if not all(os.getenv(k, "").strip() for k in required):
                     print(f"RDS_{label}=not_configured")
