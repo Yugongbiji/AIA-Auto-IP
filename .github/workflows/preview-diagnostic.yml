@@ -44,4 +44,63 @@ jobs:
               --until '2026-09-03 15:59:30 UTC' --no-pager -o cat 2>&1 \
               | grep -Ei 'error|exception|traceback|failed|exit|timeout|denied|address already in use|started|stopped|restart' \
               | tail -60 || true
+            echo '=== read-only database connectivity ==='
+            cd /opt/AIA-Auto-IP
+            .venv/bin/python - <<'PY'
+            import os
+            from pathlib import Path
+            import psycopg
+
+            # Read existing application configuration without echoing secrets.
+            for filename in (".env", ".env.rds"):
+                path = Path(filename)
+                if not path.is_file():
+                    continue
+                for raw in path.read_text(encoding="utf-8").splitlines():
+                    line = raw.strip()
+                    if not line or line.startswith("#") or "=" not in line:
+                        continue
+                    key, value = line.split("=", 1)
+                    if key.strip() and value.strip():
+                        os.environ[key.strip()] = value.strip().strip('"').strip("'")
+
+            sources = (
+                ("main", "DB"),
+                ("scripts", "SCRIPT_DB"),
+            )
+            any_failed = False
+            for label, prefix in sources:
+                required = [prefix + "_" + key for key in ("HOST", "NAME", "USER", "PASSWORD")]
+                if not all(os.getenv(k, "").strip() for k in required):
+                    print(f"RDS_{label}=not_configured")
+                    any_failed = True
+                    continue
+                try:
+                    # Explicit read-only transactions: no schema/data writes.
+                    with psycopg.connect(
+                        host=os.environ[prefix + "_HOST"].strip(),
+                        port=int(os.getenv(prefix + "_PORT", "5432")),
+                        dbname=os.environ[prefix + "_NAME"].strip(),
+                        user=os.environ[prefix + "_USER"].strip(),
+                        password=os.environ[prefix + "_PASSWORD"],
+                        sslmode=os.getenv(prefix + "_SSLMODE", "require"),
+                        connect_timeout=6,
+                        options="-c default_transaction_read_only=on",
+                    ) as conn:
+                        with conn.cursor() as cursor:
+                            cursor.execute("SELECT 1")
+                            cursor.fetchone()
+                            if label == "scripts":
+                                cursor.execute("SELECT to_regclass('public.script_library') IS NOT NULL")
+                                table_exists = bool(cursor.fetchone()[0])
+                                print(f"RDS_scripts=connected table_exists={str(table_exists).lower()}")
+                                any_failed |= not table_exists
+                            else:
+                                print("RDS_main=connected")
+                except Exception as exc:
+                    # Never print connection strings, passwords, or SQL exception details.
+                    print(f"RDS_{label}=failed error_type={type(exc).__name__}")
+                    any_failed = True
+            print("RDS_readonly_verdict=" + ("needs_attention" if any_failed else "ok"))
+            PY
             echo '=== diagnostic complete: no changes made ==='
