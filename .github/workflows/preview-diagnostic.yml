@@ -1,50 +1,47 @@
-name: Preview Environment Diagnostic
+name: ECS Production Read-only Diagnostic
 
 on:
+  workflow_dispatch:
   pull_request:
     branches:
       - main
     paths:
+      - .github/workflows/deploy.yml
       - .github/workflows/preview-diagnostic.yml
+
+permissions:
+  contents: read
 
 jobs:
   inspect:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - name: Inspect ECS environment (read only)
+      - name: Inspect existing ECS production service (read only)
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.ECS_HOST }}
           username: ${{ secrets.ECS_USER }}
           key: ${{ secrets.ECS_SSH_KEY }}
           script: |
-            set -e
-            echo '=== identity ==='
-            whoami
-            id
-            echo '=== app directories ==='
-            ls -ld /opt/AIA-Auto-IP /opt/AIA-Auto-IP-preview 2>/dev/null || true
-            echo '=== app services ==='
-            systemctl status aia-auto-ip --no-pager -l 2>/dev/null | sed -n '1,16p' || true
-            systemctl status aia-auto-ip-preview --no-pager -l 2>/dev/null | sed -n '1,16p' || true
-            echo '=== nginx loaded files that reference 8000 ==='
-            grep -Rsn '127.0.0.1:8000' /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null || true
-            echo '=== nginx candidate file contents ==='
-            for f in $(grep -Rsl '127.0.0.1:8000' /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null); do
-              real=$(readlink -f "$f")
-              echo "--- $f -> $real ---"
-              sed -n '1,220p' "$real" || true
-            done
-            echo '=== nginx effective server/location summary ==='
-            nginx -T 2>/dev/null | grep -nE 'configuration file|listen |server_name|location |proxy_pass' | head -180 || true
-            echo '=== direct local probes ==='
-            curl -sS -o /dev/null -w '8000 root: %{http_code}\n' http://127.0.0.1:8000/ || true
-            curl -sS -o /dev/null -w '8001 root: %{http_code}\n' http://127.0.0.1:8001/ || true
-            curl -sS -o /dev/null -w 'nginx root: %{http_code}\n' http://127.0.0.1/ || true
-            curl -sS -o /dev/null -w 'nginx preview: %{http_code}\n' http://127.0.0.1/preview/ || true
+            set -u
+            echo '=== service state ==='
+            systemctl show aia-auto-ip -p ActiveState -p SubState -p MainPID -p ExecMainStatus -p NRestarts -p ActiveEnterTimestamp 2>&1 || true
+            echo '=== effective service entrypoint (no environment) ==='
+            systemctl show aia-auto-ip -p ExecStart -p WorkingDirectory -p Type -p Restart 2>&1 || true
             echo '=== listening ports ==='
-            ss -lntp 2>/dev/null | grep -E ':80 |:8000 |:8001 ' || true
-            echo '=== production repo state ==='
-            git -C /opt/AIA-Auto-IP rev-parse --abbrev-ref HEAD 2>/dev/null || true
-            git -C /opt/AIA-Auto-IP rev-parse --short HEAD 2>/dev/null || true
-            echo '=== done: no changes were made ==='
+            ss -ltn '( sport = :8000 or sport = :8001 )' 2>&1 || true
+            echo '=== local HTTP status (GET, no application writes) ==='
+            for port in 8000 8001; do
+              curl --silent --show-error --connect-timeout 2 --max-time 5 -o /dev/null \
+                -w "port=${port} status=%{http_code} duration=%{time_total}\n" \
+                "http://127.0.0.1:${port}/" 2>&1 || true
+            done
+            echo '=== deployed production HEAD ==='
+            git -C /opt/AIA-Auto-IP rev-parse --short HEAD 2>&1 || true
+            echo '=== historical journal summary (no output of env files) ==='
+            journalctl -u aia-auto-ip --since '2026-09-03 15:57:30 UTC' \
+              --until '2026-09-03 15:59:30 UTC' --no-pager -o cat 2>&1 \
+              | grep -Ei 'error|exception|traceback|failed|exit|timeout|denied|address already in use|started|stopped|restart' \
+              | tail -60 || true
+            echo '=== diagnostic complete: no changes made ==='
