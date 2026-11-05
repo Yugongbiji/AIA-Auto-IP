@@ -44,6 +44,12 @@ class DeploymentSafetyContract(unittest.TestCase):
         self.assertIn("CRITICAL: one or more rollback commands failed", script)
         self.assertIn("Rollback restored and HTTP health check passed.", script)
 
+    def test_fetch_failure_cannot_trigger_production_restart(self):
+        script = remote_shell(DEPLOY_PATH)
+        self.assertLess(script.index("git fetch origin main"), script.index("trap 'on_deploy_error"))
+        self.assertLess(script.index("trap 'on_deploy_error"), script.index("git reset --hard origin/main"))
+        self.assertLess(script.index("PREFLIGHT BLOCKED: existing production HTTP service is unhealthy"), script.index("git fetch origin main"))
+
     def test_preflight_refuses_dirty_or_unhealthy_production(self):
         script = remote_shell(DEPLOY_PATH)
         self.assertIn("git diff --quiet", script)
