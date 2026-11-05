@@ -46,7 +46,30 @@ def test_profile_drawer_exposes_edit_and_restart_controls():
     assert "generateProposal()" in profile_float
 
 
+def test_profile_drawer_keeps_imported_fields_read_only_and_edits_dialogue_fields_inline():
+    profile_float = (server.ROOT / "web" / "profile-float.js").read_text(encoding="utf-8")
+
+    assert "IMMUTABLE_FIELD_KEYS" in profile_float
+    assert "saveInlineField" in profile_float
+    assert "编辑${label}" in profile_float
+    assert "报名资料" in profile_float
+    assert "客户反馈" in profile_float
+    assert "if (!text(input.value))" in profile_float
+
+
 def test_canonical_policy_exports_validation_before_persisting():
     policy = (server.ROOT / "web" / "ip-policy-core.js").read_text(encoding="utf-8")
     assert "validateCanonicalProposal" in policy
     assert "validation.valid" in policy
+
+
+def test_explicit_proposal_requests_share_one_owner_instead_of_chat_fallback():
+    app = (server.ROOT / "web" / "app.js").read_text(encoding="utf-8")
+    revision_rules = (server.ROOT / "web" / "product-rules-v18.js").read_text(encoding="utf-8")
+
+    assert "aiaProposalGeneration" in app
+    assert "发我方案" in app
+    assert "没有了" in app
+    assert "force: true" in app
+    assert "aiaProposalGeneration" in revision_rules
+    assert "wantsGenerate" not in revision_rules
