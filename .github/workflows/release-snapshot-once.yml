@@ -1,11 +1,9 @@
 name: One-time Pre-Release SQLite Snapshot
 
+# One-time snapshot was completed successfully on 2026-11-05.
+# Disabled automatic execution to avoid duplicate production snapshots.
 on:
-  push:
-    branches:
-      - ops/aia-release-snapshot-20261105
-    paths:
-      - '.github/workflows/release-snapshot-once.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
