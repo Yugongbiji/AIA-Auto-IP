@@ -57,8 +57,8 @@ class DeploymentSafetyContract(unittest.TestCase):
     def test_readiness_wait_handles_delayed_and_failed_startup(self):
         script = remote_shell(DEPLOY_PATH)
         start = script.index("wait_until_ready() {")
-        end = script.index("\\nrestore_override() {", start)
-        function = script[start:end]
+        end = script.index("restore_override() {", start)
+        function = script[start:end].rstrip()
         # Everything executes in a GitHub runner subprocess with mocked commands;
         # no actual systemd, server, or database is contacted.
         stub = """
@@ -76,7 +76,7 @@ class DeploymentSafetyContract(unittest.TestCase):
             ("never", 1, 30),
         ]:
             result = subprocess.run(
-                ["bash", "-c", stub + function + "\\nwait_until_ready"],
+                ["bash", "-c", stub + function + "\nwait_until_ready"],
                 capture_output=True, text=True,
                 env={"PATH": "/usr/bin:/bin", "SCENARIO": scenario},
             )
