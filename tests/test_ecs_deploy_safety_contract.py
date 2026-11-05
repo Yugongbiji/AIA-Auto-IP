@@ -35,6 +35,16 @@ class DeploymentSafetyContract(unittest.TestCase):
         ):
             self.assertIn(required, script)
 
+    def test_production_requires_full_qa(self):
+        workflow = DEPLOY_PATH.read_text(encoding="utf-8")
+        self.assertIn("needs: [contract-api, playwright]", workflow)
+        self.assertIn("project: [mobile-360, mobile-390, desktop-chromium]", workflow)
+        self.assertIn("python -m pytest -q", workflow)
+        self.assertIn("npm run test:e2e -- --project=", workflow)
+        # No ECS credentials may be used in the validation jobs.
+        validation_jobs = workflow.split("  deploy:", 1)[0]
+        self.assertNotIn("secrets.ECS_", validation_jobs)
+
     def test_diagnostic_does_not_run_for_pull_requests(self):
         workflow = DIAGNOSTIC_PATH.read_text(encoding="utf-8")
         triggers = workflow.split("jobs:", 1)[0]
