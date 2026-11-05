@@ -213,8 +213,11 @@
     font-size:10.5px;
     line-height:1.5;
   }
+  /* Keep the back-to-latest action on the opposite side of the fixed IP shortcuts.
+     Otherwise the profile button intercepts taps at narrow mobile widths. */
   .chat-latest-button {
-    right:12px;
+    left:12px;
+    right:auto;
     bottom:78px;
   }
 }
