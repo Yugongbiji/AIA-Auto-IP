@@ -1,0 +1,42 @@
+name: Mobile Interaction Regression
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'web/interaction-v2.css'
+      - 'web/profile-float.css'
+      - 'web/profile-float.js'
+      - 'tests/e2e/mobile-boundaries.spec.js'
+      - '.github/workflows/mobile-regression.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-boundaries:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [mobile-360, mobile-390]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - name: Verify mobile navigation and tap targets
+        run: npx playwright test tests/e2e/mobile-boundaries.spec.js --project=${{ matrix.project }}
+      - name: Upload failed test evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-boundaries-${{ matrix.project }}
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 3
