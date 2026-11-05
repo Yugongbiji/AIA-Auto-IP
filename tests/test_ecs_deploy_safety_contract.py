@@ -44,6 +44,8 @@ class DeploymentSafetyContract(unittest.TestCase):
         end = script.index("restore_override() {", start)
         verification = script[start:end]
         self.assertIn("http://127.0.0.1/", verification)
+        self.assertIn('PUBLIC_HOST="8.139.255.134"', verification)
+        self.assertIn('-H "Host: ${PUBLIC_HOST}"', verification)
         self.assertIn('id="logout-button"', verification)
         self.assertIn("beginInlineFieldEdit", verification)
         self.assertLess(script.index("if ! wait_until_ready; then", start), script.index("if ! verify_public_frontend; then", start))
