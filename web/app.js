@@ -550,7 +550,16 @@ function restoreIpPlanHistoryItem(item) {
   const saved = matched && state.proposals.find((entry) => Number(entry.version) === Number(matched[1]));
   if (!saved) return addMessage(item.content, item.role, false);
   const card = addMessage('', 'assistant', false);
+  card.dataset.proposalVersion = String(saved.version);
   renderPlanCard(card, { eyebrow: `专属 IP 方案 V${saved.version} 已完成`, title: '你的专属 IP 方案', subtitle: '昵称、平台简介与合规提示已经整理好。', buttonText: '查看 IP 方案', onView: () => renderProposal(saved.proposal, saved.version) });
+}
+
+function ensureLatestProposalCard() {
+  const saved = state.proposals[0];
+  if (!saved || messages.querySelector(`[data-proposal-version="${saved.version}"]`)) return;
+  const card = addMessage('', 'assistant', false);
+  card.dataset.proposalVersion = String(saved.version);
+  renderPlanCard(card, { eyebrow: `专属 IP 方案 V${saved.version} 已完成`, title: '你的专属 IP 方案', subtitle: '方案已保存；你可以随时从这里重新打开。', buttonText: '查看 IP 方案', onView: () => renderProposal(saved.proposal, saved.version) });
 }
 
 function presentPlanningQuestion() {
@@ -771,9 +780,11 @@ function parseRevision(text) {
 async function applyPendingUpdate(node) {
   if (!state.pendingUpdate) return;
   Object.assign(state.profile, state.pendingUpdate); state.pendingUpdate = null;
-  const notice = addMessage('档案已经换成这版啦。接下来重新生成方案，就能看到新效果。', 'system');
+  const needsRegeneration = state.proposals.length > 0;
+  const notice = addMessage(needsRegeneration ? '档案已经换成这版啦。正在按新信息生成方案。' : '档案已经换成这版啦。', 'system');
   if (node) node.replaceWith(notice);
   renderProfile(); await persistMatchedProfile();
+  if (state.proposals.length) return generateProposal();
 }
 
 function confirmRevision(updates, intro = '我读懂啦，下面这些内容准备写进档案：') {
@@ -812,7 +823,6 @@ async function answer(value) {
     const confirmsUpdate = /^(就按|确认|好的|好呀|可以|改吧|执行|更新|没问题)/.test(content);
     if (state.pendingUpdate && confirmsUpdate) {
       await applyPendingUpdate();
-      if (isGenerateRequest(content)) return generateProposal();
       return;
     }
     if (isGenerateRequest(content)) return generateProposal();
@@ -858,6 +868,7 @@ function startWorkspace(profile, matched, history = [], proposals = [], planning
   $('save-state').textContent = matched ? '已载入历史档案' : '本次会话';
   if (history.length) history.forEach((item) => restoreIpPlanHistoryItem(item));
   else addMessage(matched ? `你好，${profile.name}。你的报名资料已经带入，接下来补充生成方案需要的关键信息。` : '欢迎进入友邦红人计划。我们会通过对话建立本次 IP 档案。');
+  ensureLatestProposalCard();
   renderProfile(); refreshProposalButton(); presentQuestion();
   const defaultTool = !state.requestedTool && state.proposals.length && planningState.plans.length ? 'script' : (state.requestedTool || 'ip');
   selectTool(defaultTool);
@@ -971,6 +982,7 @@ async function generateProposal() {
     const response = await fetch('/api/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agentId: state.matched ? state.profile.agentId : '', profile: state.profile }) });
     const result = await response.json(); if (!response.ok) throw new Error(result.error || '生成失败');
     const version = result.version || state.version; const saved = { version, proposal: result.proposal, model: result.model }; if (state.matched) state.proposals.unshift(saved); state.version = version + 1;
+    card.dataset.proposalVersion = String(version);
     renderPlanCard(card, { eyebrow: `专属 IP 方案 V${version} 已完成`, title: '你的专属 IP 方案', subtitle: '昵称、平台简介与合规提示已经整理好。', buttonText: '查看 IP 方案', onView: () => renderProposal(result.proposal, version) }); if (state.matched) persistMessage('assistant', `IP 方案 V${version} 已生成。`); refreshProposalButton(); updateWorkspaceHeadings();
   } catch (error) { card.textContent = `生成失败：${error.message}`; }
   finally { state.generating = false; button.disabled = false; button.textContent = '重新生成专属 IP 方案'; }

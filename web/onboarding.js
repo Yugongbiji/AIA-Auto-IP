@@ -96,6 +96,8 @@ startWorkspace = function onboardingStartWorkspace(profile, matched, history = [
     addMessage(`欢迎回来，${profile.name}。已载入你的 IP 档案和已有方案。`, 'assistant', false);
   }
 
+  ensureLatestProposalCard();
+
   renderProfile(); refreshProposalButton(); presentQuestion();
   const defaultTool = !state.requestedTool && state.proposals.length && planningState.plans.length ? 'script' : (state.requestedTool || 'ip');
   selectTool(defaultTool);
