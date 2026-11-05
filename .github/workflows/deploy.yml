@@ -96,22 +96,25 @@ jobs:
             # through Nginx, so a healthy application process alone cannot prove
             # that the live page is serving the new frontend assets.
             verify_public_frontend() {
+              local PUBLIC_HOST="8.139.255.134"
               local public_index
               public_index=$(mktemp)
-              if ! curl -fsSL --connect-timeout 2 --max-time 5 http://127.0.0.1/ -o "$public_index"; then
+              if ! curl -fsSL --connect-timeout 2 --max-time 5 \
+                -H "Host: ${PUBLIC_HOST}" http://127.0.0.1/ -o "$public_index"; then
                 rm -f "$public_index"
                 return 1
               fi
               if ! grep -Fq 'id="logout-button"' "$public_index" \
                 || ! grep -Fq 'profile-float.js?v=20261105-navigation-profile-2' "$public_index" \
                 || ! curl -fsSL --connect-timeout 2 --max-time 5 \
+                  -H "Host: ${PUBLIC_HOST}" \
                   'http://127.0.0.1/profile-float.js?v=20261105-navigation-profile-2' \
                   | grep -Fq 'beginInlineFieldEdit'; then
                 rm -f "$public_index"
                 return 1
               fi
               rm -f "$public_index"
-              echo "Nginx entrypoint is serving the current profile controls."
+              echo "Nginx entrypoint for ${PUBLIC_HOST} is serving the current profile controls."
             }
 
             restore_override() {
