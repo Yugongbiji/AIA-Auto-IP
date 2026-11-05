@@ -1,0 +1,63 @@
+name: One-time Pre-Release SQLite Snapshot
+
+on:
+  push:
+    branches:
+      - ops/aia-release-snapshot-20261105
+    paths:
+      - '.github/workflows/release-snapshot-once.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Take an atomic production SQLite snapshot (no application writes)
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.ECS_HOST }}
+          username: ${{ secrets.ECS_USER }}
+          key: ${{ secrets.ECS_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            cd /opt/AIA-Auto-IP
+            test "$(git rev-parse HEAD)" = "66d105a38252f4cafe6e2d47faef81d511e85cb8"
+            systemctl is-active --quiet aia-auto-ip
+            curl -fsS --connect-timeout 2 --max-time 5 http://127.0.0.1:8000/ >/dev/null
+            umask 077
+            /opt/AIA-Auto-IP/.venv/bin/python - <<'PY'
+            from pathlib import Path
+            import os, shutil, sqlite3, time
+            root=Path('/opt/AIA-Auto-IP/data')
+            source=root/'persona.sqlite3'
+            assert source.is_file(), 'Main SQLite database not found'
+            outdir=Path('/opt/aia-release-backups')
+            outdir.mkdir(mode=0o700, parents=True, exist_ok=True)
+            os.chmod(outdir, 0o700)
+            required=max(100*1024*1024, source.stat().st_size*3)
+            assert shutil.disk_usage(outdir).free>required, 'Insufficient disk space'
+            timestamp=time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())
+            final=outdir/f'aia-persona-before-pr14-{timestamp}.sqlite3'
+            tmp=outdir/(final.name+'.tmp')
+            assert not final.exists() and not tmp.exists()
+            try:
+                with sqlite3.connect(f'file:{source}?mode=ro',uri=True,timeout=20) as old:
+                    with sqlite3.connect(str(tmp),timeout=20) as target:
+                        old.backup(target,pages=256,sleep=0.1)
+                with sqlite3.connect(f'file:{tmp}?mode=ro',uri=True) as check:
+                    assert check.execute('PRAGMA quick_check').fetchone()[0]=='ok'
+                os.chmod(tmp,0o600)
+                os.replace(tmp,final)
+                print('SNAPSHOT_CREATED=true')
+                print('SNAPSHOT_BYTES='+str(final.stat().st_size))
+                print('SNAPSHOT_SQLITE_QUICKCHECK=ok')
+                print('SNAPSHOT_AGE_MINUTES=0')
+            finally:
+                if tmp.exists(): tmp.unlink()
+            PY
+            systemctl is-active --quiet aia-auto-ip
+            curl -fsS --connect-timeout 2 --max-time 5 http://127.0.0.1:8000/ >/dev/null
+            echo 'PRODUCTION_REMAINS_HEALTHY=true'
