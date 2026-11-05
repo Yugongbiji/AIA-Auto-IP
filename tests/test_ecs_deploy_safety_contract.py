@@ -1,5 +1,7 @@
 """Safety checks for ECS workflow changes; offline, no ECS or RDS access."""
+import os
 import subprocess
+import tempfile
 import textwrap
 import unittest
 from pathlib import Path
@@ -90,6 +92,61 @@ class DeploymentSafetyContract(unittest.TestCase):
             self.assertIn(
                 "attempt 3/30", result.stdout
             ) if scenario == "delayed" else None
+
+    def test_rollback_rehearsal_in_disposable_sandbox(self):
+        """Execute the actual rollback function with stubbed commands and temp files."""
+        script = remote_shell(DEPLOY_PATH)
+        start = script.index("restore_override() {")
+        end = script.index("# Never overwrite tracked local changes", start)
+        functions = script[start:end].replace(
+            "/opt/AIA-Auto-IP/.venv/bin/pip install -r requirements.txt",
+            "mock_pip install -r requirements.txt",
+        )
+        # This shell never invokes the real Git, systemctl, pip, or ECS paths.
+        stubs = """
+        git() { printf 'git %s\\n' "$*" >> "$EVENT_LOG"; return 0; }
+        systemctl() {
+          printf 'systemctl %s\\n' "$*" >> "$EVENT_LOG"
+          if [ "$SCENARIO" = restart_failure ] && [ "$1" = restart ]; then return 1; fi
+          return 0
+        }
+        mock_pip() { printf 'pip %s\\n' "$*" >> "$EVENT_LOG"; return 0; }
+        diagnose_service() { echo 'MOCK_DIAGNOSTIC'; }
+        wait_until_ready() { [ "$SCENARIO" = healthy ]; }
+        """
+        for scenario in ("healthy", "restart_failure", "neverready"):
+            with self.subTest(scenario=scenario), tempfile.TemporaryDirectory() as folder:
+                root = Path(folder)
+                override = root / "override.conf"
+                backup = root / "override.backup"
+                log = root / "events.txt"
+                override.write_text("new-version", encoding="utf-8")
+                backup.write_text("last-known-good", encoding="utf-8")
+                env = {
+                    "PATH": "/usr/bin:/bin",
+                    "SCENARIO": scenario,
+                    "EVENT_LOG": str(log),
+                    "OVERRIDE": str(override),
+                    "OVERRIDE_BACKUP": str(backup),
+                    "OVERRIDE_DIR": str(root),
+                    "HAD_OVERRIDE": "1",
+                    "PREVIOUS_COMMIT": "previous-known-good",
+                }
+                result = subprocess.run(
+                    ["bash", "-c", "set -e\\n" + functions + stubs + "\\nrollback"],
+                    text=True, capture_output=True, cwd=folder, env=env,
+                )
+                self.assertEqual(result.returncode, 1, result.stderr)
+                events = log.read_text(encoding="utf-8")
+                self.assertIn("git reset --hard previous-known-good", events)
+                self.assertIn("systemctl daemon-reload", events)
+                self.assertIn("systemctl restart aia-auto-ip", events)
+                self.assertEqual(override.read_text(encoding="utf-8"), "last-known-good")
+                if scenario == "healthy":
+                    self.assertIn("Rollback restored and HTTP health check passed", result.stdout)
+                else:
+                    self.assertIn("CRITICAL:", result.stderr)
+                    self.assertIn("MOCK_DIAGNOSTIC", result.stdout)
 
     def test_production_requires_full_qa(self):
         workflow = DEPLOY_PATH.read_text(encoding="utf-8")
