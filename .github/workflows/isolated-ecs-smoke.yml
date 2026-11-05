@@ -1,0 +1,72 @@
+name: Isolated ECS Service Startup Smoke
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'script_server.py'
+      - 'server.py'
+      - 'script_library_store.py'
+      - 'backend/**'
+      - '.github/workflows/deploy.yml'
+      - '.github/workflows/isolated-ecs-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-start:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install runtime dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Start script_server in disposable SQLite sandbox, no ECS/RDS
+        shell: bash
+        run: |
+          set -euo pipefail
+          TEMP_ROOT="$(mktemp -d)"
+          PID=""
+          cleanup() {
+            if [ -n "$PID" ]; then kill "$PID" 2>/dev/null || true; wait "$PID" 2>/dev/null || true; fi
+            rm -rf "$TEMP_ROOT"
+          }
+          trap cleanup EXIT
+          cp ./*.py "$TEMP_ROOT/"
+          for d in backend src web prompts rules; do cp -a "$d" "$TEMP_ROOT/"; done
+          mkdir -p "$TEMP_ROOT/data"
+          cd "$TEMP_ROOT"
+          # Never read ECS secrets, production env, or real user databases.
+          env -u DB_HOST -u DB_NAME -u DB_USER -u DB_PASSWORD \
+              -u SCRIPT_DB_HOST -u SCRIPT_DB_NAME -u SCRIPT_DB_USER \
+              -u SCRIPT_DB_PASSWORD -u DEEPSEEK_API_KEY \
+              DB_ENGINE=sqlite PYTHONUNBUFFERED=1 \
+              python script_server.py --port 18765 >"$TEMP_ROOT/server.log" 2>&1 &
+          PID="$!"
+          READY=0
+          for i in $(seq 1 30); do
+            if ! kill -0 "$PID" 2>/dev/null; then
+              echo 'Service exited before binding test port'
+              tail -40 "$TEMP_ROOT/server.log"
+              exit 1
+            fi
+            if curl -fsS --connect-timeout 1 --max-time 2 \
+                http://127.0.0.1:18765/ -o "$TEMP_ROOT/index.html"; then
+              READY=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$READY" -ne 1 ]; then
+            echo 'Service did not become ready'
+            tail -40 "$TEMP_ROOT/server.log"
+            exit 1
+          fi
+          grep -q '脚本推荐' "$TEMP_ROOT/index.html"
+          test -s "$TEMP_ROOT/data/persona.sqlite3"
+          echo 'ISOLATED_STARTUP_OK=1; ECS/RDS and real data untouched'
