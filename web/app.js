@@ -885,6 +885,7 @@ function startWorkspace(profile, matched, history = [], proposals = [], planning
   if (matched) localStorage.setItem(SESSION_KEY, JSON.stringify({ name: profile.name, agentId: profile.agentId }));
   $('identity-screen').classList.add('hidden'); $('workspace').classList.remove('hidden');
   $('identity-state').textContent = matched ? `已匹配：${profile.name}（${profile.agentId}）` : '访客模式：资料仅保留本次会话';
+  $('logout-button').classList.toggle('hidden', !matched);
   $('save-state').textContent = matched ? '已载入历史档案' : '本次会话';
   if (history.length) history.forEach((item) => restoreIpPlanHistoryItem(item));
   else addMessage(matched ? `你好，${profile.name}。你的报名资料已经带入，接下来补充生成方案需要的关键信息。` : '欢迎进入友邦红人计划。我们会通过对话建立本次 IP 档案。');
@@ -981,6 +982,7 @@ document.querySelectorAll('.identity-tool').forEach((button) => { button.onclick
 document.querySelectorAll('.tool-tab').forEach((button) => { button.onclick = () => selectTool(button.dataset.tool); });
 if (OPERATOR_MODE) $('switch-account').classList.remove('hidden');
 $('switch-account').onclick = () => { localStorage.removeItem(SESSION_KEY); window.location.reload(); };
+$('logout-button').onclick = () => { localStorage.removeItem(SESSION_KEY); window.location.reload(); };
 $('view-proposal').onclick = () => { if (state.proposals[0]) renderProposal(state.proposals[0].proposal, state.proposals[0].version); };
 $('proposal-close').onclick = () => { $('proposal-screen').classList.add('hidden'); document.body.classList.remove('proposal-open'); syncWorkspaceToolbar(); };
 $('content-plan-close').onclick = () => { $('content-plan-screen').classList.add('hidden'); document.body.classList.remove('proposal-open'); syncWorkspaceToolbar(); };
