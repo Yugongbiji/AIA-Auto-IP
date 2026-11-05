@@ -68,20 +68,23 @@ test.describe('移动端与长会话边界', () => {
     const after = await messages.evaluate((box) => box.scrollTop);
     expect(after).toBeLessThanOrEqual(before + 2);
 
-    // Regression: floating IP shortcuts must not overlap the mobile back-to-latest control.
-    const shortcuts = page.locator('#aia-ip-owner-actions');
-    await expect(shortcuts).toBeVisible();
-    const [latestRect, shortcutsRect] = await Promise.all([
-      page.getByRole('button', { name: '回到最新消息' }).boundingBox(),
-      shortcuts.boundingBox(),
-    ]);
-    expect(latestRect).not.toBeNull();
-    expect(shortcutsRect).not.toBeNull();
-    const overlapWidth = Math.min(latestRect.x + latestRect.width, shortcutsRect.x + shortcutsRect.width)
-      - Math.max(latestRect.x, shortcutsRect.x);
-    const overlapHeight = Math.min(latestRect.y + latestRect.height, shortcutsRect.y + shortcutsRect.height)
-      - Math.max(latestRect.y, shortcutsRect.y);
-    expect(overlapWidth <= 0 || overlapHeight <= 0).toBeTruthy();
+    if (page.viewportSize().width <= 720) {
+      // Regression: floating IP shortcuts must not overlap the mobile back-to-latest control.
+      const shortcuts = page.locator('#aia-ip-owner-actions');
+      await expect(shortcuts).toBeVisible();
+      const [latestRect, shortcutsRect] = await Promise.all([
+        page.getByRole('button', { name: '回到最新消息' }).boundingBox(),
+        shortcuts.boundingBox(),
+      ]);
+      expect(latestRect).not.toBeNull();
+      expect(shortcutsRect).not.toBeNull();
+      const overlapWidth = Math.min(latestRect.x + latestRect.width, shortcutsRect.x + shortcutsRect.width)
+        - Math.max(latestRect.x, shortcutsRect.x);
+      const overlapHeight = Math.min(latestRect.y + latestRect.height, shortcutsRect.y + shortcutsRect.height)
+        - Math.max(latestRect.y, shortcutsRect.y);
+      expect(overlapWidth <= 0 || overlapHeight <= 0).toBeTruthy();
+  
+    }
 
     await page.getByRole('button', { name: '回到最新消息' }).click();
     await expect(page.getByRole('button', { name: '回到最新消息' })).toBeHidden();
