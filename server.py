@@ -3,8 +3,9 @@
 Run:
     python server.py --import-xlsx data/何不团队报名表20260807.xlsx
 
-The browser only receives the profile returned by an exact name + agent ID match.
-Guest profiles stay in the browser session and are never written to the database.
+The browser receives the profile returned by an exact name + agent ID match.
+An eligible unlisted name + agent ID creates a minimal persistent profile so the
+same person can return to their conversation and IP proposals later.
 """
 
 from __future__ import annotations
@@ -654,6 +655,15 @@ def clean(value):
     return str(value).strip()
 
 
+def is_persistable_guest_identity(name: str, agent_id: str) -> bool:
+    """Allow internal guest persistence without accepting obvious test IDs."""
+    if not 2 <= len(name) <= 40 or not re.fullmatch(r"\d{9}", agent_id):
+        return False
+    if re.fullmatch(r"(.)\1{3,}", agent_id):
+        return False
+    return agent_id not in {"123456789", "987654321"}
+
+
 def database_engine() -> str:
     return os.getenv("DB_ENGINE", "sqlite").strip().lower() or "sqlite"
 
@@ -889,6 +899,23 @@ def merged_profile(agent_id: str):
     if row["profile_json"]:
         profile.update(json.loads(row["profile_json"]))
     return {"profile": profile, "updatedAt": row["updated_at"]}
+
+
+def ensure_guest_agent(name: str, agent_id: str) -> bool:
+    """Create one minimal identity for an unlisted internal participant."""
+    if not is_persistable_guest_identity(name, agent_id):
+        return False
+    now = datetime.now(timezone.utc).isoformat()
+    profile = {"name": name, "agentId": agent_id}
+    with database() as conn:
+        existing = conn.execute("SELECT name FROM agents WHERE agent_id = ?", (agent_id,)).fetchone()
+        if existing:
+            return existing["name"] == name
+        conn.execute(
+            "INSERT INTO agents(agent_id, name, survey_json, imported_at) VALUES (?, ?, ?, ?)",
+            (agent_id, name, json.dumps(profile, ensure_ascii=False), now),
+        )
+    return True
 
 
 def save_profile(agent_id: str, profile: dict):
@@ -1144,6 +1171,8 @@ class AppHandler(BaseHTTPRequestHandler):
             name = clean(query.get("name", [""])[0])
             agent_id = clean(query.get("agentId", [""])[0])
             found = merged_profile(agent_id)
+            if not found and ensure_guest_agent(name, agent_id):
+                found = merged_profile(agent_id)
             if not found or found["profile"].get("name") != name:
                 self.send_json({"matched": False})
                 return
