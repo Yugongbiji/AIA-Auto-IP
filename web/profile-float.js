@@ -99,14 +99,23 @@
     });
   }
 
-  function addField(grid, label, value) {
+  function editableQuestion(key) {
+    return (questions || []).find((question) => question.key === key);
+  }
+
+  function addField(grid, label, value, fieldKey = '') {
     const clean = text(value);
     if (!clean) return;
     const item = document.createElement('div');
     item.className = 'aia-ip-owner-field';
     const key = document.createElement('span'); key.textContent = label;
     const val = document.createElement('strong'); val.textContent = clean;
-    item.append(key, val); grid.appendChild(item);
+    item.append(key, val);
+    if (editableQuestion(fieldKey)) {
+      const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'aia-ip-owner-edit'; edit.textContent = '修改';
+      edit.onclick = () => beginDialogueFieldEdit(fieldKey); item.appendChild(edit);
+    }
+    grid.appendChild(item);
   }
 
   function addSection(body, title, fields, full = false) {
@@ -116,7 +125,7 @@
     section.className = `aia-ip-owner-section${full ? ' is-full' : ''}`;
     const heading = document.createElement('h3'); heading.textContent = title;
     const grid = document.createElement('div'); grid.className = 'aia-ip-owner-grid';
-    usable.forEach(([label, value]) => addField(grid, label, value));
+    usable.forEach(([label, value, key]) => addField(grid, label, value, key));
     section.append(heading, grid); body.appendChild(section);
   }
 
@@ -173,14 +182,19 @@
     const p = state?.profile || {};
     body.innerHTML = '';
 
+    const controls = document.createElement('div'); controls.className = 'aia-ip-owner-controls';
+    const restart = document.createElement('button'); restart.type = 'button'; restart.className = 'secondary-button'; restart.textContent = '重新填写对话资料';
+    restart.onclick = restartDialogueProfile;
+    controls.append(restart); body.appendChild(controls);
+
     addSection(body, '基本资料', [
-      ['姓名', p.name], ['营销员编号', p.agentId], ['所在城市', p.city], ['营销服务部', p.department],
-      ['入职日期', p.joinDate], ['保险从业时间', p.insuranceYears],
+      ['姓名', p.name], ['营销员编号', p.agentId], ['所在城市', p.city, 'city'], ['营销服务部', p.department, 'department'],
+      ['入职日期', p.joinDate], ['保险从业时间', p.insuranceYears, 'insuranceYears'],
     ]);
 
     addSection(body, '经历与优势资料', [
-      ['学历', p.education], ['学校背景', p.schoolTier], ['留学背景', p.overseas], ['过往职业 / 工作经历', p.previousCareer],
-      ['荣誉', p.honors], ['长期身份', p.lifeRoles], ['兴趣爱好', p.hobbies], ['优势', p.strengths], ['可提供服务', p.services],
+      ['学历', p.education, 'education'], ['学校背景', p.schoolTier, 'schoolTier'], ['留学背景', p.overseas, 'overseas'], ['过往职业 / 工作经历', p.previousCareer],
+      ['荣誉', p.honors, 'honors'], ['长期身份', p.lifeRoles], ['兴趣爱好', p.hobbies], ['优势', p.strengths, 'strengths'], ['可提供服务', p.services],
     ]);
 
     addSection(body, '账号资料', [
@@ -201,6 +215,52 @@
     if (!body.children.length) {
       const empty = document.createElement('p'); empty.className = 'aia-ip-owner-empty'; empty.textContent = '当前还没有可展示的资料。'; body.appendChild(empty);
     }
+  }
+
+  function closeDrawer() {
+    const drawer = document.getElementById(IDS.drawer);
+    const profileButton = document.getElementById(IDS.profileButton);
+    if (drawer) drawer.hidden = true;
+    profileButton?.setAttribute('aria-expanded', 'false');
+  }
+
+  async function finishDialogueFieldEdit() {
+    if (!state.editingDialogueKey || !state.done) return;
+    state.editingDialogueKey = '';
+    if (typeof generateProposal === 'function') await generateProposal();
+  }
+
+  function beginDialogueFieldEdit(key) {
+    const question = editableQuestion(key);
+    if (!question) return;
+    const index = questions.indexOf(question);
+    if (index < 0) return;
+    closeDrawer();
+    state.editingDialogueKey = key;
+    state.currentQuestion = index;
+    state.done = false;
+    state.multiSelection = new Set();
+    delete state.profile[key];
+    renderProfile();
+    setChips(null);
+    presentQuestion();
+  }
+
+  async function restartDialogueProfile() {
+    const agentId = text(state?.profile?.agentId);
+    if (!agentId || !state.matched) return;
+    const confirmed = window.confirm('将清除 IP 对话、IP 方案和内容规划，报名资料与客户反馈会保留。确定重新填写吗？');
+    if (!confirmed) return;
+    const response = await fetch('/api/profile/reset-dialogue', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agentId }) });
+    const result = await response.json();
+    if (!response.ok) return window.alert(result.error || '暂时无法重置，请稍后重试。');
+    state.profile = result.profile || {};
+    state.proposals = []; state.version = 1; state.pendingUpdate = null; state.done = false; state.currentQuestion = 0;
+    planningState.context = {}; planningState.messages = []; planningState.plans = []; planningState.version = 1; planningState.done = false; planningState.started = false;
+    messages.innerHTML = ''; planningMessages().innerHTML = '';
+    closeDrawer(); renderProfile(); refreshProposalButton();
+    addMessage('已清除本次 IP 对话资料。报名资料和客户反馈仍保留，我们重新开始。', 'system', false);
+    presentQuestion();
   }
 
   function sync() {
@@ -242,6 +302,22 @@
       return result;
     };
   }
+  if (typeof answer === 'function') {
+    const base = answer;
+    answer = async function profileFloatEditAnswer() {
+      const result = await base.apply(this, arguments);
+      await finishDialogueFieldEdit();
+      return result;
+    };
+  }
+  if (typeof confirmMultiOption === 'function') {
+    const base = confirmMultiOption;
+    confirmMultiOption = async function profileFloatEditConfirmMulti() {
+      const result = await base.apply(this, arguments);
+      await finishDialogueFieldEdit();
+      return result;
+    };
+  }
   if (typeof refreshProposalButton === 'function') {
     const base = refreshProposalButton;
     refreshProposalButton = function floatingOwnerRefreshProposalButton() {
@@ -266,6 +342,8 @@
   window.aiaFloatingUi = Object.freeze({
     sync,
     renderProfileDrawer,
+    beginDialogueFieldEdit,
+    restartDialogueProfile,
     workspaceVisible,
     latestProposal,
     owner: 'web/profile-float.js',
