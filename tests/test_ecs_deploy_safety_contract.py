@@ -35,6 +35,15 @@ class DeploymentSafetyContract(unittest.TestCase):
         ):
             self.assertIn(required, script)
 
+    def test_deploy_captures_pre_restart_failures_and_rollback_continues(self):
+        script = remote_shell(DEPLOY_PATH)
+        self.assertIn("trap 'on_deploy_error", script)
+        self.assertIn("on_deploy_error()", script)
+        self.assertIn("trap - ERR", script)
+        self.assertIn("local restart_status=$?", script)
+        self.assertIn("CRITICAL: one or more rollback commands failed", script)
+        self.assertIn("Rollback restored and HTTP health check passed.", script)
+
     def test_production_requires_full_qa(self):
         workflow = DEPLOY_PATH.read_text(encoding="utf-8")
         self.assertIn("needs: [contract-api, playwright]", workflow)
