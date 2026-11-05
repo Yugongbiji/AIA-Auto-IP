@@ -133,7 +133,7 @@ class DeploymentSafetyContract(unittest.TestCase):
                     "PREVIOUS_COMMIT": "previous-known-good",
                 }
                 result = subprocess.run(
-                    ["bash", "-c", "set -e\\n" + functions + stubs + "\\nrollback"],
+                    ["bash", "-c", "set -e\n" + functions + stubs + "\nrollback"],
                     text=True, capture_output=True, cwd=folder, env=env,
                 )
                 self.assertEqual(result.returncode, 1, result.stderr)
