@@ -939,6 +939,33 @@ def save_profile(agent_id: str, profile: dict):
     return True
 
 
+DIALOGUE_PROFILE_KEYS = frozenset({
+    "primaryGoal", "city", "customerGroups", "customerAges", "recruitmentGroups", "recruitmentAges",
+    "insuranceYears", "strengths", "honors", "education", "schoolTier", "overseas", "contentTone",
+    "department", "generationNotes",
+})
+
+
+def reset_dialogue_workspace(agent_id: str):
+    """Clear only IP dialogue-derived data, retaining imported and feedback data."""
+    with database() as conn:
+        exists = conn.execute("SELECT 1 FROM agents WHERE agent_id = ?", (agent_id,)).fetchone()
+        if not exists:
+            return None
+        row = conn.execute("SELECT profile_json FROM saved_profiles WHERE agent_id = ?", (agent_id,)).fetchone()
+        saved = json.loads(row["profile_json"]) if row and row["profile_json"] else {}
+        retained = {key: value for key, value in saved.items() if key not in DIALOGUE_PROFILE_KEYS}
+        now = datetime.now(timezone.utc).isoformat()
+        conn.execute(
+            """INSERT INTO saved_profiles(agent_id, profile_json, updated_at) VALUES (?, ?, ?)
+            ON CONFLICT(agent_id) DO UPDATE SET profile_json=excluded.profile_json, updated_at=excluded.updated_at""",
+            (agent_id, json.dumps(retained, ensure_ascii=False), now),
+        )
+        for table in ("conversation_messages", "proposals", "content_planning_messages", "content_plans"):
+            conn.execute(f"DELETE FROM {table} WHERE agent_id = ?", (agent_id,))
+    return merged_profile(agent_id)
+
+
 def conversation_history(agent_id: str):
     with database() as conn:
         rows = conn.execute(
@@ -1190,7 +1217,7 @@ class AppHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         endpoint = urlparse(self.path).path
-        if endpoint not in ("/api/profile", "/api/generate", "/api/message", "/api/chat", "/api/content-plan/message", "/api/content-plan/generate", "/api/content-plan/revise", "/api/creative/message", "/api/script/rewrite", "/api/script/intent", "/api/xhs/intent", "/api/xhs/format"):
+        if endpoint not in ("/api/profile", "/api/profile/reset-dialogue", "/api/generate", "/api/message", "/api/chat", "/api/content-plan/message", "/api/content-plan/generate", "/api/content-plan/revise", "/api/creative/message", "/api/script/rewrite", "/api/script/intent", "/api/xhs/intent", "/api/xhs/format"):
             self.send_error(HTTPStatus.NOT_FOUND)
             return
         try:
@@ -1198,7 +1225,10 @@ class AppHandler(BaseHTTPRequestHandler):
             payload = json.loads(self.rfile.read(size).decode("utf-8"))
             agent_id = clean(payload.get("agentId"))
             profile = payload.get("profile")
-            if endpoint in ("/api/message", "/api/content-plan/message", "/api/creative/message"):
+            if endpoint == "/api/profile/reset-dialogue":
+                if not agent_id:
+                    raise ValueError("Invalid reset payload")
+            elif endpoint in ("/api/message", "/api/content-plan/message", "/api/creative/message"):
                 role = clean(payload.get("role"))
                 content = clean(payload.get("content"))
                 if not agent_id or not role or not content:
@@ -1234,6 +1264,13 @@ class AppHandler(BaseHTTPRequestHandler):
                 raise ValueError("Invalid profile payload")
         except (ValueError, json.JSONDecodeError):
             self.send_json({"error": "资料格式不正确"}, HTTPStatus.BAD_REQUEST)
+            return
+        if endpoint == "/api/profile/reset-dialogue":
+            profile = reset_dialogue_workspace(agent_id)
+            if not profile:
+                self.send_json({"error": "未找到该营销员"}, HTTPStatus.NOT_FOUND)
+                return
+            self.send_json({"reset": True, **profile})
             return
         if endpoint == "/api/generate":
             try:
