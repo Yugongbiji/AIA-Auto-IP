@@ -1029,7 +1029,7 @@ async function generateProposal() {
     card.dataset.proposalVersion = String(version);
     renderPlanCard(card, { eyebrow: `专属 IP 方案 V${version} 已完成`, title: '你的专属 IP 方案', subtitle: '昵称、平台简介与合规提示已经整理好。', buttonText: '查看 IP 方案', onView: () => renderProposal(result.proposal, version) });
     if (state.matched) persistMessage('assistant', `IP 方案 V${version} 已生成。`);
-    refreshProposalButton(); updateWorkspaceHeadings(); renderProposal(result.proposal, version);
+    refreshProposalButton(); updateWorkspaceHeadings();
   } catch (error) {
     card.className = 'message assistant proposal-generation-progress failed';
     card.innerHTML = '';
