@@ -16,6 +16,7 @@
   const text = (value) => String(value ?? '').trim();
   const splitValues = (value) => text(value).split(/[｜|、,，;；/\n]+/).map((v) => v.trim()).filter(Boolean);
   const uniq = (values) => [...new Set((values || []).filter(Boolean))];
+  const IMMUTABLE_FIELD_KEYS = new Set(['name', 'agentId', 'selfIntro', 'purpose', 'peerReviewSummary']);
 
   function workspaceVisible() {
     const workspace = document.getElementById('workspace');
@@ -103,7 +104,35 @@
     return (questions || []).find((question) => question.key === key);
   }
 
-  function addField(grid, label, value, fieldKey = '') {
+  function isEditableDialogueField(fieldKey) {
+    return Boolean(fieldKey) && !IMMUTABLE_FIELD_KEYS.has(fieldKey) && Boolean(editableQuestion(fieldKey));
+  }
+
+  async function saveInlineField(key, value) {
+    const clean = text(value);
+    if (!clean || !isEditableDialogueField(key)) return false;
+    state.profile[key] = clean;
+    renderProfileDrawer();
+    renderProfile();
+    await persistMatchedProfile();
+    await (window.aiaProposalGeneration?.request?.() || generateProposal());
+    return true;
+  }
+
+  function beginInlineFieldEdit(item, label, fieldKey, value) {
+    item.classList.add('is-editing');
+    item.innerHTML = '';
+    const key = document.createElement('span'); key.textContent = label;
+    const input = document.createElement('input'); input.className = 'aia-ip-owner-inline-input'; input.value = value; input.setAttribute('aria-label', `编辑${label}`);
+    const actions = document.createElement('div'); actions.className = 'aia-ip-owner-inline-actions';
+    const save = document.createElement('button'); save.type = 'button'; save.className = 'aia-ip-owner-inline-save'; save.textContent = '保存';
+    const cancel = document.createElement('button'); cancel.type = 'button'; cancel.className = 'aia-ip-owner-inline-cancel'; cancel.textContent = '取消';
+    save.onclick = async () => { if (!text(input.value)) { input.focus(); return; } save.disabled = true; await saveInlineField(fieldKey, input.value); };
+    cancel.onclick = renderProfileDrawer;
+    actions.append(save, cancel); item.append(key, input, actions); input.focus(); input.select();
+  }
+
+  function addField(grid, label, value, fieldKey = '', source = '') {
     const clean = text(value);
     if (!clean) return;
     const item = document.createElement('div');
@@ -111,9 +140,10 @@
     const key = document.createElement('span'); key.textContent = label;
     const val = document.createElement('strong'); val.textContent = clean;
     item.append(key, val);
-    if (editableQuestion(fieldKey)) {
-      const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'aia-ip-owner-edit'; edit.textContent = '修改';
-      edit.onclick = () => beginDialogueFieldEdit(fieldKey); item.appendChild(edit);
+    if (source) { const hint = document.createElement('small'); hint.className = 'aia-ip-owner-field-source'; hint.textContent = source; item.appendChild(hint); }
+    if (isEditableDialogueField(fieldKey)) {
+      const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'aia-ip-owner-edit'; edit.setAttribute('aria-label', `编辑${label}`); edit.title = `编辑${label}`; edit.textContent = '✎';
+      edit.onclick = () => beginInlineFieldEdit(item, label, fieldKey, clean); item.appendChild(edit);
     }
     grid.appendChild(item);
   }
@@ -125,7 +155,7 @@
     section.className = `aia-ip-owner-section${full ? ' is-full' : ''}`;
     const heading = document.createElement('h3'); heading.textContent = title;
     const grid = document.createElement('div'); grid.className = 'aia-ip-owner-grid';
-    usable.forEach(([label, value, key]) => addField(grid, label, value, key));
+    usable.forEach(([label, value, key, source]) => addField(grid, label, value, key, source));
     section.append(heading, grid); body.appendChild(section);
   }
 
@@ -188,9 +218,11 @@
     controls.append(restart); body.appendChild(controls);
 
     addSection(body, '基本资料', [
-      ['姓名', p.name], ['营销员编号', p.agentId], ['所在城市', p.city, 'city'], ['营销服务部', p.department, 'department'],
-      ['入职日期', p.joinDate], ['保险从业时间', p.insuranceYears, 'insuranceYears'],
+      ['姓名', p.name, 'name', '报名资料'], ['营销员编号', p.agentId, 'agentId', '报名资料'], ['所在城市', p.city, 'city'], ['营销服务部', p.department, 'department'],
+      ['入职日期', p.joinDate, '', '报名资料'], ['保险从业时间', p.insuranceYears, 'insuranceYears'],
     ]);
+
+    addSection(body, 'IP 对话资料', (questions || []).map((question) => [question.label, p[question.key], question.key]));
 
     addSection(body, '经历与优势资料', [
       ['学历', p.education, 'education'], ['学校背景', p.schoolTier, 'schoolTier'], ['留学背景', p.overseas, 'overseas'], ['过往职业 / 工作经历', p.previousCareer],
@@ -209,7 +241,7 @@
       const section = document.createElement('section'); section.className = 'aia-ip-owner-section is-full';
       const h = document.createElement('h3'); h.textContent = '个人介绍';
       const paragraph = document.createElement('p'); paragraph.className = 'aia-ip-owner-intro'; paragraph.textContent = text(p.selfIntro);
-      section.append(h, paragraph); body.appendChild(section);
+      const source = document.createElement('small'); source.className = 'aia-ip-owner-field-source'; source.textContent = '报名资料'; section.append(h, paragraph, source); body.appendChild(section);
     }
 
     if (!body.children.length) {
@@ -343,6 +375,7 @@
     sync,
     renderProfileDrawer,
     beginDialogueFieldEdit,
+    saveInlineField,
     restartDialogueProfile,
     workspaceVisible,
     latestProposal,

@@ -4,10 +4,6 @@
   if (typeof answer !== 'function') return;
   const baseAnswerV18 = answer;
 
-  function wantsGenerate(text) {
-    const compact = String(text || '').replace(/\s+/g, '');
-    return /(?:生成|重新生成|出|做).{0,8}(?:新|最新|一版|我的)?(?:IP)?(?:方案|人设)|(?:方案|人设).{0,8}(?:生成|重新生成|出|做)/.test(compact);
-  }
   function cleanValue(value){return String(value||'').trim().replace(/[。！!]+$/,'');}
   function parseExtendedRevision(text) {
     const updates = {};
@@ -38,7 +34,7 @@
     renderProfile();
     await persistMatchedProfile();
     addMessage(`${updateSummary(normalized)}还有其他资料要修改，可以继续告诉我；如果都改好了，回复“生成新方案”，我会根据最新资料重新生成。`, 'assistant');
-    if (wantsGenerate(originalText)) await generateProposal();
+    if (window.aiaProposalGeneration?.isExplicitRequest(originalText)) await window.aiaProposalGeneration.request();
   }
 
   answer = async function answerV18(value) {
@@ -47,7 +43,7 @@
     if (!state.done) return baseAnswerV18(value);
 
     addMessage(content, 'user');
-    if (wantsGenerate(content) && !/(?:改|修改|更新|变成|换成|改成|补充|增加|删除|去掉)/.test(content)) return generateProposal();
+    if (window.aiaProposalGeneration?.isExplicitRequest(content) && !/(?:改|修改|更新|变成|换成|改成|补充|增加|删除|去掉)/.test(content)) return window.aiaProposalGeneration.request();
 
     document.getElementById('save-state').textContent = '正在更新资料…';
     try {

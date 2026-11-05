@@ -54,6 +54,20 @@ const planningQuestions = [
 const $ = (id) => document.getElementById(id);
 const messages = $('messages');
 
+function workspaceToolbarVisible() {
+  const workspace = $('workspace');
+  const identity = $('identity-screen');
+  const detailOpen = ['proposal-screen', 'content-plan-screen', 'script-detail-screen']
+    .some((id) => !$(id)?.classList.contains('hidden'));
+  return Boolean(workspace && !workspace.classList.contains('hidden')
+    && (!identity || identity.classList.contains('hidden')) && !detailOpen);
+}
+
+function syncWorkspaceToolbar() {
+  const toolbar = document.querySelector('.workspace-toolbar');
+  if (toolbar) toolbar.hidden = !workspaceToolbarVisible();
+}
+
 const toolDetails = {
   planning: {
     icon: '🗂️', eyebrow: '账号内容规划', title: '让账号内容不再像朋友圈',
@@ -101,6 +115,7 @@ function selectTool(tool) {
   if (isPlanning) activatePlanning();
   if (isScript) activateCreativeTool('script');
   if (isXhs) activateCreativeTool('xhs');
+  syncWorkspaceToolbar();
 }
 
 function updateWorkspaceHeadings() {
@@ -813,8 +828,13 @@ function isGenerateRequest(content) {
   const text = content.replace(/\s+/g, '');
   return /(?:生成|重新生成|出|做|发|给|看|展示|打开).{0,12}(?:一版|我的|个|下|最新)?(?:IP)?(?:方案|人设|定位)/.test(text)
     || /(?:IP)?(?:方案|人设|定位).{0,12}(?:生成|重新生成|出|做|发|给|看|展示|打开)/.test(text)
-    || /^(?:方案呢|方案|我的方案|发方案|发我|给方案|直接给我|直接发我|发我方案|给我方案|看方案|出方案吧|生成吧|好了吗|没有补充了?|没补充了?|就这样|太烦了|准确|没问题|确认|对|是)$/.test(text);
+    || /^(?:方案呢|方案|我的方案|发方案|发我|给方案|直接给我|直接发我|发我方案|给我方案|看方案|出方案吧|生成吧|好了吗|没有了|没有补充了?|没补充了?|就这样|太烦了|准确|没问题|确认|对|是)$/.test(text);
 }
+
+window.aiaProposalGeneration = Object.freeze({
+  isExplicitRequest: isGenerateRequest,
+  request: () => generateProposal({ force: true }),
+});
 
 async function answer(value) {
   const content = value.trim(); if (!content) return;
@@ -825,7 +845,7 @@ async function answer(value) {
       await applyPendingUpdate();
       return;
     }
-    if (isGenerateRequest(content)) return generateProposal();
+    if (window.aiaProposalGeneration.isExplicitRequest(content)) return window.aiaProposalGeneration.request();
     $('save-state').textContent = '正在理解你的补充…';
     try {
       const result = await understandFollowUp(content);
@@ -906,6 +926,7 @@ function renderProposal(proposal, version) {
   const avoid = makeNode('div', 'compliance-column avoid'); avoid.append(makeNode('h4', '', '避免写入')); COMPLIANCE_TIPS.avoid.forEach((item) => { const row = makeNode('div', 'compliance-row'); row.append(makeNode('span', '', item.emoji), makeNode('p', '', `${item.title}：${item.text}`)); avoid.append(row); }); complianceGrid.append(allowed, avoid); compliance.append(complianceGrid); content.appendChild(compliance);
   const reminders = makeNode('section', 'platform-reminders'); reminders.append(makeNode('h3', '', '📌 平台修改机会提醒')); asArray(proposal.platformReminders).forEach((line) => reminders.append(makeNode('p', '', line))); content.appendChild(reminders);
   $('proposal-screen').classList.remove('hidden'); document.body.classList.add('proposal-open');
+  syncWorkspaceToolbar();
 }
 
 function contentPlanCard(title, body, className = '') {
@@ -951,6 +972,7 @@ function renderContentPlan(plan, version) {
   const avoid = makeNode('div', 'avoid-direction-list'); asArray(plan.avoidDirections).slice(0, 3).forEach((item) => { const row = makeNode('div', 'compact-row'); row.append(makeNode('span', 'item-emoji', '⛔')); const words = makeNode('div'); words.append(makeNode('strong', '', item.direction || '不建议混入'), makeNode('span', '', item.reason || '避免内容偏离已确定的人群与定位。')); row.append(words); avoid.append(row); }); content.appendChild(contentPlanCard('⚠️ 不建议混入的方向', avoid));
   const reminder = makeNode('section', 'platform-reminders focus-reminder'); reminder.append(makeNode('h3', '', '📌 内容聚焦提醒'), makeNode('p', '', plan.focusReminder || '内容不要太杂、太随意地混发。账号像朋友圈，平台就难判断该把你推给谁，长期容易让流量画像失焦。')); content.appendChild(reminder);
   $('content-plan-screen').classList.remove('hidden'); document.body.classList.add('proposal-open');
+  syncWorkspaceToolbar();
 }
 
 $('lookup-form').addEventListener('submit', async (event) => { event.preventDefault(); const name = $('name-input').value.trim(); const agentId = $('agent-id-input').value.trim(); const response = await fetch(`/api/lookup?name=${encodeURIComponent(name)}&agentId=${encodeURIComponent(agentId)}`); const result = await response.json(); if (result.matched) return startWorkspace(result.profile, true, result.history || [], result.proposals || [], result.planningHistory || [], result.contentPlans || [], result.creativeHistory || []); startWorkspace({ name, agentId }, false); });
@@ -960,8 +982,8 @@ document.querySelectorAll('.tool-tab').forEach((button) => { button.onclick = ()
 if (OPERATOR_MODE) $('switch-account').classList.remove('hidden');
 $('switch-account').onclick = () => { localStorage.removeItem(SESSION_KEY); window.location.reload(); };
 $('view-proposal').onclick = () => { if (state.proposals[0]) renderProposal(state.proposals[0].proposal, state.proposals[0].version); };
-$('proposal-close').onclick = () => { $('proposal-screen').classList.add('hidden'); document.body.classList.remove('proposal-open'); };
-$('content-plan-close').onclick = () => { $('content-plan-screen').classList.add('hidden'); document.body.classList.remove('proposal-open'); };
+$('proposal-close').onclick = () => { $('proposal-screen').classList.add('hidden'); document.body.classList.remove('proposal-open'); syncWorkspaceToolbar(); };
+$('content-plan-close').onclick = () => { $('content-plan-screen').classList.add('hidden'); document.body.classList.remove('proposal-open'); syncWorkspaceToolbar(); };
 $('view-content-plan').onclick = () => { if (planningState.plans[0]) renderContentPlan(planningState.plans[0].plan, planningState.plans[0].version); };
 $('chat-form').addEventListener('submit', (event) => { event.preventDefault(); answer($('chat-input').value); $('chat-input').value = ''; });
 $('planning-form').addEventListener('submit', (event) => { event.preventDefault(); planningAnswer($('planning-input').value); $('planning-input').value = ''; });
@@ -975,17 +997,46 @@ $('xhs-form').addEventListener('submit', (event) => { event.preventDefault(); su
   });
 });
 async function generateProposal() {
-  if (state.generating) return;
+  if (state.generating) {
+    state.generationCard?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+    return;
+  }
   state.generating = true;
-  const button = $('generate-button'); button.disabled = true; button.textContent = '正在生成…'; const card = addMessage('正在生成你的专属 IP 方案，稍等一下。', 'assistant', false);
+  const button = $('generate-button'); button.disabled = true; button.textContent = '正在生成…';
+  const card = addMessage('', 'assistant', false);
+  state.generationCard = card;
+  const renderProgress = (active) => {
+    card.className = 'message assistant proposal-generation-progress';
+    card.innerHTML = '';
+    const title = makeNode('strong', '', '正在为你生成专属 IP 方案');
+    const steps = document.createElement('div'); steps.className = 'proposal-generation-steps';
+    ['正在整理资料', '正在校验生成规则', '正在生成方案'].forEach((label, index) => {
+      const step = makeNode('span', index < active ? 'done' : index === active ? 'active' : '', label);
+      steps.appendChild(step);
+    });
+    card.append(title, steps);
+    messages.scrollTop = messages.scrollHeight;
+  };
+  renderProgress(0);
   try {
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    renderProgress(1);
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    renderProgress(2);
     const response = await fetch('/api/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agentId: state.matched ? state.profile.agentId : '', profile: state.profile }) });
     const result = await response.json(); if (!response.ok) throw new Error(result.error || '生成失败');
     const version = result.version || state.version; const saved = { version, proposal: result.proposal, model: result.model }; if (state.matched) state.proposals.unshift(saved); state.version = version + 1;
     card.dataset.proposalVersion = String(version);
-    renderPlanCard(card, { eyebrow: `专属 IP 方案 V${version} 已完成`, title: '你的专属 IP 方案', subtitle: '昵称、平台简介与合规提示已经整理好。', buttonText: '查看 IP 方案', onView: () => renderProposal(result.proposal, version) }); if (state.matched) persistMessage('assistant', `IP 方案 V${version} 已生成。`); refreshProposalButton(); updateWorkspaceHeadings();
-  } catch (error) { card.textContent = `生成失败：${error.message}`; }
-  finally { state.generating = false; button.disabled = false; button.textContent = '重新生成专属 IP 方案'; }
+    renderPlanCard(card, { eyebrow: `专属 IP 方案 V${version} 已完成`, title: '你的专属 IP 方案', subtitle: '昵称、平台简介与合规提示已经整理好。', buttonText: '查看 IP 方案', onView: () => renderProposal(result.proposal, version) });
+    if (state.matched) persistMessage('assistant', `IP 方案 V${version} 已生成。`);
+    refreshProposalButton(); updateWorkspaceHeadings(); renderProposal(result.proposal, version);
+  } catch (error) {
+    card.className = 'message assistant proposal-generation-progress failed';
+    card.innerHTML = '';
+    card.append(makeNode('strong', '', '方案暂时没有生成成功'), makeNode('p', '', error.message || '请检查网络后重试。'));
+    const retry = makeNode('button', 'secondary-button', '重新生成');
+    retry.type = 'button'; retry.onclick = () => window.aiaProposalGeneration.request(); card.appendChild(retry);
+  } finally { state.generating = false; state.generationCard = null; button.disabled = false; button.textContent = '重新生成专属 IP 方案'; }
 }
 $('generate-button').onclick = generateProposal;
 
@@ -997,3 +1048,8 @@ async function resumeSavedSession() {
 }
 
 resumeSavedSession();
+
+['workspace', 'identity-screen', 'proposal-screen', 'content-plan-screen', 'script-detail-screen']
+  .map($).filter(Boolean)
+  .forEach((node) => new MutationObserver(syncWorkspaceToolbar).observe(node, { attributes: true, attributeFilter: ['class'] }));
+syncWorkspaceToolbar();

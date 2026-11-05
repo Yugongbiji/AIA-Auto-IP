@@ -3,6 +3,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 FLOAT = (ROOT / 'web' / 'profile-float.js').read_text(encoding='utf-8')
 INDEX = (ROOT / 'web' / 'index.html').read_text(encoding='utf-8')
+STYLES = (ROOT / 'web' / 'styles.css').read_text(encoding='utf-8')
+APP = (ROOT / 'web' / 'app.js').read_text(encoding='utf-8')
 RELEASE_PREVIEW = (ROOT / 'scripts' / 'release_preview_stable.sh').read_text(encoding='utf-8')
 RC_CACHE_VERSION = '20260903-rc1'
 
@@ -35,3 +37,12 @@ def test_release_candidate_uses_one_fresh_cache_version_for_all_frontend_assets(
     assert asset_refs
     assert all(f'?v={RC_CACHE_VERSION}' in ref for ref in asset_refs)
     assert f'CACHE_VERSION="{RC_CACHE_VERSION}"' in RELEASE_PREVIEW
+
+
+def test_workspace_toolbar_uses_aia_red_and_is_not_coupled_to_ip_panel_visibility():
+    assert '.workspace-toolbar' in STYLES
+    assert 'background:#d31145' in STYLES
+    assert '.workspace-toolbar .tool-tab' in STYLES
+    assert 'color:#fff' in STYLES
+    assert 'workspaceToolbarVisible' in APP
+    assert "workspace-toolbar:has(#ip-chat-panel.hidden)" not in INDEX
