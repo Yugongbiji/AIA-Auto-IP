@@ -145,6 +145,18 @@ jobs:
             }
             trap 'on_deploy_error "$?" "$LINENO"' ERR
 
+            # Never overwrite tracked local changes or deploy over an unhealthy service.
+            # A failed preflight leaves the existing production checkout untouched.
+            if ! git diff --quiet || ! git diff --cached --quiet; then
+              echo "PREFLIGHT BLOCKED: production has uncommitted tracked changes." >&2
+              exit 1
+            fi
+            if ! wait_until_ready; then
+              echo "PREFLIGHT BLOCKED: existing production HTTP service is unhealthy." >&2
+              diagnose_service
+              exit 1
+            fi
+
             git fetch origin main
             git reset --hard origin/main
             /opt/AIA-Auto-IP/.venv/bin/pip install -r requirements.txt
