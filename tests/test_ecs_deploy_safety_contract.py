@@ -29,6 +29,7 @@ class DeploymentSafetyContract(unittest.TestCase):
         script = remote_shell(DEPLOY_PATH)
         for required in (
             "wait_until_ready()",
+            "verify_public_frontend()",
             "if ! wait_until_ready; then",
             "diagnose_service",
             "restore_override",
@@ -36,6 +37,16 @@ class DeploymentSafetyContract(unittest.TestCase):
             "script_server.py --port 8000",
         ):
             self.assertIn(required, script)
+
+    def test_deploy_verifies_the_nginx_entrypoint_serves_current_frontend(self):
+        script = remote_shell(DEPLOY_PATH)
+        start = script.index("verify_public_frontend() {")
+        end = script.index("restore_override() {", start)
+        verification = script[start:end]
+        self.assertIn("http://127.0.0.1/", verification)
+        self.assertIn('id="logout-button"', verification)
+        self.assertIn("beginInlineFieldEdit", verification)
+        self.assertLess(script.index("if ! wait_until_ready; then", start), script.index("if ! verify_public_frontend; then", start))
 
     def test_deploy_captures_pre_restart_failures_and_rollback_continues(self):
         script = remote_shell(DEPLOY_PATH)
