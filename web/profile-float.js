@@ -249,35 +249,6 @@
     }
   }
 
-  function closeDrawer() {
-    const drawer = document.getElementById(IDS.drawer);
-    const profileButton = document.getElementById(IDS.profileButton);
-    if (drawer) drawer.hidden = true;
-    profileButton?.setAttribute('aria-expanded', 'false');
-  }
-
-  async function finishDialogueFieldEdit() {
-    if (!state.editingDialogueKey || !state.done) return;
-    state.editingDialogueKey = '';
-    if (typeof generateProposal === 'function') await generateProposal();
-  }
-
-  function beginDialogueFieldEdit(key) {
-    const question = editableQuestion(key);
-    if (!question) return;
-    const index = questions.indexOf(question);
-    if (index < 0) return;
-    closeDrawer();
-    state.editingDialogueKey = key;
-    state.currentQuestion = index;
-    state.done = false;
-    state.multiSelection = new Set();
-    delete state.profile[key];
-    renderProfile();
-    setChips(null);
-    presentQuestion();
-  }
-
   async function restartDialogueProfile() {
     const agentId = text(state?.profile?.agentId);
     if (!agentId || !state.matched) return;
@@ -290,7 +261,11 @@
     state.proposals = []; state.version = 1; state.pendingUpdate = null; state.done = false; state.currentQuestion = 0;
     planningState.context = {}; planningState.messages = []; planningState.plans = []; planningState.version = 1; planningState.done = false; planningState.started = false;
     messages.innerHTML = ''; planningMessages().innerHTML = '';
-    closeDrawer(); renderProfile(); refreshProposalButton();
+    const drawer = document.getElementById(IDS.drawer);
+    const profileButton = document.getElementById(IDS.profileButton);
+    if (drawer) drawer.hidden = true;
+    profileButton?.setAttribute('aria-expanded', 'false');
+    renderProfile(); refreshProposalButton();
     addMessage('已清除本次 IP 对话资料。报名资料和客户反馈仍保留，我们重新开始。', 'system', false);
     presentQuestion();
   }
@@ -334,22 +309,6 @@
       return result;
     };
   }
-  if (typeof answer === 'function') {
-    const base = answer;
-    answer = async function profileFloatEditAnswer() {
-      const result = await base.apply(this, arguments);
-      await finishDialogueFieldEdit();
-      return result;
-    };
-  }
-  if (typeof confirmMultiOption === 'function') {
-    const base = confirmMultiOption;
-    confirmMultiOption = async function profileFloatEditConfirmMulti() {
-      const result = await base.apply(this, arguments);
-      await finishDialogueFieldEdit();
-      return result;
-    };
-  }
   if (typeof refreshProposalButton === 'function') {
     const base = refreshProposalButton;
     refreshProposalButton = function floatingOwnerRefreshProposalButton() {
@@ -374,7 +333,6 @@
   window.aiaFloatingUi = Object.freeze({
     sync,
     renderProfileDrawer,
-    beginDialogueFieldEdit,
     saveInlineField,
     restartDialogueProfile,
     workspaceVisible,

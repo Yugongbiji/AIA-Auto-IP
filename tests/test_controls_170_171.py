@@ -40,7 +40,7 @@ def test_reset_dialogue_workspace_keeps_creative_history(monkeypatch, tmp_path):
 
 def test_profile_drawer_exposes_edit_and_restart_controls():
     profile_float = (server.ROOT / "web" / "profile-float.js").read_text(encoding="utf-8")
-    assert "beginDialogueFieldEdit" in profile_float
+    assert "beginInlineFieldEdit" in profile_float
     assert "restartDialogueProfile" in profile_float
     assert "/api/profile/reset-dialogue" in profile_float
     assert "generateProposal()" in profile_float
@@ -55,6 +55,28 @@ def test_profile_drawer_keeps_imported_fields_read_only_and_edits_dialogue_field
     assert "报名资料" in profile_float
     assert "客户反馈" in profile_float
     assert "if (!text(input.value))" in profile_float
+
+
+def test_inline_drawer_edit_never_closes_drawer_or_falls_back_to_question_flow():
+    profile_float = (server.ROOT / "web" / "profile-float.js").read_text(encoding="utf-8")
+
+    inline_start = profile_float.index("function beginInlineFieldEdit")
+    inline_end = profile_float.index("function addField", inline_start)
+    inline_editor = profile_float[inline_start:inline_end]
+    assert "closeDrawer()" not in inline_editor
+    assert "input.focus()" in inline_editor
+    assert "beginDialogueFieldEdit" not in profile_float
+
+
+def test_matched_workspace_has_logout_and_busts_profile_drawer_asset_cache():
+    index = (server.ROOT / "web" / "index.html").read_text(encoding="utf-8")
+    app = (server.ROOT / "web" / "app.js").read_text(encoding="utf-8")
+
+    assert 'id="logout-button"' in index
+    assert "退出" in index
+    assert "profile-float.js?v=20261105-navigation-profile-2" in index
+    assert "logout-button" in app
+    assert "localStorage.removeItem(SESSION_KEY)" in app
 
 
 def test_canonical_policy_exports_validation_before_persisting():
