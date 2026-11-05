@@ -44,6 +44,47 @@ class DeploymentSafetyContract(unittest.TestCase):
         self.assertIn("CRITICAL: one or more rollback commands failed", script)
         self.assertIn("Rollback restored and HTTP health check passed.", script)
 
+    def test_preflight_refuses_dirty_or_unhealthy_production(self):
+        script = remote_shell(DEPLOY_PATH)
+        self.assertIn("git diff --quiet", script)
+        self.assertIn("git diff --cached --quiet", script)
+        self.assertIn("PREFLIGHT BLOCKED: existing production HTTP service is unhealthy", script)
+        self.assertLess(
+            script.index("PREFLIGHT BLOCKED: production has uncommitted tracked changes"),
+            script.index("git reset --hard origin/main"),
+        )
+
+    def test_readiness_wait_handles_delayed_and_failed_startup(self):
+        script = remote_shell(DEPLOY_PATH)
+        start = script.index("wait_until_ready() {")
+        end = script.index("\\nrestore_override() {", start)
+        function = script[start:end]
+        # Everything executes in a GitHub runner subprocess with mocked commands;
+        # no actual systemd, server, or database is contacted.
+        stub = """
+        ATTEMPTS=0
+        systemctl() { return 0; }
+        curl() {
+          ATTEMPTS=$((ATTEMPTS + 1))
+          if [ "$SCENARIO" = delayed ] && [ "$ATTEMPTS" -ge 3 ]; then return 0; fi
+          return 7
+        }
+        sleep() { :; }
+        """
+        for scenario, expected_code, expected_attempts in [
+            ("delayed", 0, 3),
+            ("never", 1, 30),
+        ]:
+            result = subprocess.run(
+                ["bash", "-c", stub + function + "\\nwait_until_ready"],
+                capture_output=True, text=True,
+                env={"PATH": "/usr/bin:/bin", "SCENARIO": scenario},
+            )
+            self.assertEqual(result.returncode, expected_code, result.stderr)
+            self.assertIn(
+                "attempt 3/30", result.stdout
+            ) if scenario == "delayed" else None
+
     def test_production_requires_full_qa(self):
         workflow = DEPLOY_PATH.read_text(encoding="utf-8")
         self.assertIn("needs: [contract-api, playwright]", workflow)
