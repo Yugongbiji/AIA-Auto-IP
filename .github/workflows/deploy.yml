@@ -143,8 +143,6 @@ jobs:
               echo "ERROR: deployment command failed at line $line (exit $status)." >&2
               rollback
             }
-            trap 'on_deploy_error "$?" "$LINENO"' ERR
-
             # Never overwrite tracked local changes or deploy over an unhealthy service.
             # A failed preflight leaves the existing production checkout untouched.
             if ! git diff --quiet || ! git diff --cached --quiet; then
@@ -157,7 +155,10 @@ jobs:
               exit 1
             fi
 
+            # Fetch failures must not restart a healthy production service.
             git fetch origin main
+            # Recovery is enabled only when changes to the live checkout can begin.
+            trap 'on_deploy_error "$?" "$LINENO"' ERR
             git reset --hard origin/main
             /opt/AIA-Auto-IP/.venv/bin/pip install -r requirements.txt
 
