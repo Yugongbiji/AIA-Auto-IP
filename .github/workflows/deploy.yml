@@ -102,19 +102,48 @@ jobs:
             }
 
             rollback() {
+              # Rollback must continue collecting evidence even if one recovery step fails.
+              trap - ERR
+              set +e
               echo "Production deployment failed. Restoring ${PREVIOUS_COMMIT}."
               diagnose_service
+
               git reset --hard "$PREVIOUS_COMMIT"
+              local reset_status=$?
               /opt/AIA-Auto-IP/.venv/bin/pip install -r requirements.txt
+              local pip_status=$?
               restore_override
+              local override_status=$?
               systemctl daemon-reload
+              local reload_status=$?
               systemctl restart aia-auto-ip
+              local restart_status=$?
+
+              if [ "$reset_status" -ne 0 ] || [ "$pip_status" -ne 0 ] || \
+                 [ "$override_status" -ne 0 ] || [ "$reload_status" -ne 0 ] || \
+                 [ "$restart_status" -ne 0 ]; then
+                echo "CRITICAL: one or more rollback commands failed." >&2
+                diagnose_service
+                exit 1
+              fi
+
               if ! wait_until_ready; then
                 echo "CRITICAL: rollback service not ready; manual incident response required" >&2
                 diagnose_service
+                exit 1
               fi
+              echo "Rollback restored and HTTP health check passed."
               exit 1
             }
+
+            on_deploy_error() {
+              local status="$1"
+              local line="$2"
+              trap - ERR
+              echo "ERROR: deployment command failed at line $line (exit $status)." >&2
+              rollback
+            }
+            trap 'on_deploy_error "$?" "$LINENO"' ERR
 
             git fetch origin main
             git reset --hard origin/main
