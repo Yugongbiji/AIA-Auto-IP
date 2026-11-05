@@ -1,50 +1,116 @@
-name: Preview Environment Diagnostic
+name: ECS Production Read-only Diagnostic
 
 on:
-  pull_request:
-    branches:
-      - main
-    paths:
-      - .github/workflows/preview-diagnostic.yml
+  workflow_dispatch:
+  schedule:
+    - cron: '17 2 * * 1'
+
+permissions:
+  contents: read
 
 jobs:
   inspect:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - name: Inspect ECS environment (read only)
+      - name: Inspect existing ECS production service (read only)
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.ECS_HOST }}
           username: ${{ secrets.ECS_USER }}
           key: ${{ secrets.ECS_SSH_KEY }}
           script: |
-            set -e
-            echo '=== identity ==='
-            whoami
-            id
-            echo '=== app directories ==='
-            ls -ld /opt/AIA-Auto-IP /opt/AIA-Auto-IP-preview 2>/dev/null || true
-            echo '=== app services ==='
-            systemctl status aia-auto-ip --no-pager -l 2>/dev/null | sed -n '1,16p' || true
-            systemctl status aia-auto-ip-preview --no-pager -l 2>/dev/null | sed -n '1,16p' || true
-            echo '=== nginx loaded files that reference 8000 ==='
-            grep -Rsn '127.0.0.1:8000' /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null || true
-            echo '=== nginx candidate file contents ==='
-            for f in $(grep -Rsl '127.0.0.1:8000' /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null); do
-              real=$(readlink -f "$f")
-              echo "--- $f -> $real ---"
-              sed -n '1,220p' "$real" || true
-            done
-            echo '=== nginx effective server/location summary ==='
-            nginx -T 2>/dev/null | grep -nE 'configuration file|listen |server_name|location |proxy_pass' | head -180 || true
-            echo '=== direct local probes ==='
-            curl -sS -o /dev/null -w '8000 root: %{http_code}\n' http://127.0.0.1:8000/ || true
-            curl -sS -o /dev/null -w '8001 root: %{http_code}\n' http://127.0.0.1:8001/ || true
-            curl -sS -o /dev/null -w 'nginx root: %{http_code}\n' http://127.0.0.1/ || true
-            curl -sS -o /dev/null -w 'nginx preview: %{http_code}\n' http://127.0.0.1/preview/ || true
+            set -u
+            echo '=== service state ==='
+            systemctl show aia-auto-ip -p ActiveState -p SubState -p MainPID -p ExecMainStatus -p NRestarts -p ActiveEnterTimestamp 2>&1 || true
+            echo '=== effective service entrypoint (no environment) ==='
+            systemctl show aia-auto-ip -p ExecStart -p WorkingDirectory -p Type -p Restart 2>&1 || true
             echo '=== listening ports ==='
-            ss -lntp 2>/dev/null | grep -E ':80 |:8000 |:8001 ' || true
-            echo '=== production repo state ==='
-            git -C /opt/AIA-Auto-IP rev-parse --abbrev-ref HEAD 2>/dev/null || true
-            git -C /opt/AIA-Auto-IP rev-parse --short HEAD 2>/dev/null || true
-            echo '=== done: no changes were made ==='
+            ss -ltn '( sport = :8000 or sport = :8001 )' 2>&1 || true
+            echo '=== local HTTP status (GET, no application writes) ==='
+            for port in 8000 8001; do
+              curl --silent --show-error --connect-timeout 2 --max-time 5 -o /dev/null \
+                -w "port=${port} status=%{http_code} duration=%{time_total}\n" \
+                "http://127.0.0.1:${port}/" 2>&1 || true
+            done
+            echo '=== deployed production HEAD ==='
+            git -C /opt/AIA-Auto-IP rev-parse --short HEAD 2>&1 || true
+            echo '=== historical journal summary (no output of env files) ==='
+            journalctl -u aia-auto-ip --since '2026-09-03 15:57:30 UTC' \
+              --until '2026-09-03 15:59:30 UTC' --no-pager -o cat 2>&1 \
+              | grep -Ei 'error|exception|traceback|failed|exit|timeout|denied|address already in use|started|stopped|restart' \
+              | tail -60 || true
+            echo '=== read-only database connectivity ==='
+            cd /opt/AIA-Auto-IP
+            .venv/bin/python - <<'PY'
+            import os
+            from pathlib import Path
+            import psycopg
+            import sqlite3
+
+            # Read existing application configuration without echoing secrets.
+            for filename in (".env", ".env.rds"):
+                path = Path(filename)
+                if not path.is_file():
+                    continue
+                for raw in path.read_text(encoding="utf-8").splitlines():
+                    line = raw.strip()
+                    if not line or line.startswith("#") or "=" not in line:
+                        continue
+                    key, value = line.split("=", 1)
+                    if key.strip() and value.strip():
+                        os.environ[key.strip()] = value.strip().strip('"').strip("'")
+
+            sources = (
+                ("main", "DB"),
+                ("scripts", "SCRIPT_DB"),
+            )
+            any_failed = False
+            for label, prefix in sources:
+                if label == "main" and os.getenv("DB_ENGINE", "sqlite").strip().lower() == "sqlite":
+                    try:
+                        db_path = Path("data/persona.sqlite3").resolve()
+                        with sqlite3.connect(f"file:{db_path}?mode=ro", uri=True, timeout=5) as conn:
+                            tables = conn.execute(
+                                "SELECT COUNT(*) FROM sqlite_master WHERE type='table'"
+                            ).fetchone()[0]
+                        print(f"MAIN_DB=sqlite_readonly_ok tables_present={str(tables > 0).lower()}")
+                        any_failed |= tables == 0
+                    except Exception as exc:
+                        print(f"MAIN_DB=sqlite_failed error_type={type(exc).__name__}")
+                        any_failed = True
+                    continue
+                required = [prefix + "_" + key for key in ("HOST", "NAME", "USER", "PASSWORD")]
+                if not all(os.getenv(k, "").strip() for k in required):
+                    print(f"RDS_{label}=not_configured")
+                    any_failed = True
+                    continue
+                try:
+                    # Explicit read-only transactions: no schema/data writes.
+                    with psycopg.connect(
+                        host=os.environ[prefix + "_HOST"].strip(),
+                        port=int(os.getenv(prefix + "_PORT", "5432")),
+                        dbname=os.environ[prefix + "_NAME"].strip(),
+                        user=os.environ[prefix + "_USER"].strip(),
+                        password=os.environ[prefix + "_PASSWORD"],
+                        sslmode=os.getenv(prefix + "_SSLMODE", "require"),
+                        connect_timeout=6,
+                        options="-c default_transaction_read_only=on",
+                    ) as conn:
+                        with conn.cursor() as cursor:
+                            cursor.execute("SELECT 1")
+                            cursor.fetchone()
+                            if label == "scripts":
+                                cursor.execute("SELECT to_regclass('public.script_library') IS NOT NULL")
+                                table_exists = bool(cursor.fetchone()[0])
+                                print(f"RDS_scripts=connected table_exists={str(table_exists).lower()}")
+                                any_failed |= not table_exists
+                            else:
+                                print("RDS_main=connected")
+                except Exception as exc:
+                    # Never print connection strings, passwords, or SQL exception details.
+                    print(f"RDS_{label}=failed error_type={type(exc).__name__}")
+                    any_failed = True
+            print("RDS_readonly_verdict=" + ("needs_attention" if any_failed else "ok"))
+            PY
+            echo '=== diagnostic complete: no changes made ==='

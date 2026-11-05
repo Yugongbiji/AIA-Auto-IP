@@ -4,6 +4,9 @@ name: Frontend QA
 # Full hosted QA is a final gate only: manual when needed, and once after main changes.
 on:
   workflow_dispatch:
+  pull_request:
+    branches:
+      - main
   push:
     branches:
       - main

@@ -5,9 +5,48 @@ on:
     branches:
       - main
 
+# Production is never promoted until the same commit passed all required tests.
+# Merging into main is the release decision; PRs cannot deploy.
+permissions:
+  contents: read
+
+concurrency:
+  group: aia-auto-ip-production
+  cancel-in-progress: false
+
 jobs:
-  deploy:
+  contract-api:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python -m pytest -q
+
+  playwright:
+    needs: contract-api
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [mobile-360, mobile-390, desktop-chromium]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e -- --project=${{ matrix.project }}
+
+  deploy:
+    needs: [contract-api, playwright]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Deploy to Alibaba Cloud ECS
@@ -29,6 +68,30 @@ jobs:
               HAD_OVERRIDE=1
             fi
 
+            # Preserve evidence before any rollback; no database queries or secrets are printed.
+            diagnose_service() {
+              echo "=== AIA production service diagnostics ==="
+              systemctl show aia-auto-ip -p ActiveState -p SubState -p ExecMainStatus -p MainPID -p NRestarts || true
+              ss -ltn '( sport = :8000 )' || true
+              journalctl -u aia-auto-ip -n 80 --no-pager -o short-iso 2>&1 \
+                | sed -E 's/(password|token|secret|api[_-]?key)([=: ][^ ]+)/\1=[REDACTED]/Ig' || true
+              echo "=== End diagnostics ==="
+            }
+
+            wait_until_ready() {
+              local i
+              for i in $(seq 1 30); do
+                if systemctl is-active --quiet aia-auto-ip && \
+                  curl --fail --silent --show-error --connect-timeout 2 --max-time 4 \
+                    http://127.0.0.1:8000/ >/dev/null 2>&1; then
+                  echo "AIA HTTP ready on attempt ${i}/30"
+                  return 0
+                fi
+                sleep 2
+              done
+              return 1
+            }
+
             restore_override() {
               if [ "$HAD_OVERRIDE" = "1" ]; then
                 mkdir -p "$OVERRIDE_DIR"
@@ -39,18 +102,63 @@ jobs:
             }
 
             rollback() {
+              # Rollback must continue collecting evidence even if one recovery step fails.
+              trap - ERR
+              set +e
               echo "Production deployment failed. Restoring ${PREVIOUS_COMMIT}."
+              diagnose_service
+
               git reset --hard "$PREVIOUS_COMMIT"
+              local reset_status=$?
               /opt/AIA-Auto-IP/.venv/bin/pip install -r requirements.txt
+              local pip_status=$?
               restore_override
+              local override_status=$?
               systemctl daemon-reload
+              local reload_status=$?
               systemctl restart aia-auto-ip
-              systemctl is-active --quiet aia-auto-ip
-              curl -fsS --retry 5 --retry-delay 2 http://127.0.0.1:8000/ >/dev/null
+              local restart_status=$?
+
+              if [ "$reset_status" -ne 0 ] || [ "$pip_status" -ne 0 ] || \
+                 [ "$override_status" -ne 0 ] || [ "$reload_status" -ne 0 ] || \
+                 [ "$restart_status" -ne 0 ]; then
+                echo "CRITICAL: one or more rollback commands failed." >&2
+                diagnose_service
+                exit 1
+              fi
+
+              if ! wait_until_ready; then
+                echo "CRITICAL: rollback service not ready; manual incident response required" >&2
+                diagnose_service
+                exit 1
+              fi
+              echo "Rollback restored and HTTP health check passed."
               exit 1
             }
 
+            on_deploy_error() {
+              local status="$1"
+              local line="$2"
+              trap - ERR
+              echo "ERROR: deployment command failed at line $line (exit $status)." >&2
+              rollback
+            }
+            # Never overwrite tracked local changes or deploy over an unhealthy service.
+            # A failed preflight leaves the existing production checkout untouched.
+            if ! git diff --quiet || ! git diff --cached --quiet; then
+              echo "PREFLIGHT BLOCKED: production has uncommitted tracked changes." >&2
+              exit 1
+            fi
+            if ! wait_until_ready; then
+              echo "PREFLIGHT BLOCKED: existing production HTTP service is unhealthy." >&2
+              diagnose_service
+              exit 1
+            fi
+
+            # Fetch failures must not restart a healthy production service.
             git fetch origin main
+            # Recovery is enabled only when changes to the live checkout can begin.
+            trap 'on_deploy_error "$?" "$LINENO"' ERR
             git reset --hard origin/main
             /opt/AIA-Auto-IP/.venv/bin/pip install -r requirements.txt
 
@@ -66,9 +174,11 @@ jobs:
             systemctl daemon-reload
             systemctl restart aia-auto-ip
 
-            if ! systemctl is-active --quiet aia-auto-ip \
-              || ! curl -fsS --retry 5 --retry-delay 2 http://127.0.0.1:8000/ >/dev/null \
-              || ! curl -fsS --retry 5 --retry-delay 2 http://127.0.0.1:8000/ | grep -q '脚本推荐'; then
+            if ! wait_until_ready; then
+              rollback
+            fi
+            if ! curl -fsS --connect-timeout 2 --max-time 5 http://127.0.0.1:8000/ \
+              | grep -q '脚本推荐'; then
               rollback
             fi
 

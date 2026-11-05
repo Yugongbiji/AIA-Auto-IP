@@ -1,0 +1,87 @@
+name: Production Release Readiness (read-only)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - fix/ecs-readiness-rollback-20261103
+    paths:
+      - '.github/workflows/release-readiness.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  read-only-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inspect restore prerequisites without changing production
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.ECS_HOST }}
+          username: ${{ secrets.ECS_USER }}
+          key: ${{ secrets.ECS_SSH_KEY }}
+          script: |
+            set -u
+            echo '=== existing service health ==='
+            systemctl is-active aia-auto-ip || true
+            curl --silent --show-error --connect-timeout 2 --max-time 5 \
+              -o /dev/null -w 'PROD_HTTP=%{http_code}\n' http://127.0.0.1:8000/ || true
+            echo '=== local code safety ==='
+            git -C /opt/AIA-Auto-IP rev-parse --short HEAD || true
+            if git -C /opt/AIA-Auto-IP diff --quiet && git -C /opt/AIA-Auto-IP diff --cached --quiet; then
+              echo 'TRACKED_CODE_CLEAN=true'
+            else
+              echo 'TRACKED_CODE_CLEAN=false'
+            fi
+            for ref in 66d105a38252f4cafe6e2d47faef81d511e85cb8 25b2da4411939d724e338b0fff6bd51f709f74f9; do
+              if git -C /opt/AIA-Auto-IP cat-file -e "$ref^{commit}" 2>/dev/null; then
+                echo "RESTORE_COMMIT_PRESENT=${ref:0:7}"
+              else
+                echo "RESTORE_COMMIT_MISSING=${ref:0:7}"
+              fi
+            done
+            echo '=== override restore prerequisites ==='
+            if [ -f /etc/systemd/system/aia-auto-ip.service.d/10-script-server.conf ]; then
+              echo 'SERVICE_OVERRIDE_PRESENT=true'
+            else
+              echo 'SERVICE_OVERRIDE_PRESENT=false'
+            fi
+            echo '=== backup inventory; metadata only, no file contents ==='
+            /opt/AIA-Auto-IP/.venv/bin/python - <<'PY'
+            from pathlib import Path
+            from datetime import datetime, timezone
+            import os, sqlite3
+            paths = [
+                Path('/opt/AIA-Auto-IP/data'),
+                Path('/opt/AIA-Auto-IP/backups'),
+                Path('/opt/backups'),
+            ]
+            found = []
+            for directory in paths:
+                if not directory.is_dir():
+                    continue
+                try:
+                    for p in directory.iterdir():
+                        if p.is_file() and ('persona' in p.name.lower() or 'sqlite' in p.name.lower()) and any(
+                            part in p.name.lower() for part in ('bak', 'backup', 'snapshot', '2026')
+                        ):
+                            if p.resolve() == Path('/opt/AIA-Auto-IP/data/persona.sqlite3').resolve():
+                                continue
+                            found.append(p)
+                except OSError:
+                    pass
+            print('BACKUP_CANDIDATES=' + str(len(found)))
+            for candidate in sorted(found, key=lambda p: p.stat().st_mtime, reverse=True)[:3]:
+                st = candidate.stat()
+                age = round((datetime.now(timezone.utc).timestamp()-st.st_mtime)/3600)
+                readable = False
+                try:
+                    with sqlite3.connect('file:' + str(candidate.resolve()) + '?mode=ro', uri=True, timeout=2) as db:
+                        readable = db.execute('PRAGMA quick_check').fetchone()[0] == 'ok'
+                except (OSError, sqlite3.Error):
+                    pass
+                print(f'BACKUP_CANDIDATE age_hours={age} bytes={st.st_size} sqlite_quickcheck={str(readable).lower()}')
+            PY
+            echo '=== complete; zero modifications ==='
