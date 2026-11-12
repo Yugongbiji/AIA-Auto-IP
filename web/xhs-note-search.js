@@ -1,6 +1,6 @@
 (() => {
  const $=id=>document.getElementById(id);
- const state={active:false,keyword:"",page:1,hasMore:false,pageNotes:[],loaded:new Map(),localSort:null,localDirection:"desc",busy:false,lastSearchKey:"",total:0};
+ const state={active:false,keyword:"",page:1,hasMore:false,pageNotes:[],loaded:new Map(),localSort:null,localDirection:"desc",busy:false,lastSearchKey:"",total:0,pageSize:0,totalPages:0};
  const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
  const count=v=>Number(v||0).toLocaleString("zh-CN");
  const date=v=>v?new Date(Number(v)*1000).toLocaleDateString("zh-CN"):"—";
@@ -14,8 +14,10 @@
   body.querySelectorAll("[data-note-id]").forEach(b=>b.addEventListener("click",()=>openOriginal(state.loaded.get(b.dataset.noteId),b)));
  }
  function updateMeta(){
-  $("xhs-note-result-summary").textContent=state.keyword?"关键词："+state.keyword+" · 累计已获取 "+state.loaded.size+" 条笔记":"输入关键词开始搜索";
-  const pageText=state.keyword?("第 "+state.page+" 页 · 本页 "+state.pageNotes.length+" 条 · 累计已获取 "+state.loaded.size+" 条 · "+(state.hasMore?"还有下一页":"已到当前结果末页")):"搜索后显示页码与累计数量";
+  const totalText=state.total>0?"接口返回总数约 "+count(state.total)+" 条":"接口未提供可用总数";
+  $("xhs-note-result-summary").textContent=state.keyword?"关键词："+state.keyword+" · "+totalText:"输入关键词开始搜索";
+  const pagesText=state.totalPages>0?"预计共 "+state.totalPages+" 页":"总页数待接口确认";
+  const pageText=state.keyword?("第 "+state.page+" 页 / "+pagesText+" · 本页 "+state.pageNotes.length+" 条 · 已加载 "+state.loaded.size+" 条 · "+(state.hasMore?"还有下一页":"已到当前结果末页")):"搜索后显示页码与累计数量";
   $("xhs-note-page-summary").textContent=pageText;
   $("xhs-note-prev").disabled=state.busy||state.page<=1;
   $("xhs-note-next").disabled=state.busy||!state.hasMore;
@@ -33,7 +35,7 @@
    if(!response.ok||!result.ok)throw new Error(result.error||"搜索失败");
    state.pageNotes=Array.isArray(result.notes)?result.notes:[];
    state.pageNotes.forEach(n=>{if(n&&n.id)state.loaded.set(String(n.id),n);});
-   state.hasMore=Boolean(result.has_more);state.total=Number(result.total||0);
+   state.hasMore=Boolean(result.has_more);state.total=Number(result.total||0);if(page===1){state.pageSize=state.pageNotes.length;state.totalPages=state.total>0&&state.pageSize>0?Math.ceil(state.total/state.pageSize):0;}
    renderRows();updateMeta();
    status("搜索成功：本页 "+state.pageNotes.length+" 条，累计已加载 "+state.loaded.size+" 条。"+(result.credits_charged?"本次扣除 "+result.credits_charged+" credits。":"费用以 Wellbyte 控制台记录为准。"),"success");
   }catch(e){state.pageNotes=[];state.hasMore=false;renderRows();updateMeta();status(e.message||"搜索失败，请稍后重试。","error");}
@@ -72,7 +74,7 @@
  function bind(){
   if(state.active)return;state.active=true;
   $("xhs-note-search-form").addEventListener("submit",e=>{e.preventDefault();search(1,true);});
-  $("xhs-note-search-clear").addEventListener("click",()=>{$("xhs-note-keyword").value="";state.keyword="";state.page=1;state.hasMore=false;state.pageNotes=[];state.loaded.clear();state.lastSearchKey="";state.localSort=null;renderRows();updateMeta();status("已清空搜索条件。");});
+  $("xhs-note-search-clear").addEventListener("click",()=>{$("xhs-note-keyword").value="";state.keyword="";state.page=1;state.hasMore=false;state.pageNotes=[];state.loaded.clear();state.lastSearchKey="";state.localSort=null;state.total=0;state.pageSize=0;state.totalPages=0;renderRows();updateMeta();status("已清空搜索条件。");});
   $("xhs-note-prev").addEventListener("click",()=>{if(state.page>1)search(state.page-1);});
   $("xhs-note-next").addEventListener("click",()=>{if(state.hasMore)search(state.page+1);});
   $("xhs-note-export").addEventListener("click",exportExcel);
