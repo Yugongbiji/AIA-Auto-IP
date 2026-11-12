@@ -649,6 +649,50 @@ risks 最多 8 条；没有明显风险时返回空数组。"""
     return {"formattedText": formatted, "formattedSections": formatted_sections, "suggestedTags": suggested_tags, "risks": safe_risks, "model": body.get("model", payload["model"])}
 
 
+def deepseek_xhs_revise_risk(formatted_text: str, risk: dict):
+    """Return a replacement for one risky snippet without reformatting the article."""
+    api_key = os.getenv("DEEPSEEK_API_KEY", "").strip()
+    if not api_key:
+        raise RuntimeError("未配置 DEEPSEEK_API_KEY。请在项目根目录的 .env 文件中填写密钥后重试。")
+    snippet = clean(risk.get("snippet")) if isinstance(risk, dict) else ""
+    suggestion = clean(risk.get("suggestion")) if isinstance(risk, dict) else ""
+    reason = clean(risk.get("reason")) if isinstance(risk, dict) else ""
+    if not snippet or snippet not in formatted_text:
+        raise ValueError("风险表达不在当前小红书排版内容中。请重新排版后再试。")
+    system_prompt = """你是小红书合规修正助手。当前文章已经完成小红书排版，现在只处理一个风险表达。
+只输出合法 JSON：{"replacement":"替换后的短语"}。
+replacement 只能是对风险片段的最小文字替换，不得包含换行、emoji、引号、解释、前后缀或 Markdown；不能改动风险片段以外的任何内容。
+尽量保留原意、语气和事实，不要扩写，不要把它改成整句。若建议只是提醒核对事实，不要擅自编造事实，使用更稳妥的表达。
+"""
+    payload = {
+        "model": os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash"),
+        "thinking": {"type": "disabled"},
+        "max_tokens": 300,
+        "response_format": {"type": "json_object"},
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": json.dumps({"riskSnippet": snippet, "riskReason": reason, "suggestion": suggestion}, ensure_ascii=False)},
+        ],
+    }
+    request = Request(DEEPSEEK_API_URL, data=json.dumps(payload, ensure_ascii=False).encode("utf-8"), headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}, method="POST")
+    try:
+        with urlopen(request, timeout=60) as response:
+            body = json.loads(response.read().decode("utf-8"))
+    except HTTPError as error:
+        detail = error.read().decode("utf-8", errors="replace")[:500]
+        raise RuntimeError(f"DeepSeek 请求失败（HTTP {error.code}）：{detail}") from error
+    except URLError as error:
+        raise RuntimeError("无法连接 DeepSeek API，请检查网络或代理设置。") from error
+    try:
+        result = json.loads(body.get("choices", [{}])[0].get("message", {}).get("content", "").strip())
+    except json.JSONDecodeError as error:
+        raise RuntimeError("DeepSeek 返回的风险修正格式不完整，请重试。") from error
+    replacement = clean(result.get("replacement")) if isinstance(result, dict) else ""
+    if not replacement or "\n" in replacement or "\r" in replacement or any(is_emoji_component(char) for char in replacement):
+        raise RuntimeError("风险修正结果不符合局部替换要求，请重试。")
+    return {"snippet": snippet, "replacement": replacement, "model": body.get("model", payload["model"])}
+
+
 def clean(value):
     if value is None:
         return ""
@@ -1217,7 +1261,7 @@ class AppHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         endpoint = urlparse(self.path).path
-        if endpoint not in ("/api/profile", "/api/profile/reset-dialogue", "/api/generate", "/api/message", "/api/chat", "/api/content-plan/message", "/api/content-plan/generate", "/api/content-plan/revise", "/api/creative/message", "/api/script/rewrite", "/api/script/intent", "/api/xhs/intent", "/api/xhs/format"):
+        if endpoint not in ("/api/profile", "/api/profile/reset-dialogue", "/api/generate", "/api/message", "/api/chat", "/api/content-plan/message", "/api/content-plan/generate", "/api/content-plan/revise", "/api/creative/message", "/api/script/rewrite", "/api/script/intent", "/api/xhs/intent", "/api/xhs/format", "/api/xhs/revise-risk"):
             self.send_error(HTTPStatus.NOT_FOUND)
             return
         try:
@@ -1260,6 +1304,11 @@ class AppHandler(BaseHTTPRequestHandler):
                     content = clean(payload.get("message"))
                     if not content or len(content) > 30000:
                         raise ValueError("Invalid creative intent payload")
+            elif endpoint == "/api/xhs/revise-risk":
+                formatted_text = clean(payload.get("formattedText"))
+                risk = payload.get("risk")
+                if not isinstance(profile, dict) or not formatted_text or len(formatted_text) > 30000 or not isinstance(risk, dict) or not clean(risk.get("snippet")):
+                    raise ValueError("Invalid XHS risk revision payload")
             elif not isinstance(profile, dict) or (endpoint == "/api/profile" and not agent_id):
                 raise ValueError("Invalid profile payload")
         except (ValueError, json.JSONDecodeError):
@@ -1315,6 +1364,14 @@ class AppHandler(BaseHTTPRequestHandler):
         if endpoint == "/api/xhs/format":
             try:
                 self.send_json({"ok": True, **deepseek_xhs_format(source, revision)})
+            except RuntimeError as error:
+                self.send_json({"error": str(error)}, HTTPStatus.BAD_GATEWAY)
+            return
+        if endpoint == "/api/xhs/revise-risk":
+            try:
+                self.send_json({"ok": True, **deepseek_xhs_revise_risk(formatted_text, risk)})
+            except ValueError as error:
+                self.send_json({"error": str(error)}, HTTPStatus.BAD_REQUEST)
             except RuntimeError as error:
                 self.send_json({"error": str(error)}, HTTPStatus.BAD_GATEWAY)
             return
