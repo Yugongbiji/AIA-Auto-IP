@@ -18,10 +18,13 @@ jobs:
     steps:
       - name: Deploy isolated Preview to ECS
         uses: appleboy/ssh-action@v1
+        env:
+          WELLBYTE_API_KEY: ${{ secrets.WELLBYTE_API_KEY }}
         with:
           host: ${{ secrets.ECS_HOST }}
           username: ${{ secrets.ECS_USER }}
           key: ${{ secrets.ECS_SSH_KEY }}
+          envs: WELLBYTE_API_KEY
           script: |
             set -euo pipefail
             PREVIEW_DIR=/opt/AIA-Auto-IP-preview
@@ -40,6 +43,7 @@ jobs:
             "$PREVIEW_DIR/.venv/bin/pip" install -r "$PREVIEW_DIR/requirements.txt"
             : > "$PREVIEW_DIR/.env"
             for SRC in "$PROD_DIR/.env" "$PROD_DIR/.env.rds"; do if [ -f "$SRC" ]; then grep -E '^(DEEPSEEK_API_KEY|DEEPSEEK_MODEL)=' "$SRC" >> "$PREVIEW_DIR/.env" || true; fi; done
+            if [ -n "${WELLBYTE_API_KEY:-}" ]; then printf 'WELLBYTE_API_KEY=%s\n' "$WELLBYTE_API_KEY" >> "$PREVIEW_DIR/.env"; fi
             printf '\nDB_ENGINE=sqlite\n' >> "$PREVIEW_DIR/.env"
             rm -f "$PREVIEW_DIR/.env.rds"
             grep -q '^DEEPSEEK_API_KEY=' "$PREVIEW_DIR/.env"
