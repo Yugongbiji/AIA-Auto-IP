@@ -46,13 +46,18 @@ class XiaohongshuNoteSearchContractTests(unittest.TestCase):
         self.assertIn("collect_descending", html)
         self.assertIn('"第 "+state.page+" 页 / 共 "+state.page+" 页', frontend)
         self.assertIn("还有下一页", frontend)
+        self.assertIn("本页 \"+state.pageNotes.length+\" 条", frontend)
+        self.assertIn("累计已获取 \"+state.loaded.size+\" 条", frontend)
+        self.assertIn("已到当前结果末页", frontend)
 
     def test_search_page_has_responsive_horizontal_gutters(self):
         css = (ROOT / "web" / "xhs-note-search.css").read_text(encoding="utf-8")
         html = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
         self.assertIn("padding:22px 24px 28px", css)
         self.assertIn("padding:16px 16px 22px", css)
-        self.assertIn("xhs-note-search.css?v=20261112-search-gutters-2", html)
+        self.assertIn("padding-inline:24px!important", css)
+        self.assertIn("padding-inline:16px!important", css)
+        self.assertIn("xhs-note-search.css?v=20261112-search-gutters-3", html)
 
     def test_search_toolbar_uses_compact_responsive_grid(self):
         css = (ROOT / "web" / "xhs-note-search.css").read_text(encoding="utf-8")
