@@ -74,8 +74,8 @@
     if(parsed.protocol!=="https:"&&parsed.protocol!=="http:")throw new Error("链接格式不正确");
     if(host!=="xiaohongshu.com"&&!host.endsWith(".xiaohongshu.com"))throw new Error("链接域名不可信");
     link.dataset.cachedId=id;link.dataset.cachedUrl=result.url;
-    link.textContent="打开小红书原笔记 ↗";
-    window.open(result.url,"_blank","noopener,noreferrer");
+    link.textContent="已获取链接，点击打开原笔记 ↗";
+    status("已获取小红书原笔记链接，请再次点击打开。接口返回的链接不保证笔记仍可访问。","success");
    }catch(error){link.textContent="无法获取链接，请复制笔记ID";status(error.message||"原笔记链接获取失败","error");}
    finally{link.dataset.busy="0";}
   });
