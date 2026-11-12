@@ -6,7 +6,7 @@ INDEX = (ROOT / 'web' / 'index.html').read_text(encoding='utf-8')
 STYLES = (ROOT / 'web' / 'styles.css').read_text(encoding='utf-8')
 APP = (ROOT / 'web' / 'app.js').read_text(encoding='utf-8')
 RELEASE_PREVIEW = (ROOT / 'scripts' / 'release_preview_stable.sh').read_text(encoding='utf-8')
-RC_CACHE_VERSION = '20261105-navigation-profile-2'
+RC_CACHE_VERSION = '20261112-xhs-search-layout-7'
 
 
 def test_floating_ui_does_not_observe_entire_body_subtree():
