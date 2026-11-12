@@ -69,4 +69,33 @@ test.describe('异步与空状态', () => {
     await expect(retry).toBeHidden();
     expect(attempts).toBe(2);
   });
+
+  test('小红书风险确认只在当前排版中替换风险片段', async ({ page }) => {
+    await page.route('**/api/xhs/format', async (route) => route.fulfill({
+      status: 200, contentType: 'application/json', body: JSON.stringify({
+        formattedText: '🌿 第一段原文\n\n⚠️ 这是一处高收益承诺。\n\n📌 后面的排版和表情必须保留。',
+        risks: [{ snippet: '高收益承诺', type: '收益承诺', reason: '容易造成误解', suggestion: '改为更审慎的表达' }],
+        suggestedTags: [], model: 'mock-model'
+      })
+    }));
+    await page.route('**/api/xhs/revise-risk', async (route) => {
+      const body = route.request().postDataJSON();
+      expect(body.formattedText).toContain('🌿 第一段原文\n\n⚠️');
+      expect(body.formattedText).toContain('📌 后面的排版和表情必须保留。');
+      expect(body.risk.snippet).toBe('高收益承诺');
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ replacement: '需要谨慎评估的收益表达' }) });
+    });
+
+    await enterGuestTool(page, '小红书排版');
+    await page.locator('#xhs-input').fill('这是一篇需要排版的原文。');
+    await page.locator('#xhs-form').getByRole('button', { name: '开始排版' }).click();
+    await expect(page.locator('#xhs-messages')).toContainText('初步检测到 1 处需留意的表达');
+    await page.locator('#xhs-messages').getByRole('button', { name: '确认修改' }).click();
+
+    const formatted = page.locator('#xhs-messages .creative-textarea').last();
+    await expect(formatted).toHaveValue('🌿 第一段原文\n\n⚠️ 这是一处需要谨慎评估的收益表达。\n\n📌 后面的排版和表情必须保留。');
+    await expect(page.locator('#xhs-panel')).toBeVisible();
+    await expect(page.locator('#script-panel')).toBeHidden();
+    await expect(page.locator('#xhs-messages')).not.toContainText('高收益承诺');
+  });
 });

@@ -361,6 +361,34 @@ function addSuggestedTags(parent, tags, tool = 'xhs') {
   card.append(list); parent.append(card);
 }
 
+function replaceRiskSnippet(formattedText, snippet, replacement) {
+  const source = String(formattedText || '');
+  const target = String(snippet || '');
+  const index = target ? source.indexOf(target) : -1;
+  if (index < 0) return source;
+  return `${source.slice(0, index)}${replacement}${source.slice(index + target.length)}`;
+}
+
+async function reviseXhsRiskInPlace(node, result, risk, button) {
+  const formattedText = result.formattedText || '';
+  if (!formattedText || !risk?.snippet || !formattedText.includes(risk.snippet)) return;
+  button.disabled = true; button.textContent = '正在修改…';
+  try {
+    const response = await fetch('/api/xhs/revise-risk', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ profile: state.profile, formattedText, risk }) });
+    const revised = await response.json(); if (!response.ok) throw new Error(revised.error || '风险表达修改失败');
+    const replacement = String(revised.replacement || '').trim();
+    if (!replacement || /[\r\n]/.test(replacement)) throw new Error('局部修改结果格式不正确');
+    const updated = { ...result, formattedText: replaceRiskSnippet(formattedText, risk.snippet, replacement) };
+    if (Array.isArray(result.formattedSections)) updated.formattedSections = result.formattedSections.map((section) => ({ ...section, text: replaceRiskSnippet(section.text, risk.snippet, replacement) }));
+    updated.risks = (result.risks || []).filter((item) => item !== risk && item.snippet !== risk.snippet);
+    creativeState.xhs.pendingRisks = updated.risks.length > 0;
+    renderCreativeResult(node, 'xhs', updated);
+  } catch (error) {
+    button.disabled = false; button.textContent = '确认修改';
+    addCreativeMessage('xhs', `局部修改失败：${error.message}`, 'system');
+  }
+}
+
 function renderCreativeResult(node, tool, result) {
   node.className = 'message assistant creative-result-card'; node.innerHTML = '';
   if (tool === 'script') {
@@ -386,7 +414,7 @@ function renderCreativeResult(node, tool, result) {
     risks.forEach((risk) => { const row = makeNode('div', 'risk-row'); row.append(makeNode('b', '', `“${risk.snippet}”`), makeNode('span', '', `${risk.type || '表达风险'}：${risk.reason || '建议发布前核对。'}`), makeNode('small', '', `建议：${risk.suggestion || '确认后可交给脚本改写处理。'}`)); riskBox.append(row); });
     const actions = makeNode('div', 'risk-actions');
     const keep = makeNode('button', 'secondary-button', '保留原文'); keep.type = 'button'; keep.onclick = () => addCreativeMessage('xhs', '已保留当前排版原文。', 'system');
-    const revise = makeNode('button', 'primary', '确认修改'); revise.type = 'button'; revise.onclick = () => handoffXhsToScript(result.source || creativeState.xhs.source);
+    const revise = makeNode('button', 'primary', '确认修改'); revise.type = 'button'; revise.onclick = () => reviseXhsRiskInPlace(node, result, risks[0], revise);
     actions.append(keep, revise); riskBox.append(actions);
   }
   node.append(riskBox);
@@ -430,16 +458,6 @@ async function runXhsFormat(source, revision = '') {
     const saved = { ...result, source }; toolState.pendingRisks = (saved.risks || []).length > 0; renderCreativeResult(card, 'xhs', saved); persistCreativeMessage('xhs', 'assistant', '小红书排版已完成。', saved);
   } catch (error) { card.textContent = `排版失败：${error.message}`; }
   finally { toolState.generating = false; creativeSaveState('xhs').textContent = state.matched ? '已保存到历史档案' : '本次会话'; }
-}
-
-function handoffXhsToScript(source, confirmation = '') {
-  if (!source) return;
-  if (confirmation) addCreativeMessage('xhs', '已收到确认，正在修改风险表达并转入脚本改写。', 'system');
-  else addCreativeMessage('xhs', '已确认修改风险表达，正在转入脚本改写。', 'user');
-  creativeState.xhs.pendingRisks = false;
-  creativeState.script.source = source; selectTool('script');
-  addCreativeMessage('script', '这份原文已从小红书排版的风险提示转入脚本改写。我会只修改需要处理的风险表达，并保留原文核心观点。', 'system');
-  return runScriptRewrite(source, '请根据小红书排版后的风险提示，修改有风险的表达；保留原文核心观点与事实。');
 }
 
 function isExplicitRevision(text, includeFormat = false) {
@@ -543,7 +561,7 @@ async function submitCreativeTool(tool, value) {
   const toolState = creativeState[tool];
   if (tool === 'xhs' && toolState.source && toolState.pendingRisks && isXhsConfirmRevision(content)) {
     addCreativeMessage('xhs', content, 'user');
-    return handoffXhsToScript(toolState.source, content);
+    return addCreativeMessage('xhs', '请直接点击当前风险提示下的“确认修改”，我会只处理这一处表达，并保留现有小红书排版。', 'system');
   }
   addCreativeMessage(tool, content, 'user');
   if (!toolState.source) { toolState.source = content; return tool === 'script' ? runScriptRewrite(content) : runXhsFormat(content); }
