@@ -37,7 +37,9 @@
  function openDrawer(n){
   if(!n)return;const cover=n.cover?'<img class="xhs-note-cover" src="'+esc(n.cover)+'" alt="笔记封面" loading="lazy">':"";
   $("xhs-note-drawer-content").innerHTML=cover+'<div class="xhs-note-drawer-meta">'+esc(n.author||"作者未提供")+' · '+date(n.timestamp)+' · '+(n.type==="video"?"视频":"图文")+'</div><div class="xhs-note-drawer-stats"><span>点赞<strong>'+count(n.liked_count)+'</strong></span><span>收藏<strong>'+count(n.collected_count)+'</strong></span><span>评论<strong>'+count(n.comments_count)+'</strong></span><span>分享<strong>'+count(n.shared_count)+'</strong></span></div><h4>'+esc(n.title||"（无标题）")+'</h4><p class="xhs-note-description">'+esc(n.desc||"接口未返回正文摘要。")+'</p><p class="xhs-note-id">笔记ID：'+esc(n.id)+'</p>';
-  $("xhs-note-open-original").href=n.url||"https://www.xiaohongshu.com/explore/"+encodeURIComponent(n.id);$("xhs-note-copy-id").dataset.noteId=n.id;
+  const original=$("xhs-note-open-original");
+  original.removeAttribute("href");original.dataset.noteId=n.id;original.textContent="获取原笔记链接（按需查询）";
+  $("xhs-note-copy-id").dataset.noteId=n.id;$("xhs-note-copy-id").textContent="复制笔记ID";
   $("xhs-note-drawer").classList.remove("hidden");$("xhs-note-drawer").setAttribute("aria-hidden","false");document.body.classList.add("xhs-note-drawer-open");
  }
  function closeDrawer(){$("xhs-note-drawer").classList.add("hidden");$("xhs-note-drawer").setAttribute("aria-hidden","true");document.body.classList.remove("xhs-note-drawer-open");}
@@ -58,6 +60,26 @@
   $("xhs-note-prev").addEventListener("click",()=>{if(state.page>1)search(state.page-1);});
   $("xhs-note-next").addEventListener("click",()=>{if(state.hasMore)search(state.page+1);});
   $("xhs-note-export").addEventListener("click",exportExcel);
+  $("xhs-note-open-original").addEventListener("click",async e=>{
+   e.preventDefault();const link=$("xhs-note-open-original"),id=link.dataset.noteId;
+   if(!id||link.dataset.busy==="1")return;
+   if(link.dataset.cachedId===id&&link.dataset.cachedUrl){window.open(link.dataset.cachedUrl,"_blank","noopener,noreferrer");return;}
+   link.dataset.busy="1";link.textContent="正在查询原笔记链接…";
+   try{
+    const response=await fetch("/api/xhs-notes/original-link?"+new URLSearchParams({noteId:id}));
+    const result=await response.json();
+    if(!response.ok||!result.ok)throw new Error(result.error||"详情接口查询失败");
+    if(!result.url){link.textContent="未获取到可验证链接，请复制笔记ID";return;}
+    const parsed=new URL(result.url),host=parsed.hostname.toLowerCase();
+    if(parsed.protocol!=="https:"&&parsed.protocol!=="http:")throw new Error("链接格式不正确");
+    if(host!=="xiaohongshu.com"&&!host.endsWith(".xiaohongshu.com"))throw new Error("链接域名不可信");
+    link.dataset.cachedId=id;link.dataset.cachedUrl=result.url;
+    link.textContent="打开小红书原笔记 ↗";
+    window.open(result.url,"_blank","noopener,noreferrer");
+   }catch(error){link.textContent="无法获取链接，请复制笔记ID";status(error.message||"原笔记链接获取失败","error");}
+   finally{link.dataset.busy="0";}
+  });
+
   document.querySelectorAll("[data-local-sort]").forEach(b=>b.addEventListener("click",()=>{const k=b.dataset.localSort;state.localDirection=state.localSort===k&&state.localDirection==="desc"?"asc":"desc";state.localSort=k;renderRows();}));
   $("xhs-note-drawer-close").addEventListener("click",closeDrawer);$("xhs-note-drawer-backdrop").addEventListener("click",closeDrawer);
   $("xhs-note-copy-id").addEventListener("click",async()=>{const id=$("xhs-note-copy-id").dataset.noteId||"";try{await navigator.clipboard.writeText(id);$("xhs-note-copy-id").textContent="已复制";}catch(_){$("xhs-note-copy-id").textContent=id;}});
