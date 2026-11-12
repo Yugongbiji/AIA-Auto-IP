@@ -83,6 +83,50 @@ class ScriptApiTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "contentDirections"):
             script_api.recommend(self.database, {"contentDirections": "养老规划"})
 
+    def test_library_search_matches_title_tags_and_body_across_active_library(self):
+        title_id = add_script(
+            self.database, level1="家庭保障", level2="养老规划",
+            title="退休后现金流怎么安排", body="普通正文", content_hash="search-title",
+        )
+        body_id = add_script(
+            self.database, level1="家庭保障", level2="医疗保障",
+            title="家庭保障脚本", body="这里讲长期护理和养老准备。", content_hash="search-body",
+        )
+        add_script(
+            self.database, level1="财富规划", level2="投资基础",
+            title="和养老无关的标题", body="普通正文", content_hash="search-none",
+        )
+
+        title_result = script_api.library(self.database, search="  现金流 ")
+        self.assertEqual([item["script_id"] for item in title_result["scripts"]], [title_id])
+        self.assertEqual(title_result["search"], "现金流")
+
+        body_result = script_api.library(self.database, search="长期护理")
+        self.assertEqual([item["script_id"] for item in body_result["scripts"]], [body_id])
+
+    def test_library_search_combines_with_tag_filters_and_ignores_empty_query(self):
+        matching_id = add_script(
+            self.database, level1="家庭保障", level2="养老规划",
+            title="养老家庭安排", body="正文", content_hash="search-combined-1",
+        )
+        add_script(
+            self.database, level1="财富规划", level2="养老规划",
+            title="养老财富安排", body="正文", content_hash="search-combined-2",
+        )
+        add_script(
+            self.database, level1="家庭保障", level2="医疗保障",
+            title="医疗家庭安排", body="正文", content_hash="search-combined-3",
+        )
+
+        result = script_api.library(
+            self.database, level1="家庭保障", level2="养老规划", search="养老",
+        )
+        self.assertEqual([item["script_id"] for item in result["scripts"]], [matching_id])
+
+        empty_result = script_api.library(self.database, search="  ")
+        self.assertEqual(empty_result["total"], 3)
+        self.assertEqual(empty_result["search"], "")
+
 
 if __name__ == "__main__":
     unittest.main()
