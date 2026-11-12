@@ -74,7 +74,7 @@ def test_matched_workspace_has_logout_and_busts_profile_drawer_asset_cache():
 
     assert 'id="logout-button"' in index
     assert "退出" in index
-    assert "profile-float.js?v=20261105-navigation-profile-2" in index
+    assert "profile-float.js?v=20261112-xhs-search-layout-5" in index
     assert "logout-button" in app
     assert "localStorage.removeItem(SESSION_KEY)" in app
 
