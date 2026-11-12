@@ -50,6 +50,14 @@ class XiaohongshuNoteSearchContractTests(unittest.TestCase):
         self.assertIn("累计已获取 \"+state.loaded.size+\" 条", frontend)
         self.assertIn("已到当前结果末页", frontend)
 
+    def test_api_total_and_estimated_pages_are_displayed_separately_from_loaded_count(self):
+        frontend = (ROOT / "web" / "xhs-note-search.js").read_text(encoding="utf-8")
+        self.assertIn("接口返回总数约", frontend)
+        self.assertIn("预计共 ", frontend)
+        self.assertIn("state.total=Number(result.total||0)", frontend)
+        self.assertIn("Math.ceil(state.total/state.pageSize)", frontend)
+        self.assertIn("已加载 \"+state.loaded.size+\" 条", frontend)
+
     def test_search_page_has_responsive_horizontal_gutters(self):
         css = (ROOT / "web" / "xhs-note-search.css").read_text(encoding="utf-8")
         html = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
