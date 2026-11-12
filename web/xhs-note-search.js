@@ -19,10 +19,10 @@
   $("xhs-note-prev").disabled=state.busy||state.page<=1;$("xhs-note-next").disabled=state.busy||!state.hasMore;
   $("xhs-note-export").disabled=state.loaded.size===0||state.busy;$("xhs-note-export").textContent="导出前"+Math.min(50,state.loaded.size)+"条 Excel";
  }
- async function search(page){
+ async function search(page,fresh=false){
   const keyword=$("xhs-note-keyword").value.trim();if(!keyword){status("请先输入搜索关键词。","error");return;}
   const key=[keyword,$("xhs-note-type").value,$("xhs-note-sort").value,$("xhs-note-time").value].join("|");
-  if(key!==state.lastSearchKey){state.loaded.clear();state.localSort=null;state.localDirection="desc";state.lastSearchKey=key;}
+  if(fresh||key!==state.lastSearchKey){state.loaded.clear();state.localSort=null;state.localDirection="desc";state.lastSearchKey=key;}
   state.keyword=keyword;state.page=page;state.busy=true;updateMeta();status("正在搜索小红书笔记…");
   const params=new URLSearchParams({keyword,page:String(page),noteType:$("xhs-note-type").value,sortType:$("xhs-note-sort").value,timeFilter:$("xhs-note-time").value});
   try{
@@ -53,7 +53,7 @@
  }
  function bind(){
   if(state.active)return;state.active=true;
-  $("xhs-note-search-form").addEventListener("submit",e=>{e.preventDefault();search(1);});
+  $("xhs-note-search-form").addEventListener("submit",e=>{e.preventDefault();search(1,true);});
   $("xhs-note-search-clear").addEventListener("click",()=>{$("xhs-note-keyword").value="";state.keyword="";state.page=1;state.hasMore=false;state.pageNotes=[];state.loaded.clear();state.lastSearchKey="";state.localSort=null;renderRows();updateMeta();status("已清空搜索条件。");});
   $("xhs-note-prev").addEventListener("click",()=>{if(state.page>1)search(state.page-1);});
   $("xhs-note-next").addEventListener("click",()=>{if(state.hasMore)search(state.page+1);});
