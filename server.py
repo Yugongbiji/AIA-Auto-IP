@@ -18,6 +18,7 @@ import re
 import sqlite3
 import sys
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -1352,7 +1353,7 @@ class AppHandler(BaseHTTPRequestHandler):
                     if not isinstance(note, dict):
                         continue
                     timestamp = int(note.get("timestamp") or 0)
-                    published = datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M") if timestamp else ""
+                    published = datetime.fromtimestamp(timestamp, timezone.utc).astimezone(ZoneInfo("Asia/Shanghai")).strftime("%Y-%m-%d %H:%M") if timestamp else ""
                     sheet.append([xhs_excel_safe(note.get("title")), xhs_excel_safe(note.get("desc")), published,
                         "视频" if note.get("type") == "video" else "图文", xhs_excel_safe(note.get("author")),
                         int(note.get("liked_count") or 0), int(note.get("collected_count") or 0), int(note.get("comments_count") or 0),
