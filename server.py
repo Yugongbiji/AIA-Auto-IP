@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlencode, quote, urlparse
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -1223,6 +1223,63 @@ def migrate_sqlite_to_postgres(source: Path = DB_PATH):
     return database_counts()
 
 
+def xhs_note_search_request(keyword: str, page: int = 1, note_type: str = "ALL", sort_type: str = "general", time_filter: str = "ALL"):
+    """Search Xiaohongshu notes through Wellbyte. The API key never leaves the server."""
+    api_key = os.getenv("WELLBYTE_API_KEY", "").strip()
+    if not api_key:
+        raise RuntimeError("WELLBYTE_API_KEY_NOT_CONFIGURED")
+    if note_type not in {"ALL", "VIDEO_NOTE", "NORMAL_NOTE"}:
+        raise ValueError("笔记类型参数无效")
+    if sort_type not in {"general", "popularity_descending", "time_descending", "comment_descending", "collect_descending"}:
+        raise ValueError("排序参数无效")
+    if time_filter not in {"ALL", "ONE_DAY", "ONE_WEEK", "HALF_YEAR"}:
+        raise ValueError("发布时间参数无效")
+    params = {"page": page, "keyword": keyword, "noteType": note_type, "sortType": sort_type, "timeFilter": time_filter}
+    url = "https://api.wellbyte.net/v1/xiaohongshu/search/note_v4?" + urlencode(params)
+    request = Request(url, headers={"Authorization": f"Bearer {api_key}", "Accept": "application/json"})
+    try:
+        with urlopen(request, timeout=35) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except HTTPError as error:
+        raise RuntimeError(f"WELLBYTE_HTTP_{error.code}") from error
+    except (URLError, TimeoutError) as error:
+        raise RuntimeError("WELLBYTE_CONNECTION_FAILED") from error
+    data = payload.get("data") if isinstance(payload, dict) else None
+    api_info = data.get("api_info", {}) if isinstance(data, dict) else {}
+    if not isinstance(data, dict) or payload.get("code") != 0 or api_info.get("code") not in (None, 10200):
+        raise RuntimeError("WELLBYTE_SEARCH_FAILED")
+    notes = []
+    for raw in data.get("notes", []):
+        if not isinstance(raw, dict) or not raw.get("id"):
+            continue
+        images = raw.get("images_list") if isinstance(raw.get("images_list"), list) else []
+        cover = next((item.get("url") or item.get("url_size_large") for item in images if isinstance(item, dict) and (item.get("url") or item.get("url_size_large"))), "")
+        note_id = str(raw.get("id"))
+        original_url = raw.get("share_url") or raw.get("note_url") or ""
+        if not (isinstance(original_url, str) and "xiaohongshu.com" in original_url):
+            original_url = "https://www.xiaohongshu.com/explore/" + quote(note_id)
+        xsec_token = raw.get("xsec_token")
+        if xsec_token and "xsec_token=" not in original_url:
+            original_url += ("&" if "?" in original_url else "?") + "xsec_token=" + quote(str(xsec_token))
+        user = raw.get("user") if isinstance(raw.get("user"), dict) else {}
+        notes.append({
+            "id": note_id, "title": str(raw.get("title") or "").strip() or str(raw.get("desc") or "").strip()[:42] or "（无标题）",
+            "desc": str(raw.get("desc") or ""), "type": "video" if raw.get("type") == "video" else "normal",
+            "author": str(user.get("nickname") or ""), "timestamp": int(raw.get("timestamp") or 0),
+            "liked_count": int(raw.get("liked_count") or 0), "collected_count": int(raw.get("collected_count") or 0),
+            "comments_count": int(raw.get("comments_count") or 0), "shared_count": int(raw.get("shared_count") or 0),
+            "cover": cover, "url": original_url,
+        })
+    return {"notes": notes, "total": int(data.get("total") or len(notes)), "has_more": bool(data.get("has_more")),
+            "statistics": data.get("statistics") if isinstance(data.get("statistics"), dict) else {},
+            "credits_charged": int((payload.get("meta") or {}).get("credits_charged") or 0)}
+
+
+def xhs_excel_safe(value):
+    text = "" if value is None else str(value)
+    return "'" + text if text.startswith(("=", "+", "-", "@")) else text
+
+
 class AppHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         return
@@ -1237,6 +1294,25 @@ class AppHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         parsed = urlparse(self.path)
+        if parsed.path == "/api/xhs-notes/search":
+            query = parse_qs(parsed.query)
+            keyword = clean(query.get("keyword", [""])[0])[:100]
+            try:
+                page = int(query.get("page", ["1"])[0])
+                if not keyword or page < 1 or page > 100:
+                    raise ValueError("请输入关键词，并使用有效页码")
+                result = xhs_note_search_request(keyword, page, query.get("noteType", ["ALL"])[0], query.get("sortType", ["general"])[0], query.get("timeFilter", ["ALL"])[0])
+                self.send_json({"ok": True, **result})
+            except ValueError as error:
+                self.send_json({"ok": False, "error": str(error)}, HTTPStatus.BAD_REQUEST)
+            except RuntimeError as error:
+                code = str(error)
+                status = HTTPStatus.SERVICE_UNAVAILABLE if code == "WELLBYTE_API_KEY_NOT_CONFIGURED" else HTTPStatus.BAD_GATEWAY
+                message = "尚未配置小红书搜索服务密钥" if code == "WELLBYTE_API_KEY_NOT_CONFIGURED" else "小红书搜索服务暂时不可用，请稍后重试"
+                self.send_json({"ok": False, "error": message}, status)
+            except Exception:
+                self.send_json({"ok": False, "error": "搜索请求处理失败，请稍后重试"}, HTTPStatus.BAD_GATEWAY)
+            return
         if parsed.path == "/api/lookup":
             query = parse_qs(parsed.query)
             name = clean(query.get("name", [""])[0])
@@ -1261,6 +1337,46 @@ class AppHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         endpoint = urlparse(self.path).path
+        if endpoint == "/api/xhs-notes/export":
+            try:
+                payload = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))).decode("utf-8"))
+                notes = payload.get("notes") if isinstance(payload, dict) else None
+                if not isinstance(notes, list) or not notes or len(notes) > 50:
+                    raise ValueError("导出数据需为1至50条已加载笔记")
+                from io import BytesIO
+                workbook = openpyxl.Workbook()
+                sheet = workbook.active
+                sheet.title = "小红书笔记"
+                sheet.append(["笔记标题", "笔记内容", "发布时间", "笔记类型", "作者", "点赞量", "收藏量", "评论量", "分享量", "笔记ID", "原笔记链接"])
+                for note in notes:
+                    if not isinstance(note, dict):
+                        continue
+                    timestamp = int(note.get("timestamp") or 0)
+                    published = datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M") if timestamp else ""
+                    sheet.append([xhs_excel_safe(note.get("title")), xhs_excel_safe(note.get("desc")), published,
+                        "视频" if note.get("type") == "video" else "图文", xhs_excel_safe(note.get("author")),
+                        int(note.get("liked_count") or 0), int(note.get("collected_count") or 0), int(note.get("comments_count") or 0),
+                        int(note.get("shared_count") or 0), xhs_excel_safe(note.get("id")), xhs_excel_safe(note.get("url"))])
+                sheet.freeze_panes = "A2"
+                sheet.auto_filter.ref = sheet.dimensions
+                for cell in sheet[1]:
+                    cell.font = openpyxl.styles.Font(bold=True)
+                for index, width in enumerate([38, 60, 19, 12, 20, 12, 12, 12, 12, 28, 55], 1):
+                    sheet.column_dimensions[openpyxl.utils.get_column_letter(index)].width = width
+                output = BytesIO()
+                workbook.save(output)
+                content = output.getvalue()
+                self.send_response(HTTPStatus.OK)
+                self.send_header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                self.send_header("Content-Disposition", "attachment; filename*=UTF-8''" + quote("小红书笔记搜索结果.xlsx"))
+                self.send_header("Content-Length", str(len(content)))
+                self.end_headers()
+                self.wfile.write(content)
+            except (ValueError, json.JSONDecodeError) as error:
+                self.send_json({"error": str(error)}, HTTPStatus.BAD_REQUEST)
+            except Exception:
+                self.send_json({"error": "Excel 导出失败，请稍后重试"}, HTTPStatus.INTERNAL_SERVER_ERROR)
+            return
         if endpoint not in ("/api/profile", "/api/profile/reset-dialogue", "/api/generate", "/api/message", "/api/chat", "/api/content-plan/message", "/api/content-plan/generate", "/api/content-plan/revise", "/api/creative/message", "/api/script/rewrite", "/api/script/intent", "/api/xhs/intent", "/api/xhs/format", "/api/xhs/revise-risk"):
             self.send_error(HTTPStatus.NOT_FOUND)
             return
