@@ -1331,6 +1331,9 @@ class AppHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         parsed = urlparse(self.path)
+        if parsed.path == "/api/xhs-notes/status":
+            self.send_json({"ok": True, "configured": bool(os.getenv("WELLBYTE_API_KEY", "").strip())})
+            return
         if parsed.path == "/api/xhs-notes/original-link":
             query = parse_qs(parsed.query)
             note_id = query.get("noteId", [""])[0]
