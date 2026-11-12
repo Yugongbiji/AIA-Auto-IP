@@ -162,6 +162,7 @@ class ScriptAppHandler(core.AppHandler):
                     level1=(query.get("level1", [""])[0] or ""),
                     level2=(query.get("level2", [""])[0] or ""),
                     tag=(query.get("tag", [""])[0] or ""),
+                    search=(query.get("search", [""])[0] or ""),
                     page=int(query.get("page", ["1"])[0] or 1),
                     page_size=int(query.get("pageSize", ["20"])[0] or 20),
                 )

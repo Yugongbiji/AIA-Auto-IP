@@ -93,6 +93,18 @@ def test_script_library_restores_real_paging_responsive_grid_and_detail_contract
     assert "window.aiaScriptRecommendation.openDetail" in DETAIL
 
 
+def test_script_library_search_and_detail_footer_actions_contract():
+    assert "script-recommendation-search-form" in RECOMMEND
+    assert "searchQuery" in RECOMMEND
+    assert "search" in RECOMMEND
+    assert "script-recommendation-search" in RECOMMEND_CSS
+    index = (WEB / "index.html").read_text(encoding="utf-8")
+    assert "id=\"script-detail-prev\"" not in index
+    assert "id=\"script-detail-next\"" not in index
+    assert 'id="script-detail-rewrite" class="secondary-button"' in index
+    assert 'id="script-detail-xhs" class="secondary-button"' in index
+
+
 def test_no_whole_body_observer_returns_in_detail_paging():
     compact = DETAIL.replace(" ", "")
     assert "observe(document.body" not in compact

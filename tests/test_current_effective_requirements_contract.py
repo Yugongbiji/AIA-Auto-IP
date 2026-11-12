@@ -169,14 +169,17 @@ def test_content_goal_boundary_uses_canonical_primary_goal_only():
     assert "不存在第三种“双主线”最终状态" in boundary
 
 
-def test_script_detail_supports_previous_and_next_article_navigation():
+def test_script_detail_uses_article_navigation_and_two_equal_footer_actions():
     index = read("web/index.html")
     recommendation = read("web/script-recommendation-v1.js")
-    assert 'id="script-detail-prev"' in index
-    assert 'id="script-detail-next"' in index
+    detail_rules = read("web/product-rules-v17.js")
+    assert 'id="script-detail-prev"' not in index
+    assert 'id="script-detail-next"' not in index
+    assert 'id="script-detail-rewrite" class="secondary-button"' in index
+    assert 'id="script-detail-xhs" class="secondary-button"' in index
     assert "function navigateDetail" in recommendation
-    assert "script-detail-prev" in recommendation
-    assert "script-detail-next" in recommendation
+    assert 'data-script-page="previous"' in detail_rules
+    assert 'data-script-page="next"' in detail_rules
 
 
 def test_script_recommendation_errors_preserve_diagnostic_context():
