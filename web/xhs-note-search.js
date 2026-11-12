@@ -9,8 +9,8 @@
  function status(msg,kind){const n=$("xhs-note-search-status");n.textContent=msg;n.className="xhs-note-search-status"+(kind?" "+kind:"");}
  function renderRows(){
   const body=$("xhs-note-results-body"),items=sorted(state.pageNotes);
-  if(!items.length){body.innerHTML='<tr><td colspan="8" class="xhs-note-empty">没有找到笔记，请尝试更换关键词或筛选条件。</td></tr>';return;}
-  body.innerHTML=items.map(n=>'<tr><td class="xhs-note-title-cell"><button type="button" class="xhs-note-title" data-note-id="'+esc(n.id)+'" title="点击直接打开小红书原笔记">'+esc(n.title||"（无标题）")+'</button></td><td>'+(n.type==="video"?"视频":"图文")+'</td><td>'+esc(n.author||"—")+'</td><td>'+date(n.timestamp)+'</td><td class="numeric">'+count(n.liked_count)+'</td><td class="numeric">'+count(n.collected_count)+'</td><td class="numeric">'+count(n.comments_count)+'</td><td class="numeric">'+count(n.shared_count)+'</td></tr>').join("");
+  if(!items.length){body.innerHTML='<tr><td colspan="9" class="xhs-note-empty">没有找到笔记，请尝试更换关键词或筛选条件。</td></tr>';return;}
+  body.innerHTML=items.map(n=>'<tr><td class="xhs-note-title-cell"><button type="button" class="xhs-note-title" data-note-id="'+esc(n.id)+'" title="点击直接打开小红书原笔记">'+esc(n.title||"（无标题）")+'</button></td><td class="xhs-note-id-cell" title="作品ID">'+esc(n.id)+'</td><td>'+(n.type==="video"?"视频":"图文")+'</td><td>'+esc(n.author||"—")+'</td><td>'+date(n.timestamp)+'</td><td class="numeric">'+count(n.liked_count)+'</td><td class="numeric">'+count(n.collected_count)+'</td><td class="numeric">'+count(n.comments_count)+'</td><td class="numeric">'+count(n.shared_count)+'</td></tr>').join("");
   body.querySelectorAll("[data-note-id]").forEach(b=>b.addEventListener("click",()=>openOriginal(state.loaded.get(b.dataset.noteId),b)));
  }
  function updateMeta(){
