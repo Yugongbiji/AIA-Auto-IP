@@ -29,6 +29,11 @@ class XiaohongshuNoteSearchContractTests(unittest.TestCase):
         self.assertIn('id="xhs-note-open-original"', html)
         self.assertIn("www.xiaohongshu.com/explore/", frontend)
 
+    def test_preview_rewrites_double_quoted_fetch_paths(self):
+        workflow = (ROOT / ".github" / "workflows" / "preview-deploy.yml").read_text(encoding="utf-8")
+        self.assertIn('fetch("/api/', workflow)
+        self.assertIn('fetch("/preview/api/', workflow)
+
     def test_search_pagination_and_local_sort(self):
         html = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
         frontend = (ROOT / "web" / "xhs-note-search.js").read_text(encoding="utf-8")
