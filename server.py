@@ -1257,7 +1257,8 @@ def xhs_note_search_request(keyword: str, page: int = 1, note_type: str = "ALL",
         cover = next((item.get("url") or item.get("url_size_large") for item in images if isinstance(item, dict) and (item.get("url") or item.get("url_size_large"))), "")
         note_id = str(raw.get("id"))
         original_url = raw.get("share_url") or raw.get("note_url") or ""
-        if not (isinstance(original_url, str) and "xiaohongshu.com" in original_url):
+        original_host = urlparse(original_url).hostname.lower() if isinstance(original_url, str) and original_url else ""
+        if not (original_host == "xiaohongshu.com" or original_host.endswith(".xiaohongshu.com")):
             original_url = "https://www.xiaohongshu.com/explore/" + quote(note_id)
         xsec_token = raw.get("xsec_token")
         if xsec_token and "xsec_token=" not in original_url:
