@@ -1406,10 +1406,10 @@ class AppHandler(BaseHTTPRequestHandler):
                     timestamp = int(note.get("timestamp") or 0)
                     published = datetime.fromtimestamp(timestamp, timezone.utc).astimezone(ZoneInfo("Asia/Shanghai")).strftime("%Y-%m-%d %H:%M") if timestamp else ""
                     sheet.append([xhs_excel_safe(note.get("title")), xhs_excel_safe(note.get("desc")), published,
-                    exported_count += 1
                         "视频" if note.get("type") == "video" else "图文", xhs_excel_safe(note.get("author")),
                         int(note.get("liked_count") or 0), int(note.get("collected_count") or 0), int(note.get("comments_count") or 0),
                         int(note.get("shared_count") or 0), xhs_excel_safe(note.get("id")), xhs_excel_safe(note.get("url"))])
+                    exported_count += 1
                 sheet.freeze_panes = "A2"
                 sheet.auto_filter.ref = sheet.dimensions
                 for cell in sheet[1]:
