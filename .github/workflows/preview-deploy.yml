@@ -111,6 +111,7 @@ jobs:
                     sub_filter_once off;
                     sub_filter_types text/javascript application/javascript;
                     sub_filter "fetch('/api/" "fetch('/preview/api/";
+                    sub_filter 'fetch("/api/' 'fetch("/preview/api/';
                     add_header X-AIA-Environment preview always;
                 }
                 # AIA_PREVIEW_END
