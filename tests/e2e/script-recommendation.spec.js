@@ -93,8 +93,8 @@ test.describe('脚本推荐 V1', () => {
     await expect(page.locator('#script-detail-body')).toContainText('这是完整脚本正文。');
     await expect(detail.getByRole('button', { name: '脚本改写' })).toBeVisible();
     await expect(detail.getByRole('button', { name: '小红书排版' })).toBeVisible();
-    await expect(detail.getByRole('button', { name: '上一篇' })).toHaveCount(0);
-    await expect(detail.getByRole('button', { name: '下一篇' })).toHaveCount(0);
+    await expect(detail.getByRole('button', { name: '上一篇' })).toHaveCount(1);
+    await expect(detail.getByRole('button', { name: '下一篇' })).toHaveCount(1);
 
     await page.locator('#script-detail-rewrite').click();
     await expect(page.locator('#script-panel')).toBeVisible();
