@@ -18,10 +18,13 @@ jobs:
     steps:
       - name: Deploy isolated Preview to ECS
         uses: appleboy/ssh-action@v1
+        env:
+          WELLBYTE_API_KEY: ${{ secrets.WELLBYTE_API_KEY }}
         with:
           host: ${{ secrets.ECS_HOST }}
           username: ${{ secrets.ECS_USER }}
           key: ${{ secrets.ECS_SSH_KEY }}
+          envs: WELLBYTE_API_KEY
           script: |
             set -euo pipefail
             PREVIEW_DIR=/opt/AIA-Auto-IP-preview
@@ -40,6 +43,7 @@ jobs:
             "$PREVIEW_DIR/.venv/bin/pip" install -r "$PREVIEW_DIR/requirements.txt"
             : > "$PREVIEW_DIR/.env"
             for SRC in "$PROD_DIR/.env" "$PROD_DIR/.env.rds"; do if [ -f "$SRC" ]; then grep -E '^(DEEPSEEK_API_KEY|DEEPSEEK_MODEL)=' "$SRC" >> "$PREVIEW_DIR/.env" || true; fi; done
+            if [ -n "${WELLBYTE_API_KEY:-}" ]; then printf 'WELLBYTE_API_KEY=%s\n' "$WELLBYTE_API_KEY" >> "$PREVIEW_DIR/.env"; fi
             printf '\nDB_ENGINE=sqlite\n' >> "$PREVIEW_DIR/.env"
             rm -f "$PREVIEW_DIR/.env.rds"
             grep -q '^DEEPSEEK_API_KEY=' "$PREVIEW_DIR/.env"
@@ -118,6 +122,9 @@ jobs:
             PY
             nginx -t || { rollback; exit 1; }; systemctl reload nginx; sleep 2
             curl -fsS --retry 8 --retry-delay 1 http://127.0.0.1/preview/ >/dev/null || { rollback; exit 1; }
+            WELLBYTE_STATUS=$(curl -fsS --retry 3 http://127.0.0.1:8001/api/xhs-notes/status)
+            echo "Preview Wellbyte configuration status: $WELLBYTE_STATUS"
+            echo "$WELLBYTE_STATUS" | grep -q '"configured": true' || { echo "Preview Wellbyte API key is not configured"; rollback; exit 1; }
             curl -fsS --retry 5 http://127.0.0.1/ >/dev/null || { rollback; exit 1; }
             systemctl is-active --quiet aia-auto-ip || { rollback; exit 1; }
             echo "Preview healthy; branch=${PREVIEW_BRANCH}; commit=$(git -C "$PREVIEW_DIR" rev-parse --short HEAD)"
