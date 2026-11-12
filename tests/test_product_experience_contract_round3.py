@@ -149,6 +149,17 @@ def test_xhs_contract_is_two_sentence_dense_and_repairs_isolated_punctuation():
     assert "core_module.enforce_xhs_readability = readability" in XHS
 
 
+def test_xhs_risk_confirmation_stays_in_xhs_and_revises_only_one_snippet():
+    app = (WEB / "app.js").read_text(encoding="utf-8")
+    server = (ROOT / "server.py").read_text(encoding="utf-8")
+    assert "/api/xhs/revise-risk" in server
+    assert "reviseXhsRiskInPlace" in app
+    assert "replaceRiskSnippet" in app
+    assert "handoffXhsToScript(result.source" not in app
+    assert "selectTool('script')" not in app.split("function reviseXhsRiskInPlace", 1)[1].split("function activateCreativeTool", 1)[0]
+    assert "formattedText" in app.split("function reviseXhsRiskInPlace", 1)[1].split("function activateCreativeTool", 1)[0]
+
+
 def test_prompt_cannot_generate_or_confuse_fixed_compliance_footer():
     assert "固定合规尾部不是模型职责" in PROMPT
     assert "模型不得生成个人意见固定声明、营销服务部行、执业证编号行" in PROMPT
