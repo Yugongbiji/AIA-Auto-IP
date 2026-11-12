@@ -14,8 +14,8 @@
   body.querySelectorAll("[data-note-id]").forEach(b=>b.addEventListener("click",()=>openOriginal(state.loaded.get(b.dataset.noteId),b)));
  }
  function updateMeta(){
-  $("xhs-note-result-summary").textContent=state.keyword?"关键词："+state.keyword+" · 已获取 "+state.loaded.size+" 条":"输入关键词开始搜索";
-  const pageText=state.keyword?(state.hasMore?"第 "+state.page+" 页 · 每页约20条 · 已加载 "+state.loaded.size+" 条 · 还有下一页":"第 "+state.page+" 页 / 共 "+state.page+" 页 · 每页约20条 · 已加载 "+state.loaded.size+" 条"):"尚未搜索";
+  $("xhs-note-result-summary").textContent=state.keyword?"关键词："+state.keyword+" · 累计已获取 "+state.loaded.size+" 条笔记":"输入关键词开始搜索";
+  const pageText=state.keyword?("第 "+state.page+" 页 · 本页 "+state.pageNotes.length+" 条 · 累计已获取 "+state.loaded.size+" 条 · "+(state.hasMore?"还有下一页":"已到当前结果末页")):"搜索后显示页码与累计数量";
   $("xhs-note-page-summary").textContent=pageText;
   $("xhs-note-prev").disabled=state.busy||state.page<=1;
   $("xhs-note-next").disabled=state.busy||!state.hasMore;
