@@ -65,7 +65,7 @@ class XiaohongshuNoteSearchContractTests(unittest.TestCase):
         self.assertIn("padding:16px 16px 22px", css)
         self.assertIn("padding-inline:24px!important", css)
         self.assertIn("padding-inline:16px!important", css)
-        self.assertIn("xhs-note-search.css?v=20261112-xhs-search-layout-3", html)
+        self.assertIn("xhs-note-search.css?v=20261112-xhs-search-layout-4", html)
 
     def test_search_toolbar_uses_compact_responsive_grid(self):
         css = (ROOT / "web" / "xhs-note-search.css").read_text(encoding="utf-8")
