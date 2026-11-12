@@ -9,7 +9,7 @@ class XiaohongshuNoteSearchContractTests(unittest.TestCase):
         self.assertIn("WELLBYTE_API_KEY",server)
         self.assertIn("https://api.wellbyte.net/v1/xiaohongshu/search/note_v4",server)
         self.assertNotIn("WELLBYTE_API_KEY",frontend)
-        self.assertIn("collect_descending",frontend)
+        self.assertIn("collect_descending",html)
     def test_export_is_capped_at_50_loaded_rows(self):
         server=(ROOT/"server.py").read_text(encoding="utf-8")
         frontend=(ROOT/"web"/"xhs-note-search.js").read_text(encoding="utf-8")
@@ -28,5 +28,5 @@ class XiaohongshuNoteSearchContractTests(unittest.TestCase):
         self.assertIn("page:String(page)",frontend)
         self.assertIn("state.loaded.set(String(n.id),n)",frontend)
         self.assertIn("data-local-sort",html)
-        self.assertIn("collect_descending",frontend)
+        self.assertIn("collect_descending",html)
 if __name__=="__main__": unittest.main()
