@@ -1277,6 +1277,41 @@ def xhs_note_search_request(keyword: str, page: int = 1, note_type: str = "ALL",
             "credits_charged": int((payload.get("meta") or {}).get("credits_charged") or 0)}
 
 
+def xhs_note_original_link(note_id: str):
+    """On-demand detail lookup; never guess a URL from an ID."""
+    if not re.fullmatch(r"[a-zA-Z0-9_-]{8,80}", note_id):
+        raise ValueError("笔记ID无效")
+    api_key = os.getenv("WELLBYTE_API_KEY", "").strip()
+    if not api_key:
+        raise RuntimeError("WELLBYTE_API_KEY_NOT_CONFIGURED")
+    url = "https://api.wellbyte.net/v1/xiaohongshu/note/detail?" + urlencode({"note_id": note_id})
+    request = Request(url, headers={"Authorization": f"Bearer {api_key}", "Accept": "application/json"})
+    try:
+        with urlopen(request, timeout=35) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except (HTTPError, URLError, TimeoutError) as error:
+        raise RuntimeError("WELLBYTE_DETAIL_FAILED") from error
+    if not isinstance(payload, dict) or payload.get("code") != 0:
+        raise RuntimeError("WELLBYTE_DETAIL_FAILED")
+    data = payload.get("data")
+    if not isinstance(data, dict):
+        raise RuntimeError("WELLBYTE_DETAIL_FAILED")
+    candidates = [data]
+    for key in ("note", "note_info", "note_detail", "detail", "note_card"):
+        if isinstance(data.get(key), dict):
+            candidates.append(data[key])
+    for item in candidates:
+        for key in ("share_url", "shareUrl", "note_url", "noteUrl", "url", "web_url"):
+            candidate = item.get(key)
+            if not isinstance(candidate, str):
+                continue
+            parsed = urlparse(candidate)
+            host = (parsed.hostname or "").lower()
+            if parsed.scheme == "https" and (host == "xiaohongshu.com" or host.endswith(".xiaohongshu.com")) and parsed.path not in ("", "/"):
+                return {"url": candidate, "credits_charged": int((payload.get("meta") or {}).get("credits_charged") or 0)}
+    return {"url": None, "credits_charged": int((payload.get("meta") or {}).get("credits_charged") or 0)}
+
+
 def xhs_excel_safe(value):
     text = "" if value is None else str(value)
     return "'" + text if text.startswith(("=", "+", "-", "@")) else text
@@ -1296,6 +1331,17 @@ class AppHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         parsed = urlparse(self.path)
+        if parsed.path == "/api/xhs-notes/original-link":
+            query = parse_qs(parsed.query)
+            note_id = query.get("noteId", [""])[0]
+            try:
+                result = xhs_note_original_link(note_id)
+                self.send_json({"ok": True, **result})
+            except ValueError as error:
+                self.send_json({"ok": False, "error": str(error)}, HTTPStatus.BAD_REQUEST)
+            except RuntimeError:
+                self.send_json({"ok": False, "error": "无法通过详情接口获取笔记链接，请复制笔记ID后在小红书搜索"}, HTTPStatus.BAD_GATEWAY)
+            return
         if parsed.path == "/api/xhs-notes/search":
             query = parse_qs(parsed.query)
             keyword = clean(query.get("keyword", [""])[0])[:100]
