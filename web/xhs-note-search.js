@@ -73,8 +73,10 @@
   try{
    const response=await fetch("/api/xhs-notes/export",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({notes})});
    if(!response.ok){const r=await response.json().catch(()=>({}));throw new Error(r.error||"导出失败");}
+   const exportedCount=Number(response.headers.get("X-Exported-Count")||0);
+   if(exportedCount!==notes.length)throw new Error("导出数量校验失败：页面准备导出 "+notes.length+" 条，服务器实际写入 "+exportedCount+" 条。为避免文件不完整，已取消下载。");
    const blob=await response.blob(),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="小红书笔记搜索结果.xlsx";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
-   status("Excel 已生成，共 "+notes.length+" 条笔记。","success");
+   status("Excel 已生成并核对，共 "+exportedCount+" 条笔记。","success");
   }catch(e){status(e.message||"Excel 导出失败。","error");}finally{updateMeta();}
  }
  function bind(){
