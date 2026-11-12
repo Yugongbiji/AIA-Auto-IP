@@ -22,27 +22,36 @@ class XiaohongshuNoteSearchContractTests(unittest.TestCase):
         self.assertIn("sorted(allLoaded()).slice(0,50)", frontend)
         self.assertIn("/api/xhs-notes/export", frontend)
 
-    def test_drawer_and_original_note_link(self):
+    def test_titles_open_original_note_without_preview_drawer_or_copy_id_button(self):
         html = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
         frontend = (ROOT / "web" / "xhs-note-search.js").read_text(encoding="utf-8")
-        self.assertIn('id="xhs-note-drawer"', html)
-        self.assertIn('id="xhs-note-open-original"', html)
+        self.assertNotIn('id="xhs-note-drawer"', html)
+        self.assertNotIn('id="xhs-note-copy-id"', html)
+        self.assertIn("openOriginal(state.loaded.get", frontend)
         self.assertIn("/api/xhs-notes/original-link", frontend)
-        self.assertIn("xhs_note_original_link", (ROOT / "server.py").read_text(encoding="utf-8"))
-        self.assertNotIn("n.url||", frontend)
+        self.assertIn("window.open(\"about:blank\",\"_blank\")", frontend)
+        self.assertNotIn("navigator.clipboard", frontend)
 
     def test_preview_rewrites_double_quoted_fetch_paths(self):
         workflow = (ROOT / ".github" / "workflows" / "preview-deploy.yml").read_text(encoding="utf-8")
         self.assertIn('fetch("/api/', workflow)
         self.assertIn('fetch("/preview/api/', workflow)
 
-    def test_search_pagination_and_local_sort(self):
+    def test_search_pagination_and_local_sort_are_explicit(self):
         html = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
         frontend = (ROOT / "web" / "xhs-note-search.js").read_text(encoding="utf-8")
         self.assertIn("page:String(page)", frontend)
         self.assertIn("state.loaded.set(String(n.id),n)", frontend)
         self.assertIn("data-local-sort", html)
         self.assertIn("collect_descending", html)
+        self.assertIn('"第 "+state.page+" 页 / 共 "+state.page+" 页', frontend)
+        self.assertIn("还有下一页", frontend)
+
+    def test_search_toolbar_uses_compact_responsive_grid(self):
+        css = (ROOT / "web" / "xhs-note-search.css").read_text(encoding="utf-8")
+        self.assertIn("grid-template-columns:minmax(220px,2fr) repeat(3,minmax(135px,1fr)) auto auto", css)
+        self.assertIn("@media(max-width:560px)", css)
+        self.assertIn("cursor:pointer", css)
 
 
 if __name__ == "__main__":
