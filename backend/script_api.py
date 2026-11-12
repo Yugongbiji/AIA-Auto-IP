@@ -14,12 +14,17 @@ def recommend(database, payload: dict) -> dict:
     return build_recommendation_payload(database, directions, limit_per_direction=10)
 
 
-def library(database, *, level1: str = "", level2: str = "", tag: str = "", page: int = 1, page_size: int = 20) -> dict:
+def _search_key(value) -> str:
+    return "".join(str(value or "").casefold().split())
+
+
+def library(database, *, level1: str = "", level2: str = "", tag: str = "", search: str = "", page: int = 1, page_size: int = 20) -> dict:
     page = max(1, int(page or 1))
     page_size = max(1, min(50, int(page_size or 20)))
     # tag 保留旧接口兼容；新前端统一使用 level1 / level2。
     level1 = str(level1 or "").strip()
     level2 = str(level2 or tag or "").strip()
+    search = " ".join(str(search or "").split())
     scripts = store.list_active_scripts(database)
 
     level1_tags = sorted({str(item.get("level1_tag") or "").strip() for item in scripts if str(item.get("level1_tag") or "").strip()})
@@ -35,6 +40,13 @@ def library(database, *, level1: str = "", level2: str = "", tag: str = "", page
         scripts = [item for item in scripts if str(item.get("level1_tag") or "").strip() == level1]
     if level2:
         scripts = [item for item in scripts if str(item.get("level2_tag") or "").strip() == level2]
+    if search:
+        needle = _search_key(search)
+        fields = ("title_1", "title_2", "title_3", "level1_tag", "level2_tag", "body")
+        scripts = [
+            item for item in scripts
+            if any(needle in _search_key(item.get(field)) for field in fields)
+        ]
 
     total = len(scripts)
     pages = max(1, (total + page_size - 1) // page_size) if total else 1
@@ -58,6 +70,7 @@ def library(database, *, level1: str = "", level2: str = "", tag: str = "", page
         "level1": level1,
         "level2": level2,
         "tag": level2,
+        "search": search,
         "page": page,
         "page_size": page_size,
         "total": total,
