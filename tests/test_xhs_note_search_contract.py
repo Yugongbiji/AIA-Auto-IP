@@ -27,7 +27,9 @@ class XiaohongshuNoteSearchContractTests(unittest.TestCase):
         frontend = (ROOT / "web" / "xhs-note-search.js").read_text(encoding="utf-8")
         self.assertIn('id="xhs-note-drawer"', html)
         self.assertIn('id="xhs-note-open-original"', html)
-        self.assertIn("www.xiaohongshu.com/explore/", frontend)
+        self.assertIn("/api/xhs-notes/original-link", frontend)
+        self.assertIn("xhs_note_original_link", (ROOT / "server.py").read_text(encoding="utf-8"))
+        self.assertNotIn("n.url||", frontend)
 
     def test_preview_rewrites_double_quoted_fetch_paths(self):
         workflow = (ROOT / ".github" / "workflows" / "preview-deploy.yml").read_text(encoding="utf-8")
