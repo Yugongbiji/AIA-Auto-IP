@@ -44,7 +44,7 @@ class XiaohongshuNoteSearchContractTests(unittest.TestCase):
         self.assertIn("state.loaded.set(String(n.id),n)", frontend)
         self.assertIn("data-local-sort", html)
         self.assertIn("collect_descending", html)
-        self.assertIn('"第 "+state.page+" 页 / 共 "+state.page+" 页', frontend)
+        self.assertIn('"第 "+state.page+" 页 · 本页 "+state.pageNotes.length+" 条', frontend)
         self.assertIn("还有下一页", frontend)
         self.assertIn("本页 \"+state.pageNotes.length+\" 条", frontend)
         self.assertIn("累计已获取 \"+state.loaded.size+\" 条", frontend)
@@ -57,7 +57,7 @@ class XiaohongshuNoteSearchContractTests(unittest.TestCase):
         self.assertIn("padding:16px 16px 22px", css)
         self.assertIn("padding-inline:24px!important", css)
         self.assertIn("padding-inline:16px!important", css)
-        self.assertIn("xhs-note-search.css?v=20261112-search-gutters-3", html)
+        self.assertIn("xhs-note-search.css?v=20261112-xhs-search-layout-3", html)
 
     def test_search_toolbar_uses_compact_responsive_grid(self):
         css = (ROOT / "web" / "xhs-note-search.css").read_text(encoding="utf-8")
