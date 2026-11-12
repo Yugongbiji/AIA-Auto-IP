@@ -43,6 +43,8 @@ class XiaohongshuNoteSearchContractTests(unittest.TestCase):
         self.assertIn("page:String(page)", frontend)
         self.assertIn("state.loaded.set(String(n.id),n)", frontend)
         self.assertIn("data-local-sort", html)
+        self.assertIn("<th>作品ID</th>", html)
+        self.assertIn("xhs-note-id-cell", frontend)
         self.assertIn("collect_descending", html)
         self.assertIn('"第 "+state.page+" 页 / "+pagesText+" · 本页 "+state.pageNotes.length+" 条', frontend)
         self.assertIn("还有下一页", frontend)
@@ -65,13 +67,15 @@ class XiaohongshuNoteSearchContractTests(unittest.TestCase):
         self.assertIn("padding:16px 16px 22px", css)
         self.assertIn("padding-inline:24px!important", css)
         self.assertIn("padding-inline:16px!important", css)
-        self.assertIn("xhs-note-search.css?v=20261112-xhs-search-layout-6", html)
+        self.assertIn("xhs-note-search.css?v=20261112-xhs-search-layout-7", html)
 
     def test_search_toolbar_uses_compact_responsive_grid(self):
         css = (ROOT / "web" / "xhs-note-search.css").read_text(encoding="utf-8")
         self.assertIn("grid-template-columns:minmax(220px,2fr) repeat(3,minmax(135px,1fr)) auto auto", css)
         self.assertIn("@media(max-width:560px)", css)
         self.assertIn("cursor:pointer", css)
+        self.assertIn("position:sticky;bottom:0", css)
+        self.assertIn("max-height:min(58vh,620px)", css)
 
 
 if __name__ == "__main__":
