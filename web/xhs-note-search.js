@@ -27,7 +27,7 @@
  async function search(page,fresh=false){
   const keyword=$("xhs-note-keyword").value.trim();if(!keyword){status("请先输入搜索关键词。","error");return;}
   const key=[keyword,$("xhs-note-type").value,$("xhs-note-sort").value,$("xhs-note-time").value].join("|");
-  if(fresh||key!==state.lastSearchKey){state.loaded.clear();state.localSort=null;state.localDirection="desc";state.lastSearchKey=key;}
+  if(fresh||key!==state.lastSearchKey){state.loaded.clear();state.localSort=null;state.localDirection="desc";state.total=0;state.pageSize=0;state.totalPages=0;state.lastSearchKey=key;}
   state.keyword=keyword;state.page=page;state.busy=true;updateMeta();status("正在搜索小红书笔记…");
   const params=new URLSearchParams({keyword,page:String(page),noteType:$("xhs-note-type").value,sortType:$("xhs-note-sort").value,timeFilter:$("xhs-note-time").value});
   try{
