@@ -47,7 +47,7 @@ class XiaohongshuNoteSearchContractTests(unittest.TestCase):
         self.assertIn('"第 "+state.page+" 页 / "+pagesText+" · 本页 "+state.pageNotes.length+" 条', frontend)
         self.assertIn("还有下一页", frontend)
         self.assertIn("本页 \"+state.pageNotes.length+\" 条", frontend)
-        self.assertIn("累计已获取 \"+state.loaded.size+\" 条", frontend)
+        self.assertIn("已加载 \"+state.loaded.size+\" 条", frontend)
         self.assertIn("已到当前结果末页", frontend)
 
     def test_api_total_and_estimated_pages_are_displayed_separately_from_loaded_count(self):
