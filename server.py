@@ -1399,6 +1399,7 @@ class AppHandler(BaseHTTPRequestHandler):
                 sheet = workbook.active
                 sheet.title = "小红书笔记"
                 sheet.append(["笔记标题", "笔记内容", "发布时间", "笔记类型", "作者", "点赞量", "收藏量", "评论量", "分享量", "笔记ID", "原笔记链接"])
+                exported_count = 0
                 for note in notes:
                     if not isinstance(note, dict):
                         continue
@@ -1408,6 +1409,7 @@ class AppHandler(BaseHTTPRequestHandler):
                         "视频" if note.get("type") == "video" else "图文", xhs_excel_safe(note.get("author")),
                         int(note.get("liked_count") or 0), int(note.get("collected_count") or 0), int(note.get("comments_count") or 0),
                         int(note.get("shared_count") or 0), xhs_excel_safe(note.get("id")), xhs_excel_safe(note.get("url"))])
+                    exported_count += 1
                 sheet.freeze_panes = "A2"
                 sheet.auto_filter.ref = sheet.dimensions
                 for cell in sheet[1]:
@@ -1420,6 +1422,7 @@ class AppHandler(BaseHTTPRequestHandler):
                 self.send_response(HTTPStatus.OK)
                 self.send_header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
                 self.send_header("Content-Disposition", "attachment; filename*=UTF-8''" + quote("小红书笔记搜索结果.xlsx"))
+                self.send_header("X-Exported-Count", str(exported_count))
                 self.send_header("Content-Length", str(len(content)))
                 self.end_headers()
                 self.wfile.write(content)
