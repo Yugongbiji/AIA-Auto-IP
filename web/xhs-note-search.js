@@ -1,6 +1,6 @@
 (() => {
  const $=id=>document.getElementById(id);
- const state={active:false,keyword:"",page:1,hasMore:false,pageNotes:[],loaded:new Map(),localSort:null,localDirection:"desc",busy:false,lastSearchKey:"",total:0,pageSize:0,totalPages:0};
+ const state={active:false,keyword:"",page:1,hasMore:false,pageNotes:[],loaded:new Map(),pageCache:new Map(),localSort:null,localDirection:"desc",busy:false,lastSearchKey:"",total:0,pageSize:0,totalPages:0};
  const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
  const count=v=>Number(v||0).toLocaleString("zh-CN");
  const date=v=>v?new Date(Number(v)*1000).toLocaleDateString("zh-CN"):"—";
@@ -27,15 +27,21 @@
  async function search(page,fresh=false){
   const keyword=$("xhs-note-keyword").value.trim();if(!keyword){status("请先输入搜索关键词。","error");return;}
   const key=[keyword,$("xhs-note-type").value,$("xhs-note-sort").value,$("xhs-note-time").value].join("|");
-  if(fresh||key!==state.lastSearchKey){state.loaded.clear();state.localSort=null;state.localDirection="desc";state.total=0;state.pageSize=0;state.totalPages=0;state.lastSearchKey=key;}
-  state.keyword=keyword;state.page=page;state.busy=true;updateMeta();status("正在搜索小红书笔记…");
+  if(fresh||key!==state.lastSearchKey){state.loaded.clear();state.pageCache.clear();state.localSort=null;state.localDirection="desc";state.total=0;state.pageSize=0;state.totalPages=0;state.lastSearchKey=key;}
+  state.keyword=keyword;state.page=page;
+  const cachedPage=state.pageCache.get(page);
+  if(cachedPage){
+   state.pageNotes=cachedPage.notes;state.hasMore=cachedPage.hasMore;state.total=cachedPage.total;
+   renderRows();updateMeta();status("已从本地缓存恢复第 "+page+" 页，本次未调用接口、不消耗 Credits。","success");return;
+  }
+  state.busy=true;updateMeta();status("正在搜索小红书笔记…");
   const params=new URLSearchParams({keyword,page:String(page),noteType:$("xhs-note-type").value,sortType:$("xhs-note-sort").value,timeFilter:$("xhs-note-time").value});
   try{
    const response=await fetch("/api/xhs-notes/search?"+params.toString()),result=await response.json();
    if(!response.ok||!result.ok)throw new Error(result.error||"搜索失败");
    state.pageNotes=Array.isArray(result.notes)?result.notes:[];
    state.pageNotes.forEach(n=>{if(n&&n.id)state.loaded.set(String(n.id),n);});
-   state.hasMore=Boolean(result.has_more);state.total=Number(result.total||0);if(page===1){state.pageSize=state.pageNotes.length;state.totalPages=state.total>0&&state.pageSize>0?Math.ceil(state.total/state.pageSize):0;}
+   state.hasMore=Boolean(result.has_more);state.total=Number(result.total||0);if(page===1){state.pageSize=state.pageNotes.length;state.totalPages=state.total>0&&state.pageSize>0?Math.ceil(state.total/state.pageSize):0;}state.pageCache.set(page,{notes:state.pageNotes,hasMore:state.hasMore,total:state.total});
    renderRows();updateMeta();
    status("搜索成功：本页 "+state.pageNotes.length+" 条，累计已加载 "+state.loaded.size+" 条。"+(result.credits_charged?"本次扣除 "+result.credits_charged+" credits。":"费用以 Wellbyte 控制台记录为准。"),"success");
   }catch(e){state.pageNotes=[];state.hasMore=false;renderRows();updateMeta();status(e.message||"搜索失败，请稍后重试。","error");}
@@ -74,7 +80,7 @@
  function bind(){
   if(state.active)return;state.active=true;
   $("xhs-note-search-form").addEventListener("submit",e=>{e.preventDefault();search(1,true);});
-  $("xhs-note-search-clear").addEventListener("click",()=>{$("xhs-note-keyword").value="";state.keyword="";state.page=1;state.hasMore=false;state.pageNotes=[];state.loaded.clear();state.lastSearchKey="";state.localSort=null;state.total=0;state.pageSize=0;state.totalPages=0;renderRows();updateMeta();status("已清空搜索条件。");});
+  $("xhs-note-search-clear").addEventListener("click",()=>{$("xhs-note-keyword").value="";state.keyword="";state.page=1;state.hasMore=false;state.pageNotes=[];state.loaded.clear();state.pageCache.clear();state.lastSearchKey="";state.localSort=null;state.total=0;state.pageSize=0;state.totalPages=0;renderRows();updateMeta();status("已清空搜索条件。");});
   $("xhs-note-prev").addEventListener("click",()=>{if(state.page>1)search(state.page-1);});
   $("xhs-note-next").addEventListener("click",()=>{if(state.hasMore)search(state.page+1);});
   $("xhs-note-export").addEventListener("click",exportExcel);
