@@ -104,10 +104,12 @@ function selectTool(tool) {
   const isPlanning = tool === 'planning';
   const isScript = tool === 'script';
   const isXhs = tool === 'xhs';
+  const isXhsSearch = tool === 'xhs-search';
   $('ip-chat-panel').classList.toggle('hidden', !isIp);
   $('planning-panel').classList.toggle('hidden', !isPlanning);
   $('script-panel').classList.toggle('hidden', !isScript);
   $('xhs-panel').classList.toggle('hidden', !isXhs);
+  $('xhs-note-search-panel').classList.toggle('hidden', !isXhsSearch);
   $('tool-placeholder').classList.add('hidden');
   $('generate-button').classList.toggle('hidden', !isIp);
   if (!isIp) $('view-proposal').classList.add('hidden');
@@ -115,6 +117,7 @@ function selectTool(tool) {
   if (isPlanning) activatePlanning();
   if (isScript) activateCreativeTool('script');
   if (isXhs) activateCreativeTool('xhs');
+  if (isXhsSearch && window.activateXhsNoteSearch) window.activateXhsNoteSearch();
   syncWorkspaceToolbar();
 }
 
