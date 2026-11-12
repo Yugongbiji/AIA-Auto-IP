@@ -22,6 +22,20 @@ class XiaohongshuNoteSearchContractTests(unittest.TestCase):
         self.assertIn("sorted(allLoaded()).slice(0,50)", frontend)
         self.assertIn("/api/xhs-notes/export", frontend)
 
+    def test_previous_page_uses_local_cache_without_repeat_api_call(self):
+        frontend = (ROOT / "web" / "xhs-note-search.js").read_text(encoding="utf-8")
+        self.assertIn("pageCache:new Map()", frontend)
+        self.assertIn("const cachedPage=state.pageCache.get(page)", frontend)
+        self.assertIn("已从本地缓存恢复第 ", frontend)
+        self.assertIn("state.pageCache.set(page,", frontend)
+
+    def test_excel_export_reports_and_verifies_actual_row_count(self):
+        server = (ROOT / "server.py").read_text(encoding="utf-8")
+        frontend = (ROOT / "web" / "xhs-note-search.js").read_text(encoding="utf-8")
+        self.assertIn('self.send_header("X-Exported-Count", str(exported_count))', server)
+        self.assertIn("exportedCount!==notes.length", frontend)
+        self.assertIn("导出数量校验失败", frontend)
+
     def test_titles_open_original_note_without_preview_drawer_or_copy_id_button(self):
         html = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
         frontend = (ROOT / "web" / "xhs-note-search.js").read_text(encoding="utf-8")
